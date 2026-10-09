@@ -143,13 +143,14 @@ JSON einer Qualification: `{"sailing_license": "SKS"}`, `{"boat_permit": "<uuid>
 
 ### Arbeitsstunden
 ```rust
-WorkEntry { id, member, extent: WorkExtent, description: Option<String>, reference: Option<WorkReference>,
+WorkEntry { id, member, extent: WorkExtent, subject: WorkSubject, description: Option<String>, reference: Option<WorkReference>,
             confirmation: Option<Confirmation> }
 Confirmation { by: MemberId, at: Timestamp }
 enum WorkExtent { Amount { date: Timestamp, hours: f64 }, Period { start: Timestamp, end: Timestamp } }
 #[serde(rename_all = "snake_case")] enum WorkReference { WorkEvent(WorkEventId), Task(TaskId) }
 HourTransfer { id, year: i32, from: MemberId, to: MemberId, hours: f64, description }
 ```
+`#[serde(rename_all = "snake_case")] enum WorkSubject { Boat(BoatId), Club }` ist Pflichtfeld (kein Default), JSON `{"boat": "<uuid>"}` oder `"club"`. Ein Einsatz braucht weder Termin noch Aufgabe; `ClubRecord::validate_work_entry(&entry)` meldet einen Widerspruch, wenn `reference` auf einen Termin oder eine Aufgabe mit Boot zeigt und `subject` ein anderes Boot oder `Club` ist.
 `WorkExtent` steht im JSON **flach** im Eintrag (`date`+`hours` oder `start`+`end`). Dafür nutzt `WorkEntry` `#[serde(try_from = "RawWorkEntry", into = "RawWorkEntry")]`; `RawWorkEntry` hat die vier Umfangsfelder als `Option` (übrige Felder wie im Eintrag), und `TryFrom` lehnt „beide Formen“ und „keine Form“ ab. Ein `#[serde(untagged)]`-Enum mit `flatten` würde überzählige Felder stillschweigend ignorieren und ist deshalb verworfen. `WorkReference` als Enum macht „Termin und Aufgabe zugleich“ unmöglich.
 `WorkEntry::hours()`, `::year()`, `::validate()`; `ClubRecord::credited_hours(member, year)` = **bestätigte** Einsätze + erhaltene − abgegebene Überträge + abgegoltene Stunden; `work_entries_of(member, year)` liefert alle Einsätze inkl. unbestätigter; `ClubRecord::hours_for_task(task)`.
 
@@ -241,7 +242,7 @@ JSON: `"chair"`, `{"boatwarden": "<uuid>"}`. Zeitverhalten: `ClubRecord::appoint
 | Action | erlaubt für |
 |---|---|
 | BlockBoat, LiftBlock, ReleaseBoat | Boatwarden(boot), HeadBoatwarden, Vorstand |
-| ConfirmWork | Boatwarden(boot) wenn `reference` → WorkEvent/Task mit `boat == boot`; HeadBoatwarden; Vorstand; nie `actor == entry.member` |
+| ConfirmWork | `subject = Boat(boot)`: Boatwarden(boot), HeadBoatwarden, Vorstand; `subject = Club`: jedes zum Zeitpunkt aktive Amt; nie `actor == entry.member` |
 | RecordCheckout | Examiner(boot), Boatwarden(boot), Vorstand |
 | Revoke | Vorstand |
 
@@ -275,7 +276,7 @@ Testmodul mit den fünf Booten nach Segelordnung 14.04.2026; „SKS+“ = [SKS |
 - [Gästegebühren auf Mitgliedskonto] → Der Verein hat keine Konten für Gäste; das einladende Mitglied bzw. der Skipper kassiert.
 - [`f64` in Structs] → kein `Eq`/`Hash` für Typen mit Stunden/Maßen; für das Modell unproblematisch.
 - [Rechte nur für Fachhandlungen] → Forderungen, Einzahlungen, Mitgliederverwaltung und Ämterpflege prüfen keine Rechte (Wahlen/Mitgliederversammlung nicht im Umfang); kann später über weitere `Action`-Varianten ergänzt werden.
-- [Bootswart ohne Bootsbezug] → Einsätze ohne Termin/Aufgabe oder zu Terminen ohne Boot kann nur Oberbootswart oder Vorstand bestätigen.
+- [Gegenstand vom Mitglied gewählt] → Wer „Verein“ statt eines Bootes angibt, erweitert den Kreis der Bestätigenden; der Bestätigende sieht Gegenstand und Beschreibung und kann die Bestätigung verweigern.
 - [Referentielle Integrität] → Verweise auf unbekannte Kennungen werden nicht beim Einlesen, sondern in den Prüfungen gemeldet.
 
 ## Migration Plan

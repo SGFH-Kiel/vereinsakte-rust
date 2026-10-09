@@ -7,7 +7,7 @@ Erfasst die von Mitgliedern geleisteten Arbeitsstunden – bei gemeinsamen Arbei
 ## ADDED Requirements
 
 ### Requirement: Arbeitseinsatz
-Ein Arbeitseinsatz SHALL einem Mitglied zugeordnet sein und seinen Umfang entweder als (Datum, Stunden) oder als (Start, Ende) angeben. Eine Beschreibung SHALL optional möglich sein. Optional SHALL er auf einen Arbeitstermin oder eine Aufgabe verweisen, nicht auf beides.
+Ein Arbeitseinsatz SHALL einem Mitglied zugeordnet sein und seinen Umfang entweder als (Datum, Stunden) oder als (Start, Ende) angeben. Eine Beschreibung SHALL optional möglich sein. Optional SHALL er auf einen Arbeitstermin oder eine Aufgabe verweisen, nicht auf beides; ein Einsatz SHALL auch ohne Termin und ohne Aufgabe erfasst werden können.
 
 #### Scenario: Einsatz mit Datum und Menge
 - **WHEN** ein Einsatz am 12. April 2026 mit 3,5 Stunden und Beschreibung „Unterwasserschiff geschliffen“ erfasst wird
@@ -24,6 +24,25 @@ Ein Arbeitseinsatz SHALL einem Mitglied zugeordnet sein und seinen Umfang entwed
 #### Scenario: Keine Umfangsangabe
 - **WHEN** JSON eines Einsatzes weder `date`/`hours` noch `start`/`end` enthält
 - **THEN** schlägt das Einlesen mit einem Fehler fehl
+
+#### Scenario: Einsatz ohne Termin und Aufgabe
+- **WHEN** Clara 2 Stunden „Segel der Filou geflickt“ für die „Filou“ erfasst, ohne Termin und ohne Aufgabe
+- **THEN** ist der Einsatz gültig
+
+### Requirement: Gegenstand eines Einsatzes
+Jeder Arbeitseinsatz SHALL einen Gegenstand angeben: entweder ein Boot oder den Verein allgemein (Arbeiten ohne Boot wie Webseite, IT oder Vereinszeitung). Verweist der Einsatz auf einen Arbeitstermin oder eine Aufgabe mit Boot, SHALL der Gegenstand dieses Boot sein.
+
+#### Scenario: Fehlender Gegenstand
+- **WHEN** JSON eines Einsatzes ohne Gegenstand eingelesen wird
+- **THEN** schlägt das Einlesen mit einem Fehler fehl
+
+#### Scenario: Vereinsarbeit
+- **WHEN** David 3 Stunden „Webseite aktualisiert“ mit Gegenstand „Verein“ erfasst
+- **THEN** ist der Einsatz gültig und keinem Boot zugeordnet
+
+#### Scenario: Widerspruch zur Aufgabe
+- **WHEN** ein Einsatz auf die Aufgabe „Trigon Antifouling“ verweist, aber die „Filou“ als Gegenstand angibt
+- **THEN** wird der Einsatz als ungültig gemeldet
 
 ### Requirement: Bestätigung
 Ein Arbeitseinsatz SHALL bestätigt werden können; die Bestätigung SHALL das bestätigende Mitglied und den Zeitpunkt festhalten (wer bestätigen darf: siehe aemter). Ein neu erfasster Einsatz SHALL unbestätigt sein. Unbestätigte Einsätze SHALL sichtbar bleiben, aber nicht angerechnet werden.

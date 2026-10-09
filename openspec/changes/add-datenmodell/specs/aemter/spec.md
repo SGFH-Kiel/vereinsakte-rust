@@ -77,18 +77,26 @@ Ein Boot sperren, eine Sperre aufheben oder ein Boot für eine Saison freigeben 
 - **THEN** wird die Handlung als nicht berechtigt abgelehnt und das Boot bleibt unverändert
 
 ### Requirement: Recht zur Bestätigung von Arbeitsstunden
-Einen Arbeitseinsatz bestätigen SHALL dürfen: ein Bootswart, wenn der Einsatz auf einen Arbeitstermin oder eine Aufgabe zu seinem Boot verweist; der Oberbootswart und jedes Vorstandsmitglied für jeden Einsatz. Niemand SHALL seine eigenen Einsätze bestätigen dürfen.
+Einen Arbeitseinsatz mit einem Boot als Gegenstand SHALL ein Bootswart dieses Bootes, der Oberbootswart oder ein Vorstandsmitglied bestätigen dürfen. Einen Arbeitseinsatz mit dem Verein als Gegenstand SHALL jedes Mitglied bestätigen dürfen, das zu diesem Zeitpunkt irgendein Amt innehat. Niemand SHALL seine eigenen Einsätze bestätigen dürfen.
 
 #### Scenario: Bootswart bestätigt
-- **WHEN** Ben als Bootswart der „Trigon“ Claras Einsatz bei der Aufgabe „Trigon Antifouling“ bestätigt
+- **WHEN** Ben als Bootswart der „Trigon“ Claras Einsatz mit Gegenstand „Trigon“ bestätigt
 - **THEN** ist der Einsatz mit Ben und Zeitpunkt als bestätigt erfasst
 
 #### Scenario: Eigene Stunden
 - **WHEN** der Oberbootswart seinen eigenen Einsatz bestätigen will
 - **THEN** wird die Handlung als nicht berechtigt abgelehnt
 
-#### Scenario: Einsatz ohne Bootsbezug
-- **WHEN** ein Bootswart einen Einsatz ohne Bezug zu seinem Boot bestätigen will und kein Vorstandsamt hat
+#### Scenario: Einsatz für ein fremdes Boot
+- **WHEN** Ben als Bootswart der „Trigon“ ohne Vorstandsamt einen Einsatz mit Gegenstand „Filou“ bestätigen will
+- **THEN** wird die Handlung als nicht berechtigt abgelehnt
+
+#### Scenario: Vereinsarbeit durch beliebiges Amt
+- **WHEN** Ben als Bootswart der „Trigon“ Davids Einsatz „Webseite aktualisiert“ mit Gegenstand „Verein“ bestätigt
+- **THEN** ist der Einsatz bestätigt
+
+#### Scenario: Vereinsarbeit ohne Amt
+- **WHEN** ein Mitglied ohne Amt einen Einsatz mit Gegenstand „Verein“ bestätigen will
 - **THEN** wird die Handlung als nicht berechtigt abgelehnt
 
 ### Requirement: Recht zu Abnahme und Widerruf
