@@ -180,7 +180,7 @@ FeeSchedule {
 TypeRate { membership_type, amount: Money }
 TourRate { tariff_group, day: Money, week: Money, first_week: Option<Money> }
 ```
-`FeeSchedule::default()` enthält die Sätze der Beitragsordnung (siehe Specs `beitraege`, `tourgebuehren`); fehlende Saison/Tabelle → Default. Listen statt Maps, damit das JSON lesbar bleibt (`[{"membership_type": "regular", "amount": 24000}, …]`).
+`FeeSchedule::default()` enthält die Sätze der Beitragsordnung (siehe Specs `beitraege`, `tourgebuehren`); fehlende Saison/Tabelle → Default. Listen statt Maps, damit das JSON lesbar bleibt (`[{"membership_type": "regular", "amount": "240.00"}, …]`).
 
 ### Mitgliedskonto
 ```rust

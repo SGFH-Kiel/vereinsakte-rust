@@ -1,0 +1,2084 @@
+{
+  "members": [
+    {
+      "id": 101,
+      "last_name": "Petersen",
+      "first_name": "Anna",
+      "address": {
+        "street": "Holtenauer Straße 112",
+        "postal_code": "24105",
+        "city": "Kiel"
+      },
+      "phone": {
+        "landline": "0431 556677",
+        "mobile": "0151 23456789"
+      },
+      "email": "anna.petersen@example.org",
+      "membership_type": "regular",
+      "membership": {
+        "joined_at": "2015-03-01T00:00:00+01:00"
+      },
+      "sailing_licenses": [
+        {
+          "kind": "SBF See",
+          "acquired_at": "2014-06-20T00:00:00+02:00"
+        },
+        {
+          "kind": "SKS",
+          "acquired_at": "2017-09-15T00:00:00+02:00"
+        }
+      ],
+      "radio_licenses": [
+        {
+          "kind": "SRC"
+        }
+      ],
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10001",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "240.00",
+            "text": "Jahresbeitrag 2026 (ordentliches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10002",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0003"
+              }
+            },
+            "amount": "140.00",
+            "text": "Tourgebühr Schruvtrekker 01.07.–14.07.2026 (14 Tage)",
+            "created_at": "2026-07-15T10:00:00+02:00",
+            "due_at": "2026-07-21T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10003",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0003",
+                "guest": "Max Gast"
+              }
+            },
+            "amount": "90.00",
+            "text": "Tourgebühr Schruvtrekker 01.07.–03.07.2026 für Gast Max Gast (3 Tage)",
+            "created_at": "2026-07-15T10:00:00+02:00",
+            "due_at": "2026-07-10T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a700001",
+            "amount": "250.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Überweisung Jahresbeitrag 2026"
+          },
+          {
+            "id": "00000000-0000-0000-0000-00009a700002",
+            "amount": "230.00",
+            "at": "2026-07-20T00:00:00+02:00",
+            "text": "Tourgebühren Dänemark inkl. Gast"
+          }
+        ]
+      }
+    },
+    {
+      "id": 102,
+      "last_name": "Hansen",
+      "first_name": "Ben",
+      "address": {
+        "street": "Knooper Weg 45",
+        "postal_code": "24103",
+        "city": "Kiel"
+      },
+      "email": "ben.hansen@example.org",
+      "membership_type": "regular",
+      "membership": {
+        "joined_at": "2012-04-01T00:00:00+02:00"
+      },
+      "sailing_licenses": [
+        {
+          "kind": "SBF See"
+        },
+        {
+          "kind": "SKS"
+        }
+      ],
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10004",
+            "kind": "other",
+            "amount": "20.00",
+            "text": "Schlüsselpfand Bootshalle",
+            "created_at": "2026-02-01T10:00:00+01:00",
+            "due_at": "2026-02-15T00:00:00+01:00",
+            "cancelled": {
+              "at": "2026-02-14T18:00:00+01:00",
+              "reason": "Schlüssel zurückgegeben"
+            }
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10005",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "240.00",
+            "text": "Jahresbeitrag 2026 (ordentliches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10006",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0003"
+              }
+            },
+            "amount": "70.00",
+            "text": "Tourgebühr Schruvtrekker 01.07.–07.07.2026 (7 Tage)",
+            "created_at": "2026-07-15T10:00:00+02:00",
+            "due_at": "2026-07-14T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a700003",
+            "amount": "240.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Lastschrift Jahresbeitrag 2026"
+          },
+          {
+            "id": "00000000-0000-0000-0000-00009a700004",
+            "amount": "70.00",
+            "at": "2026-07-18T00:00:00+02:00",
+            "text": "Tourgebühr Dänemark"
+          }
+        ]
+      }
+    },
+    {
+      "id": 103,
+      "last_name": "Jensen",
+      "first_name": "Clara",
+      "address": {
+        "street": "Sophienblatt 20",
+        "postal_code": "24114",
+        "city": "Kiel"
+      },
+      "phone": {
+        "mobile": "0176 99887766"
+      },
+      "email": "clara.jensen@example.org",
+      "membership_type": "student",
+      "membership": {
+        "joined_at": "2023-04-01T00:00:00+02:00"
+      },
+      "sailing_licenses": [
+        {
+          "kind": "SBF See"
+        },
+        {
+          "kind": "SKS"
+        }
+      ],
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10007",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "170.00",
+            "text": "Jahresbeitrag 2026 (studentisches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10008",
+            "kind": {
+              "work_compensation": {
+                "year": 2026
+              }
+            },
+            "amount": "45.00",
+            "text": "Arbeitsstunden-Abgeltung 2026 (3 h)",
+            "created_at": "2026-06-01T00:00:00+02:00",
+            "due_at": "2026-06-01T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a700005",
+            "amount": "170.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Lastschrift Jahresbeitrag 2026"
+          }
+        ]
+      }
+    },
+    {
+      "id": 104,
+      "last_name": "Schulz",
+      "first_name": "David",
+      "address": {
+        "street": "Westring 280",
+        "postal_code": "24116",
+        "city": "Kiel"
+      },
+      "email": "david.schulz@example.org",
+      "membership_type": "student",
+      "membership": {
+        "joined_at": "2024-10-01T00:00:00+02:00"
+      },
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10009",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "170.00",
+            "text": "Jahresbeitrag 2026 (studentisches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a1000a",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0003"
+              }
+            },
+            "amount": "58.00",
+            "text": "Tourgebühr Schruvtrekker 07.07.–14.07.2026 (8 Tage)",
+            "created_at": "2026-07-15T10:00:00+02:00",
+            "due_at": "2026-07-21T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a700006",
+            "amount": "170.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Lastschrift Jahresbeitrag 2026"
+          }
+        ]
+      }
+    },
+    {
+      "id": 105,
+      "last_name": "Möller",
+      "first_name": "Eva",
+      "address": {
+        "street": "Düsternbrooker Weg 70",
+        "postal_code": "24105",
+        "city": "Kiel"
+      },
+      "email": "eva.möller@example.org",
+      "membership_type": "honorary",
+      "membership": {
+        "joined_at": "1988-05-01T00:00:00+02:00"
+      },
+      "sailing_licenses": [
+        {
+          "kind": "SBF See"
+        },
+        {
+          "kind": "SKS"
+        },
+        {
+          "kind": "SSS"
+        }
+      ],
+      "radio_licenses": [
+        {
+          "kind": "LRC"
+        }
+      ],
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a1000b",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0004"
+              }
+            },
+            "amount": "36.00",
+            "text": "Tourgebühr Trigon 14.08.–16.08.2026 (3 Tage)",
+            "created_at": "2026-08-17T10:00:00+02:00",
+            "due_at": "2026-08-23T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a700007",
+            "amount": "36.00",
+            "at": "2026-08-20T00:00:00+02:00",
+            "text": "Tourgebühr Trigon"
+          }
+        ]
+      }
+    },
+    {
+      "id": 106,
+      "last_name": "Koch",
+      "first_name": "Frank",
+      "address": {
+        "street": "Feldstraße 99",
+        "postal_code": "24105",
+        "city": "Kiel"
+      },
+      "email": "frank.koch@example.org",
+      "membership_type": "regular",
+      "membership": {
+        "joined_at": "2005-02-01T00:00:00+01:00"
+      },
+      "sailing_licenses": [
+        {
+          "kind": "SBF See"
+        },
+        {
+          "kind": "SKS"
+        }
+      ],
+      "radio_licenses": [
+        {
+          "kind": "SRC"
+        }
+      ],
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a1000c",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "240.00",
+            "text": "Jahresbeitrag 2026 (ordentliches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a1000d",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0004"
+              }
+            },
+            "amount": "36.00",
+            "text": "Tourgebühr Trigon 14.08.–16.08.2026 (3 Tage)",
+            "created_at": "2026-08-17T10:00:00+02:00",
+            "due_at": "2026-08-23T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a1000e",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0004",
+                "guest": "Ole Svensson"
+              }
+            },
+            "amount": "90.00",
+            "text": "Tourgebühr Trigon 14.08.–16.08.2026 für Gast Ole Svensson (3 Tage)",
+            "created_at": "2026-08-17T10:00:00+02:00",
+            "due_at": "2026-08-23T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a700008",
+            "amount": "240.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Lastschrift Jahresbeitrag 2026"
+          },
+          {
+            "id": "00000000-0000-0000-0000-00009a700009",
+            "amount": "126.00",
+            "at": "2026-08-20T00:00:00+02:00",
+            "text": "Tourgebühr Trigon inkl. Gast"
+          }
+        ]
+      }
+    },
+    {
+      "id": 107,
+      "last_name": "Lorenzen",
+      "first_name": "Greta",
+      "address": {
+        "street": "Schönberger Straße 50",
+        "postal_code": "24148",
+        "city": "Kiel"
+      },
+      "email": "greta.lorenzen@example.org",
+      "membership_type": "extraordinary",
+      "membership": {
+        "joined_at": "2020-01-01T00:00:00+01:00"
+      },
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a1000f",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "60.00",
+            "text": "Jahresbeitrag 2026 (außerordentliches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a70000a",
+            "amount": "60.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Lastschrift Jahresbeitrag 2026"
+          }
+        ]
+      }
+    },
+    {
+      "id": 108,
+      "last_name": "Petersen",
+      "first_name": "Hannes",
+      "address": {
+        "street": "Holtenauer Straße 112",
+        "postal_code": "24105",
+        "city": "Kiel"
+      },
+      "membership_type": "child_of_member",
+      "child_of": 101,
+      "membership": {
+        "joined_at": "2022-05-01T00:00:00+02:00"
+      },
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10010",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0003"
+              }
+            },
+            "amount": "100.00",
+            "text": "Tourgebühr Schruvtrekker 01.07.–14.07.2026 (14 Tage)",
+            "created_at": "2026-07-15T10:00:00+02:00",
+            "due_at": "2026-07-21T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a70000b",
+            "amount": "100.00",
+            "at": "2026-07-20T00:00:00+02:00",
+            "text": "Tourgebühr Hannes"
+          }
+        ]
+      }
+    },
+    {
+      "id": 109,
+      "last_name": "Dupont",
+      "first_name": "Inès",
+      "address": {
+        "street": "Olshausenstraße 40",
+        "postal_code": "24118",
+        "city": "Kiel"
+      },
+      "email": "inès.dupont@example.org",
+      "membership_type": "erasmus",
+      "membership": {
+        "joined_at": "2026-03-01T00:00:00+01:00",
+        "limited_until": "2026-11-01T00:00:00+01:00"
+      },
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10011",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "100.00",
+            "text": "Jahresbeitrag 2026 (Erasmus)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a70000c",
+            "amount": "100.00",
+            "at": "2026-03-04T00:00:00+01:00",
+            "text": "Überweisung Nutzungspauschale"
+          }
+        ]
+      }
+    },
+    {
+      "id": 110,
+      "last_name": "Brandt",
+      "first_name": "Jonas",
+      "address": {
+        "street": "Elisabethstraße 8",
+        "postal_code": "24143",
+        "city": "Kiel"
+      },
+      "email": "jonas.brandt@example.org",
+      "membership_type": "regular",
+      "membership": {
+        "joined_at": "2010-09-01T00:00:00+02:00"
+      },
+      "sailing_licenses": [
+        {
+          "kind": "SBF See"
+        }
+      ],
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10012",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "240.00",
+            "text": "Jahresbeitrag 2026 (ordentliches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10013",
+            "kind": {
+              "work_compensation": {
+                "year": 2026
+              }
+            },
+            "amount": "375.00",
+            "text": "Arbeitsstunden-Abgeltung 2026 (25 h)",
+            "created_at": "2026-03-01T00:00:00+01:00",
+            "due_at": "2026-03-01T00:00:00+01:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a70000d",
+            "amount": "375.00",
+            "at": "2026-03-05T00:00:00+01:00",
+            "text": "Überweisung Abgeltung Arbeitsstunden"
+          },
+          {
+            "id": "00000000-0000-0000-0000-00009a70000e",
+            "amount": "240.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Lastschrift Jahresbeitrag 2026"
+          }
+        ]
+      }
+    },
+    {
+      "id": 111,
+      "last_name": "Voß",
+      "first_name": "Karin",
+      "address": {
+        "street": "Lornsenstraße 21",
+        "postal_code": "24105",
+        "city": "Kiel"
+      },
+      "email": "karin.voß@example.org",
+      "membership_type": "regular",
+      "membership": {
+        "joined_at": "2016-04-01T00:00:00+02:00"
+      },
+      "sailing_licenses": [
+        {
+          "kind": "SBF See"
+        },
+        {
+          "kind": "BR"
+        }
+      ],
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10014",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "240.00",
+            "text": "Jahresbeitrag 2026 (ordentliches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10015",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0003"
+              }
+            },
+            "amount": "140.00",
+            "text": "Tourgebühr Schruvtrekker 01.07.–14.07.2026 (14 Tage)",
+            "created_at": "2026-07-15T10:00:00+02:00",
+            "due_at": "2026-07-21T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a70000f",
+            "amount": "240.00",
+            "at": "2026-04-01T00:00:00+02:00",
+            "text": "Lastschrift Jahresbeitrag 2026"
+          },
+          {
+            "id": "00000000-0000-0000-0000-00009a700010",
+            "amount": "140.00",
+            "at": "2026-07-25T00:00:00+02:00",
+            "text": "Tourgebühr Dänemark"
+          }
+        ]
+      }
+    },
+    {
+      "id": 112,
+      "last_name": "Meier",
+      "first_name": "Lukas",
+      "address": {
+        "street": "Ringstraße 12",
+        "postal_code": "24114",
+        "city": "Kiel"
+      },
+      "email": "lukas.meier@example.org",
+      "membership_type": "regular",
+      "membership": {
+        "joined_at": "2018-03-01T00:00:00+01:00"
+      },
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10016",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "240.00",
+            "text": "Jahresbeitrag 2026 (ordentliches Mitglied)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-04-01T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10017",
+            "kind": {
+              "tour_fee": {
+                "reservation": "00000000-0000-0000-0000-00002e5e0004"
+              }
+            },
+            "amount": "36.00",
+            "text": "Tourgebühr Trigon 14.08.–16.08.2026 (3 Tage)",
+            "created_at": "2026-08-17T10:00:00+02:00",
+            "due_at": "2026-08-23T00:00:00+02:00"
+          }
+        ]
+      }
+    },
+    {
+      "id": 113,
+      "last_name": "Kruse",
+      "first_name": "Malte",
+      "address": {
+        "street": "Wilhelminenstraße 5",
+        "postal_code": "24103",
+        "city": "Kiel"
+      },
+      "email": "malte.kruse@example.org",
+      "membership_type": "student",
+      "membership": {
+        "joined_at": "2026-05-15T00:00:00+02:00",
+        "provisional_until": "2027-04-30T00:00:00+02:00"
+      },
+      "account": {
+        "claims": [
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10018",
+            "kind": {
+              "annual_fee": {
+                "year": 2026
+              }
+            },
+            "amount": "113.33",
+            "text": "Jahresbeitrag 2026 (studentisches Mitglied), anteilig ab Mai (8/12)",
+            "created_at": "2026-03-15T10:00:00+01:00",
+            "due_at": "2026-05-15T00:00:00+02:00"
+          },
+          {
+            "id": "00000000-0000-0000-0000-0000c1a10019",
+            "kind": "admission_fee",
+            "amount": "30.00",
+            "text": "Aufnahmegebühr (studentisches Mitglied)",
+            "created_at": "2026-05-16T10:00:00+02:00",
+            "due_at": "2026-05-15T00:00:00+02:00"
+          }
+        ],
+        "payments": [
+          {
+            "id": "00000000-0000-0000-0000-00009a700011",
+            "amount": "143.33",
+            "at": "2026-05-20T00:00:00+02:00",
+            "text": "Überweisung Aufnahme und Beitrag"
+          }
+        ]
+      }
+    }
+  ],
+  "boats": [
+    {
+      "id": "00000000-0000-0000-0000-0000b0a70001",
+      "name": "Filou",
+      "boat_type": "dinghy",
+      "length_m": 5.4,
+      "beam_m": 1.8,
+      "draft_m": 1.1,
+      "sail_area_m2": 15.0,
+      "crew_rules": [
+        {
+          "area": "home_waters",
+          "min_members": 1,
+          "min_persons": 1
+        }
+      ],
+      "releases": [
+        {
+          "season": 2025,
+          "by": 106,
+          "at": "2025-04-12T15:00:00+02:00"
+        },
+        {
+          "season": 2026,
+          "by": 106,
+          "at": "2026-04-18T15:00:00+02:00"
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000b0a70002",
+      "name": "Dipl.Ing.ling",
+      "boat_type": "dinghy",
+      "class": "Yngling",
+      "length_m": 6.35,
+      "beam_m": 1.73,
+      "draft_m": 1.05,
+      "sail_area_m2": 14.0,
+      "crew_rules": [
+        {
+          "area": "home_waters",
+          "min_members": 1,
+          "min_persons": 1
+        }
+      ],
+      "releases": [
+        {
+          "season": 2025,
+          "by": 106,
+          "at": "2025-04-12T15:00:00+02:00"
+        },
+        {
+          "season": 2026,
+          "by": 106,
+          "at": "2026-04-18T15:00:00+02:00"
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000b0a70003",
+      "name": "Harald Blauzahn",
+      "boat_type": "keelboat",
+      "class": "Nordisches Folkeboot",
+      "year_built": 1996,
+      "length_m": 7.64,
+      "beam_m": 2.2,
+      "draft_m": 1.2,
+      "sail_area_m2": 24.0,
+      "berths": 4,
+      "skipper_requirement": [
+        [
+          {
+            "sailing_license": "SKS"
+          },
+          {
+            "sailing_license": "SSS"
+          },
+          {
+            "sailing_license": "SHS"
+          },
+          {
+            "sailing_license": "BR"
+          }
+        ]
+      ],
+      "crew_rules": [
+        {
+          "area": "home_waters",
+          "min_members": 2,
+          "min_persons": 2
+        },
+        {
+          "area": "outside",
+          "min_members": 2,
+          "min_persons": 2,
+          "co_skipper_required": true,
+          "co_skipper_requirement": [
+            [
+              {
+                "boat_permit_for_type": "dinghy"
+              },
+              {
+                "sailing_license": "SBF See"
+              },
+              {
+                "sailing_license": "SKS"
+              },
+              {
+                "sailing_license": "SSS"
+              },
+              {
+                "sailing_license": "SHS"
+              },
+              {
+                "sailing_license": "BR"
+              }
+            ]
+          ]
+        }
+      ],
+      "releases": [
+        {
+          "season": 2025,
+          "by": 106,
+          "at": "2025-04-12T15:00:00+02:00"
+        },
+        {
+          "season": 2026,
+          "by": 106,
+          "at": "2026-04-18T15:00:00+02:00"
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000b0a70004",
+      "name": "Schruvtrekker",
+      "boat_type": "keelboat",
+      "class": "Dehler 31",
+      "year_built": 1986,
+      "length_m": 9.4,
+      "draft_m": 1.5,
+      "engine": "Einbaudiesel",
+      "skipper_requirement": [
+        [
+          {
+            "sailing_license": "SKS"
+          },
+          {
+            "sailing_license": "SSS"
+          },
+          {
+            "sailing_license": "SHS"
+          },
+          {
+            "sailing_license": "BR"
+          }
+        ],
+        [
+          {
+            "sailing_license": "SBF See"
+          }
+        ],
+        [
+          {
+            "radio_license": "SRC"
+          },
+          {
+            "radio_license": "LRC"
+          }
+        ]
+      ],
+      "crew_rules": [
+        {
+          "area": "home_waters",
+          "min_members": 2,
+          "min_persons": 2,
+          "co_skipper_required": true,
+          "co_skipper_requirement": [
+            [
+              {
+                "boat_permit_for_type": "dinghy"
+              },
+              {
+                "sailing_license": "SBF See"
+              },
+              {
+                "sailing_license": "SKS"
+              },
+              {
+                "sailing_license": "SSS"
+              },
+              {
+                "sailing_license": "SHS"
+              },
+              {
+                "sailing_license": "BR"
+              }
+            ]
+          ]
+        },
+        {
+          "area": "outside",
+          "min_members": 2,
+          "min_persons": 3,
+          "co_skipper_required": true,
+          "co_skipper_requirement": [
+            [
+              {
+                "boat_permit": "00000000-0000-0000-0000-0000b0a70003"
+              }
+            ],
+            [
+              {
+                "sailing_license": "SBF See"
+              }
+            ]
+          ]
+        }
+      ],
+      "releases": [
+        {
+          "season": 2025,
+          "by": 106,
+          "at": "2025-04-12T15:00:00+02:00"
+        },
+        {
+          "season": 2026,
+          "by": 106,
+          "at": "2026-04-18T15:00:00+02:00"
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000b0a70005",
+      "name": "Trigon",
+      "boat_type": "keelboat",
+      "class": "Matcher 37",
+      "year_built": 1996,
+      "length_m": 11.1,
+      "draft_m": 1.95,
+      "engine": "18 PS",
+      "skipper_requirement": [
+        [
+          {
+            "sailing_license": "SKS"
+          },
+          {
+            "sailing_license": "SSS"
+          },
+          {
+            "sailing_license": "SHS"
+          },
+          {
+            "sailing_license": "BR"
+          }
+        ],
+        [
+          {
+            "sailing_license": "SBF See"
+          }
+        ],
+        [
+          {
+            "radio_license": "SRC"
+          },
+          {
+            "radio_license": "LRC"
+          }
+        ]
+      ],
+      "crew_rules": [
+        {
+          "area": "home_waters",
+          "min_members": 2,
+          "min_persons": 2,
+          "co_skipper_required": true,
+          "co_skipper_requirement": [
+            [
+              {
+                "boat_permit_for_type": "dinghy"
+              },
+              {
+                "sailing_license": "SBF See"
+              },
+              {
+                "sailing_license": "SKS"
+              },
+              {
+                "sailing_license": "SSS"
+              },
+              {
+                "sailing_license": "SHS"
+              },
+              {
+                "sailing_license": "BR"
+              }
+            ]
+          ]
+        },
+        {
+          "area": "outside",
+          "min_members": 2,
+          "min_persons": 3,
+          "co_skipper_required": true,
+          "co_skipper_requirement": [
+            [
+              {
+                "boat_permit": "00000000-0000-0000-0000-0000b0a70003"
+              }
+            ],
+            [
+              {
+                "sailing_license": "SBF See"
+              }
+            ]
+          ]
+        }
+      ],
+      "releases": [
+        {
+          "season": 2025,
+          "by": 106,
+          "at": "2025-04-12T15:00:00+02:00"
+        },
+        {
+          "season": 2026,
+          "by": 106,
+          "at": "2026-04-18T15:00:00+02:00"
+        }
+      ]
+    }
+  ],
+  "offices": [
+    {
+      "id": "00000000-0000-0000-0000-00000ff10000",
+      "role": "vice_chair",
+      "member": 105,
+      "start": "2004-04-24T19:00:00+02:00",
+      "end": "2024-04-20T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10001",
+      "role": "chair",
+      "member": 105,
+      "start": "2024-04-20T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10002",
+      "role": "vice_chair",
+      "member": 101,
+      "start": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10003",
+      "role": "treasurer",
+      "member": 110,
+      "start": "2019-04-27T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10004",
+      "role": "secretary",
+      "member": 111,
+      "start": "2022-04-23T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10005",
+      "role": "head_boatwarden",
+      "member": 106,
+      "start": "2020-04-25T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10006",
+      "role": "auditor",
+      "member": 112,
+      "start": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10007",
+      "role": "auditor",
+      "member": 103,
+      "start": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10008",
+      "role": {
+        "boatwarden": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "member": 106,
+      "start": "2015-04-25T19:00:00+02:00",
+      "end": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10009",
+      "role": {
+        "boatwarden": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "member": 103,
+      "start": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff1000a",
+      "role": {
+        "boatwarden": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "member": 112,
+      "start": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff1000b",
+      "role": {
+        "boatwarden": "00000000-0000-0000-0000-0000b0a70004"
+      },
+      "member": 101,
+      "start": "2023-04-22T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff1000c",
+      "role": {
+        "boatwarden": "00000000-0000-0000-0000-0000b0a70003"
+      },
+      "member": 102,
+      "start": "2026-04-01T00:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff1000d",
+      "role": {
+        "boatwarden": "00000000-0000-0000-0000-0000b0a70001"
+      },
+      "member": 104,
+      "start": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff1000e",
+      "role": {
+        "boatwarden": "00000000-0000-0000-0000-0000b0a70002"
+      },
+      "member": 104,
+      "start": "2025-04-26T19:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff1000f",
+      "role": {
+        "examiner": "00000000-0000-0000-0000-0000b0a70001"
+      },
+      "member": 104,
+      "start": "2025-05-01T00:00:00+02:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000ff10010",
+      "role": {
+        "examiner": "00000000-0000-0000-0000-0000b0a70003"
+      },
+      "member": 106,
+      "start": "2020-05-01T00:00:00+02:00"
+    }
+  ],
+  "boat_checkouts": [
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0001",
+      "member": 101,
+      "boat": "00000000-0000-0000-0000-0000b0a70001",
+      "at": "2015-06-13T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0002",
+      "member": 101,
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "at": "2016-05-21T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0003",
+      "member": 101,
+      "boat": "00000000-0000-0000-0000-0000b0a70004",
+      "at": "2018-05-26T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0004",
+      "member": 101,
+      "boat": "00000000-0000-0000-0000-0000b0a70005",
+      "at": "2021-06-19T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0005",
+      "member": 102,
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "at": "2013-05-11T15:00:00+02:00",
+      "result": "failed",
+      "examiner": 105,
+      "remark": "Anlegemanöver noch unsicher"
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0006",
+      "member": 102,
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "at": "2013-08-17T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0007",
+      "member": 102,
+      "boat": "00000000-0000-0000-0000-0000b0a70005",
+      "at": "2017-06-10T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0008",
+      "member": 102,
+      "boat": "00000000-0000-0000-0000-0000b0a70001",
+      "at": "2012-06-02T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0009",
+      "member": 103,
+      "boat": "00000000-0000-0000-0000-0000b0a70001",
+      "at": "2023-06-03T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec000a",
+      "member": 103,
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "at": "2025-06-14T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec000b",
+      "member": 103,
+      "boat": "00000000-0000-0000-0000-0000b0a70002",
+      "at": "2024-05-11T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec000c",
+      "member": 104,
+      "boat": "00000000-0000-0000-0000-0000b0a70001",
+      "at": "2025-05-24T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec000d",
+      "member": 106,
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "at": "2005-07-09T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec000e",
+      "member": 106,
+      "boat": "00000000-0000-0000-0000-0000b0a70004",
+      "at": "2006-06-17T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec000f",
+      "member": 106,
+      "boat": "00000000-0000-0000-0000-0000b0a70005",
+      "at": "2007-06-16T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0010",
+      "member": 105,
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "at": "2020-06-06T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0011",
+      "member": 105,
+      "boat": "00000000-0000-0000-0000-0000b0a70005",
+      "at": "2020-06-06T16:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0012",
+      "member": 111,
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "at": "2019-07-06T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0013",
+      "member": 110,
+      "boat": "00000000-0000-0000-0000-0000b0a70001",
+      "at": "2011-05-14T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 105
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000c4ec0014",
+      "member": 104,
+      "boat": "00000000-0000-0000-0000-0000b0a70002",
+      "at": "2025-06-21T14:00:00+02:00",
+      "result": "passed",
+      "examiner": 106
+    }
+  ],
+  "revocations": [
+    {
+      "id": "00000000-0000-0000-0000-00002e700001",
+      "member": 102,
+      "boat": "00000000-0000-0000-0000-0000b0a70005",
+      "at": "2025-09-06T10:00:00+02:00",
+      "reason": "Grundberührung ohne Meldung – erneute Abnahme erforderlich",
+      "by": 105
+    }
+  ],
+  "work_entries": [
+    {
+      "id": "00000000-0000-0000-0000-00003e000001",
+      "member": 101,
+      "subject": "club",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000002",
+      "member": 101,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70004"
+      },
+      "date": "2026-03-07T00:00:00+01:00",
+      "hours": 8.0,
+      "description": "Motor-Service Schruvtrekker",
+      "confirmation": {
+        "by": 106,
+        "at": "2026-03-09T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000003",
+      "member": 101,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "date": "2026-03-28T00:00:00+01:00",
+      "hours": 5.0,
+      "description": "Polster der Trigon gereinigt",
+      "confirmation": {
+        "by": 103,
+        "at": "2026-03-30T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000004",
+      "member": 101,
+      "subject": "club",
+      "date": "2026-05-09T00:00:00+02:00",
+      "hours": 6.0,
+      "description": "Vereinsraum gestrichen",
+      "confirmation": {
+        "by": 105,
+        "at": "2026-05-11T00:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000005",
+      "member": 102,
+      "subject": "club",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000006",
+      "member": 102,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70003"
+      },
+      "date": "2026-02-21T00:00:00+01:00",
+      "hours": 4.0,
+      "description": "Fock genäht",
+      "reference": {
+        "task": "00000000-0000-0000-0000-00007a5c0002"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-02-23T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000007",
+      "member": 102,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70003"
+      },
+      "start": "2026-03-14T09:00:00+01:00",
+      "end": "2026-03-14T17:00:00+01:00",
+      "description": "Arbeitsdienst Folkeboot",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70002"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-03-16T17:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000008",
+      "member": 102,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70001"
+      },
+      "date": "2026-03-21T00:00:00+01:00",
+      "hours": 6.0,
+      "description": "Schwert der Filou überholt",
+      "confirmation": {
+        "by": 104,
+        "at": "2026-03-23T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000009",
+      "member": 102,
+      "subject": "club",
+      "date": "2026-05-16T00:00:00+02:00",
+      "hours": 6.0,
+      "description": "Steg repariert",
+      "confirmation": {
+        "by": 110,
+        "at": "2026-05-18T00:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00000a",
+      "member": 103,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "date": "2026-03-28T00:00:00+01:00",
+      "hours": 4.0,
+      "description": "Antifouling Trigon",
+      "reference": {
+        "task": "00000000-0000-0000-0000-00007a5c0001"
+      },
+      "confirmation": {
+        "by": 112,
+        "at": "2026-03-30T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00000b",
+      "member": 103,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "date": "2026-04-04T00:00:00+02:00",
+      "hours": 2.5,
+      "description": "Rigg der Trigon kontrolliert",
+      "confirmation": {
+        "by": 112,
+        "at": "2026-04-06T00:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00000c",
+      "member": 103,
+      "subject": "club",
+      "start": "2026-04-18T07:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00000d",
+      "member": 103,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70001"
+      },
+      "date": "2026-05-02T00:00:00+02:00",
+      "hours": 6.0,
+      "description": "Segel der Filou geflickt"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00000e",
+      "member": 104,
+      "subject": "club",
+      "date": "2026-02-10T00:00:00+01:00",
+      "hours": 3.0,
+      "description": "Webseite aktualisiert",
+      "reference": {
+        "task": "00000000-0000-0000-0000-00007a5c0004"
+      },
+      "confirmation": {
+        "by": 111,
+        "at": "2026-02-12T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00000f",
+      "member": 104,
+      "subject": "club",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000010",
+      "member": 104,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70001"
+      },
+      "date": "2026-03-21T00:00:00+01:00",
+      "hours": 8.0,
+      "description": "Rumpf der Filou geschliffen",
+      "confirmation": {
+        "by": 106,
+        "at": "2026-03-23T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000011",
+      "member": 104,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70002"
+      },
+      "date": "2026-03-22T00:00:00+01:00",
+      "hours": 6.0,
+      "description": "Dipl.Ing.ling: Beschläge erneuert",
+      "confirmation": {
+        "by": 106,
+        "at": "2026-03-24T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000012",
+      "member": 105,
+      "subject": "club",
+      "date": "2026-01-24T00:00:00+01:00",
+      "hours": 4.0,
+      "description": "Chronik für die Vereinszeitung",
+      "confirmation": {
+        "by": 111,
+        "at": "2026-01-26T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000013",
+      "member": 105,
+      "subject": "club",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000014",
+      "member": 106,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "date": "2026-02-28T00:00:00+01:00",
+      "hours": 10.0,
+      "description": "Trigon: Winterlagerarbeiten",
+      "confirmation": {
+        "by": 103,
+        "at": "2026-03-02T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000015",
+      "member": 106,
+      "subject": "club",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 105,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000016",
+      "member": 106,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70003"
+      },
+      "date": "2026-03-14T00:00:00+01:00",
+      "hours": 8.0,
+      "description": "Arbeitsdienst Folkeboot",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70002"
+      },
+      "confirmation": {
+        "by": 105,
+        "at": "2026-03-16T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000017",
+      "member": 106,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70004"
+      },
+      "date": "2026-03-07T00:00:00+01:00",
+      "hours": 6.0,
+      "description": "Seeventile der Schruvtrekker getauscht",
+      "confirmation": {
+        "by": 101,
+        "at": "2026-03-09T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000018",
+      "member": 106,
+      "subject": "club",
+      "start": "2025-12-31T22:00:00+01:00",
+      "end": "2026-01-01T01:00:00+01:00",
+      "description": "Silvesterwache Bootshalle",
+      "confirmation": {
+        "by": 105,
+        "at": "2026-01-03T01:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000019",
+      "member": 111,
+      "subject": "club",
+      "date": "2026-02-20T00:00:00+01:00",
+      "hours": 7.0,
+      "description": "Vereinszeitung: Redaktion",
+      "reference": {
+        "task": "00000000-0000-0000-0000-00007a5c0003"
+      },
+      "confirmation": {
+        "by": 105,
+        "at": "2026-02-22T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00001a",
+      "member": 111,
+      "subject": "club",
+      "date": "2026-03-05T00:00:00+01:00",
+      "hours": 5.0,
+      "description": "Vereinszeitung: Layout und Druck",
+      "reference": {
+        "task": "00000000-0000-0000-0000-00007a5c0003"
+      },
+      "confirmation": {
+        "by": 105,
+        "at": "2026-03-07T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00001b",
+      "member": 111,
+      "subject": "club",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00001c",
+      "member": 111,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70003"
+      },
+      "date": "2026-03-14T00:00:00+01:00",
+      "hours": 7.0,
+      "description": "Lack am Folkeboot ausgebessert",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70002"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-03-16T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00001d",
+      "member": 112,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70005"
+      },
+      "date": "2026-03-28T00:00:00+01:00",
+      "hours": 6.0,
+      "description": "Antifouling Trigon",
+      "reference": {
+        "task": "00000000-0000-0000-0000-00007a5c0001"
+      },
+      "confirmation": {
+        "by": 103,
+        "at": "2026-03-30T00:00:00+01:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00001e",
+      "member": 112,
+      "subject": "club",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "description": "Einkranen",
+      "reference": {
+        "work_event": "00000000-0000-0000-0000-0000e7e70001"
+      },
+      "confirmation": {
+        "by": 106,
+        "at": "2026-04-20T15:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e00001f",
+      "member": 113,
+      "subject": "club",
+      "date": "2026-06-06T00:00:00+02:00",
+      "hours": 6.0,
+      "description": "Bootshalle aufgeräumt",
+      "confirmation": {
+        "by": 106,
+        "at": "2026-06-08T00:00:00+02:00"
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00003e000020",
+      "member": 113,
+      "subject": {
+        "boat": "00000000-0000-0000-0000-0000b0a70001"
+      },
+      "date": "2026-06-13T00:00:00+02:00",
+      "hours": 6.0,
+      "description": "Filou: Persenning ausgebessert",
+      "confirmation": {
+        "by": 104,
+        "at": "2026-06-15T00:00:00+02:00"
+      }
+    }
+  ],
+  "hour_transfers": [
+    {
+      "id": "00000000-0000-0000-0000-00007f000001",
+      "year": 2026,
+      "from": 102,
+      "to": 103,
+      "hours": 5.0,
+      "description": "Ausgleich unter Partnern"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00007f000002",
+      "year": 2026,
+      "from": 103,
+      "to": 104,
+      "hours": 2.0,
+      "description": "Ausgleich unter Partnern"
+    }
+  ],
+  "work_events": [
+    {
+      "id": "00000000-0000-0000-0000-0000e7e70002",
+      "title": "Arbeitsdienst Folkeboot",
+      "start": "2026-03-14T09:00:00+01:00",
+      "end": "2026-03-14T17:00:00+01:00",
+      "location": "Bootshalle Schwentine",
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "max_participants": 6,
+      "registrations": [
+        102,
+        106,
+        111
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000e7e70001",
+      "title": "Boote kranen",
+      "start": "2026-04-18T09:00:00+02:00",
+      "end": "2026-04-18T15:00:00+02:00",
+      "location": "Sporthafen Düsternbrook",
+      "description": "Einkranen aller Kielboote, danach Grillen",
+      "registrations": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        111,
+        112
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000e7e70003",
+      "title": "Boote auskranen",
+      "start": "2026-10-17T09:00:00+02:00",
+      "end": "2026-10-17T15:00:00+02:00",
+      "location": "Sporthafen Düsternbrook",
+      "registrations": [
+        101,
+        106,
+        113
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "00000000-0000-0000-0000-00007a5c0001",
+      "title": "Trigon: Antifouling streichen",
+      "boat": "00000000-0000-0000-0000-0000b0a70005",
+      "assignees": [
+        103,
+        112
+      ],
+      "estimated_hours": 10.0,
+      "due_at": "2026-04-10T00:00:00+02:00",
+      "status": "done",
+      "done_at": "2026-03-28T18:00:00+01:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00007a5c0002",
+      "title": "Fock von Harald Blauzahn nähen",
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "assignees": [
+        102
+      ],
+      "estimated_hours": 4.0,
+      "status": "done",
+      "done_at": "2026-02-21T17:00:00+01:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00007a5c0003",
+      "title": "Vereinszeitung Frühjahrsausgabe",
+      "assignees": [
+        111
+      ],
+      "estimated_hours": 12.0,
+      "status": "done",
+      "done_at": "2026-03-05T20:00:00+01:00"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00007a5c0004",
+      "title": "Webseite: Törnberichte einpflegen",
+      "description": "Berichte der Saison 2025 mit Fotos",
+      "assignees": [
+        104
+      ],
+      "estimated_hours": 5.0,
+      "status": "in_progress"
+    }
+  ],
+  "seasons": [
+    {
+      "year": 2025,
+      "hours_quota": 25.0,
+      "compensation_rate": "15.00"
+    },
+    {
+      "year": 2026,
+      "hours_quota": 25.0,
+      "compensation_rate": "15.00"
+    }
+  ],
+  "annual_records": [
+    {
+      "member": 105,
+      "year": 2026,
+      "reduced_quota": {
+        "hours": 10.0,
+        "reason": "Alter, Absprache mit dem Vorstand"
+      }
+    },
+    {
+      "member": 113,
+      "year": 2026,
+      "reduced_quota": {
+        "hours": 12.0,
+        "reason": "Eintritt im Mai 2026"
+      }
+    },
+    {
+      "member": 103,
+      "year": 2026,
+      "compensation": {
+        "hours": 3.0,
+        "approved_at": "2026-06-01T00:00:00+02:00",
+        "reason": "Prüfungsphase"
+      }
+    },
+    {
+      "member": 110,
+      "year": 2026,
+      "compensation": {
+        "hours": 25.0,
+        "approved_at": "2026-03-01T00:00:00+01:00",
+        "reason": "Auslandsaufenthalt bis Juli"
+      }
+    }
+  ],
+  "reservations": [
+    {
+      "id": "00000000-0000-0000-0000-00002e5e0001",
+      "boat": "00000000-0000-0000-0000-0000b0a70001",
+      "start": "2026-06-13T14:00:00+02:00",
+      "end": "2026-06-13T18:00:00+02:00",
+      "area": "home_waters",
+      "skipper": 104
+    },
+    {
+      "id": "00000000-0000-0000-0000-00002e5e0002",
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "start": "2026-06-20T10:00:00+02:00",
+      "end": "2026-06-20T17:00:00+02:00",
+      "area": "home_waters",
+      "skipper": 111,
+      "crew": [
+        {
+          "member": 110
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-0000-0000-00002e5e0003",
+      "boat": "00000000-0000-0000-0000-0000b0a70004",
+      "start": "2026-07-01T10:00:00+02:00",
+      "end": "2026-07-14T16:00:00+02:00",
+      "area": "outside",
+      "tour": true,
+      "skipper": 101,
+      "co_skipper": 111,
+      "crew": [
+        {
+          "member": 102,
+          "until": "2026-07-07T18:00:00+02:00"
+        },
+        {
+          "member": 104,
+          "from": "2026-07-07T10:00:00+02:00"
+        },
+        {
+          "member": 108
+        }
+      ],
+      "guests": [
+        {
+          "name": "Max Gast",
+          "phone": "0160 5554443",
+          "until": "2026-07-03T18:00:00+02:00"
+        }
+      ],
+      "remark": "Kiel – Marstal – Svendborg – Kiel"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00002e5e0004",
+      "boat": "00000000-0000-0000-0000-0000b0a70005",
+      "start": "2026-08-14T16:00:00+02:00",
+      "end": "2026-08-16T18:00:00+02:00",
+      "area": "outside",
+      "tour": true,
+      "skipper": 105,
+      "co_skipper": 106,
+      "crew": [
+        {
+          "member": 112
+        }
+      ],
+      "guests": [
+        {
+          "name": "Ole Svensson",
+          "invited_by": 106
+        }
+      ]
+    }
+  ]
+}
