@@ -13,7 +13,7 @@ use tower_sessions::{Expiry, SessionManagerLayer, SessionStore};
 use crate::error::not_found;
 use crate::session::csrf_guard;
 use crate::state::AppState;
-use crate::{login, members, pages};
+use crate::{login, members, offices, pages};
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
                    form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
@@ -51,7 +51,10 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
             "/mitglieder/{nr}/scheine/{kind}/{idx}/entfernen",
             post(members::remove_license),
         )
-        .route("/meine-daten/bearbeiten", get(members::edit_own));
+        .route("/meine-daten/bearbeiten", get(members::edit_own))
+        .route("/aemter", get(offices::overview).post(offices::appoint))
+        .route("/aemter/historie", get(offices::history))
+        .route("/aemter/{id}/abgeben", post(offices::resign));
     if settings.development {
         // Nur im Entwicklungsmodus registriert – sonst existieren die Routen nicht.
         app = app

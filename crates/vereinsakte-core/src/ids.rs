@@ -80,6 +80,14 @@ macro_rules! uuid_id {
                 write!(f, "{}", self.0)
             }
         }
+
+        impl std::str::FromStr for $name {
+            type Err = uuid::Error;
+
+            fn from_str(text: &str) -> Result<Self, Self::Err> {
+                text.parse::<Uuid>().map(Self)
+            }
+        }
     )*};
 }
 

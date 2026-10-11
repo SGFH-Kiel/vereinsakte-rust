@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="breadcrumbs"><a href="/aemter">Ämter</a> › Historie</div>
+<div class="page-head"><h1>Amtshistorie</h1></div>
+<section class="card">
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Amt</th><th>Inhaber</th><th>Von</th><th>Bis</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td data-label="Amt">{{ row.role }}</td>
+        <td data-label="Inhaber"><a href="/mitglieder/{{ row.holder_id }}">{{ row.holder }}</a></td>
+        <td data-label="Von">{{ row.since }}</td>
+        <td data-label="Bis">{% if let Some(until) = row.until %}{{ until }}{% else %}<span class="badge ok">laufend</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

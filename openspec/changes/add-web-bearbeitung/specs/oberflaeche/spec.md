@@ -25,11 +25,11 @@ Die Oberfläche SHALL auf Bildschirmbreiten von 360 px bis über 1440 px ohne ho
 - **THEN** erscheint eine Tabelle mit sortierbaren Spalten
 
 ### Requirement: Navigation nach Berechtigung
-Die Hauptnavigation SHALL die Bereiche Start, Meine Daten, Mitglieder, Boote, Reservierungen, Arbeit, Konto bzw. Finanzen und, nur mit Berechtigung, Ämter und Protokoll anbieten und den aktuellen Bereich hervorheben. Auf schmalen Bildschirmen SHALL sie hinter einer Menüschaltfläche liegen, die ohne JavaScript funktioniert.
+Die Hauptnavigation SHALL die Bereiche Start, Meine Daten, Mitglieder, Ämter, Boote, Reservierungen und Arbeit anbieten sowie Finanzen nur für Vorstand und Revisoren und Protokoll für alle, und den aktuellen Bereich hervorheben. Auf schmalen Bildschirmen SHALL sie hinter einer Menüschaltfläche liegen, die ohne JavaScript funktioniert.
 
 #### Scenario: Navigation für Greta
 - **WHEN** Greta ohne Amt eine Seite öffnet
-- **THEN** zeigt die Navigation weder „Finanzen“ noch „Protokoll“
+- **THEN** zeigt die Navigation nicht „Finanzen“, aber „Ämter“ und „Protokoll“
 
 #### Scenario: Menü ohne JavaScript
 - **WHEN** auf einem schmalen Bildschirm JavaScript deaktiviert ist

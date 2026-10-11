@@ -11,6 +11,7 @@ pub mod format;
 pub mod members;
 pub mod memory;
 pub mod my_data;
+pub mod offices;
 pub mod ports;
 pub mod principal;
 pub mod scope;

@@ -30,8 +30,8 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 5. Ämter
 
-- [ ] 5.1 Ämterübersicht und Amtshistorie (`/aemter`); Tests: Greta sieht Eva als 1. Vorsitzende und Ben als Bootswart der Harald Blauzahn ohne Kontaktdaten, Historie nur für den Vorstand
-- [ ] 5.2 Ernennen und Abgeben inklusive Prüfhinweisen der Spec `aemter` und Berechtigungen (Vorstand alle, Oberbootswart Bootswarte/Abnehmer, Mitglied eigenes Amt); Tests: Bootswartin Greta darf anschließend die Filou sperren, Ben darf kein Vorstandsamt vergeben (403), Ende vor Beginn → Meldung, Doppelbesetzung → Hinweis, Bens Abgabe wirkt auf seiner nächsten Anfrage
+- [x] 5.1 Ämterübersicht und Amtshistorie (`/aemter`); Tests: Greta sieht Eva als 1. Vorsitzende und Ben als Bootswart der Harald Blauzahn ohne Kontaktdaten, Historie nur für den Vorstand
+- [x] 5.2 Ernennen und Abgeben inklusive Prüfhinweisen der Spec `aemter` und Berechtigungen (Vorstand alle, Oberbootswart Bootswarte/Abnehmer, Mitglied eigenes Amt); Tests: Bootswartin Greta darf anschließend die Filou sperren, Ben darf kein Vorstandsamt vergeben (403), Ende vor Beginn → Meldung, Doppelbesetzung → Hinweis, Bens Abgabe wirkt auf seiner nächsten Anfrage
 
 ## 6. Boote, Sperren, Abnahmen
 

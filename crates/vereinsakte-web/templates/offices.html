@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Ämter</h1><p class="muted">Aktuelle Besetzung nach Satzung und Segelordnung</p></div>
+  {% if v.can_see_history %}<div class="actions"><a class="btn" href="/aemter/historie">Amtshistorie</a></div>{% endif %}
+</div>
+{% for hint in hints %}<div class="notice warn" role="status">Hinweis: {{ hint }}</div>{% endfor %}
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+{% for section in v.sections %}
+<section class="card">
+  <h2>{{ section.title }}</h2>
+  {% if section.rows.is_empty() %}<p class="muted">Derzeit nicht besetzt.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Amt</th><th>Inhaber</th><th>Seit</th><th></th></tr></thead>
+    <tbody>
+    {% for row in section.rows %}
+      <tr>
+        <td data-label="Amt">{{ row.role }}</td>
+        <td data-label="Inhaber"><a href="/mitglieder/{{ row.holder_id }}">{{ row.holder }}</a></td>
+        <td data-label="Seit">{{ row.since }}</td>
+        <td data-label="">{% if row.can_resign %}
+          <form method="post" action="/aemter/{{ row.id }}/abgeben" class="inline">
+            <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+            <button type="submit" class="small danger">Amt abgeben</button>
+          </form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+{% if v.can_appoint %}
+<section class="card">
+  <h2>Mitglied ernennen</h2>
+  <form method="post" action="/aemter" class="form-grid cols-2">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <div class="field{% if !errors.get("member").is_empty() %} has-error{% endif %}">
+      <label for="f-member">Mitglied</label>
+      <select id="f-member" name="member">
+        {% for (number, name) in v.member_options %}<option value="{{ number }}"{% if number.to_string() == chosen_member %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+      {% if !errors.get("member").is_empty() %}<span class="error-text">{{ errors.get("member") }}</span>{% endif %}
+    </div>
+    <div class="field{% if !errors.get("role").is_empty() %} has-error{% endif %}">
+      <label for="f-role">Amt</label>
+      <select id="f-role" name="role">
+        {% for (key, label) in v.role_options %}<option value="{{ key }}"{% if *key == chosen_role %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      {% if !errors.get("role").is_empty() %}<span class="error-text">{{ errors.get("role") }}</span>{% endif %}
+    </div>
+    {{ f::field("start", "Beginn", chosen_start, errors.get("start"), "date", "leer lassen für heute") }}
+    <div class="form-actions wide"><button type="submit" class="primary">Ernennen</button></div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

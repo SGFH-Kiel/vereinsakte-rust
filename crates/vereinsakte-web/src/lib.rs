@@ -6,6 +6,7 @@ pub mod forms;
 pub mod list;
 mod login;
 mod members;
+mod offices;
 pub mod oidc;
 mod pages;
 mod router;

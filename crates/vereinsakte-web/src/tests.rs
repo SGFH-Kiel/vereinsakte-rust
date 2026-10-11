@@ -1095,3 +1095,143 @@ async fn board_ends_membership_with_date() {
     let page = eva.get("/mitglieder/107").await;
     assert!(page.body.contains("Ende der Mitgliedschaft") && page.body.contains("31.10.2026"));
 }
+
+// --- Gruppe 5: Ämter -------------------------------------------------------------
+
+fn resign_action(html: &str, holder: &str) -> String {
+    let at = html
+        .find(holder)
+        .unwrap_or_else(|| panic!("{holder} fehlt"));
+    let rest = &html[at..];
+    let start = rest.find("action=\"/aemter/").expect("Abgeben-Formular") + "action=\"".len();
+    rest[start..start + rest[start..].find('"').unwrap()].to_string()
+}
+
+#[tokio::test]
+async fn offices_overview_for_everyone_with_admin_only_for_the_board() {
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let page = greta.get("/aemter").await;
+    assert_eq!(page.status, StatusCode::OK);
+    for text in [
+        "1. Vorsitzende(r)",
+        "Eva Möller",
+        "Bootswart (Harald Blauzahn)",
+        "Ben Hansen",
+    ] {
+        assert!(page.body.contains(text), "{text}");
+    }
+    assert!(!page.body.contains("Mitglied ernennen") && !page.body.contains("Amtshistorie"));
+    assert!(!page.body.contains("@example.org"), "keine Kontaktdaten");
+    assert_eq!(
+        greta.get("/aemter/historie").await.status,
+        StatusCode::FORBIDDEN
+    );
+    let mut frank = logged_in(&h, 106).await;
+    let page = frank.get("/aemter").await;
+    assert!(page.body.contains("Mitglied ernennen") && page.body.contains("Amtshistorie"));
+    let history = frank.get("/aemter/historie").await;
+    assert!(history.body.contains("Eva Möller") && history.body.contains("laufend"));
+}
+
+#[tokio::test]
+async fn board_appoints_and_non_board_cannot() {
+    let h = dev();
+    let filou = vereinsakte_core::example::FILOU;
+    let role = format!("boatwarden:{filou}");
+    let mut frank = logged_in(&h, 106).await;
+    let page = frank.get("/aemter").await;
+    let token = csrf(&page.body);
+    let done = frank
+        .post(
+            "/aemter",
+            &[("csrf", &token), ("member", "107"), ("role", &role)],
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::SEE_OTHER, "{}", done.body);
+    let page = frank.get("/aemter").await;
+    assert!(page.body.contains("Das Amt wurde vergeben."));
+    let rows: Vec<&str> = page.body.split("Bootswart (Filou)</td>").skip(1).collect();
+    assert!(
+        rows.iter()
+            .any(|r| r[..r.len().min(200)].contains("/mitglieder/107\">Greta Lorenzen")),
+        "Greta ist jetzt Inhaberin"
+    );
+    let mut ben = logged_in(&h, 102).await;
+    let page = ben.get("/aemter").await;
+    let denied = ben
+        .post(
+            "/aemter",
+            &[
+                ("csrf", &csrf(&page.body)),
+                ("member", "107"),
+                ("role", "chair"),
+            ],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    let bad = frank
+        .post(
+            "/aemter",
+            &[("csrf", &token), ("member", "107"), ("role", "unbekannt")],
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(bad.body.contains("Bitte ein Amt wählen"));
+}
+
+#[tokio::test]
+async fn double_board_office_gives_a_hint_but_saves() {
+    let h = dev();
+    let mut eva = logged_in(&h, 105).await;
+    let page = eva.get("/aemter").await;
+    let done = eva
+        .post(
+            "/aemter",
+            &[
+                ("csrf", &csrf(&page.body)),
+                ("member", "110"),
+                ("role", "secretary"),
+            ],
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::SEE_OTHER);
+    let page = eva.get("/aemter").await;
+    assert!(page.body.contains("Hinweis:"), "{}", page.body);
+    assert!(page.body.contains("Brandt, Jonas") || page.body.contains("Jonas Brandt"));
+}
+
+#[tokio::test]
+async fn resigning_validates_the_date_and_removes_the_office() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let page = ben.get("/aemter").await;
+    let action = resign_action(&page.body, "Ben Hansen");
+    let token = csrf(&page.body);
+    let early = ben
+        .post(&action, &[("csrf", &token), ("date", "01.01.2026")])
+        .await;
+    assert_eq!(early.status, StatusCode::SEE_OTHER);
+    assert!(
+        ben.get("/aemter")
+            .await
+            .body
+            .contains("nicht vor seinem Beginn")
+    );
+    let mut greta = logged_in(&h, 107).await;
+    let greta_page = greta.get("/aemter").await;
+    let foreign = greta
+        .post(&action, &[("csrf", &csrf(&greta_page.body))])
+        .await;
+    assert_eq!(foreign.status, StatusCode::FORBIDDEN);
+    let ok = ben
+        .post(&action, &[("csrf", &token), ("date", "09.10.2026")])
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER);
+    let page = ben.get("/aemter").await;
+    assert!(page.body.contains("Das Amt wurde abgegeben."));
+    assert!(
+        !page.body.contains("/mitglieder/102\">Ben Hansen"),
+        "nicht mehr in der aktuellen Übersicht"
+    );
+}
