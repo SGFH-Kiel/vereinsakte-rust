@@ -17,7 +17,8 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 - **Filterleiste statt Filterzeile**: Suche und Filter des Mitgliederverzeichnisses (und weiterer Listen mit mehreren Filtern) stehen in einer Leiste neben der Liste, am Handy einklappbar.
 - **Namen sind Links**: Jeder Mitgliedsname führt zur Profilseite der Person (Gäste und Ausgeschiedene bleiben Text).
 - **Arbeitseinsatz-Formular mit Umschalter Stunden/Zeitraum**: nur die jeweils relevanten Felder sind sichtbar, ohne JavaScript.
-- **Mitfahrerlisten beim Reservieren**: Crew und Gäste werden als Listen mit Hinzufügen/Entfernen gepflegt statt als Freitext; Crew-Mitglieder sind Links zu ihrem Profil.
+- **Crewliste beim Reservieren**: Die Crew wird als Liste mit Hinzufügen/Entfernen gepflegt statt als Freitext; Crew-Mitglieder sind Links zu ihrem Profil.
+- **Schlankere Reservierung** (**BREAKING**): Gäste als eigene Angabe entfallen und stehen in der Bemerkung, die als großes mehrzeiliges Feld erscheint. Weil Gäste manuell durch den Skipper abgerechnet werden, entstehen für sie keine Tourgebühren mehr. Die Prüfung der Mindestbesatzung beim Reservieren entfällt, weil sich die Besatzung bis zur Abfahrt ändert.
 - **Alle Tabellen sortierbar** per Klick auf den Spaltenkopf (aufsteigend/absteigend, in der Adresse, ohne JavaScript; am Handy per Auswahl).
 - **Mitgliederliste mit Symbolen**: Segelscheine, Funkscheine und Mitgliedsart erscheinen als Symbole mit Tooltip statt als Text. Ebenso der Bootstyp (zwei Symbole: Jolle, Dickschiff; der genaue Typ mit Klasse im Tooltip).
 - **Tour ergibt sich aus der Buchungsdauer**: das Tour-Kennzeichen im Reservierungsformular entfällt; eine Reservierung gilt als Tour, sobald sie mindestens eine Übernachtung umfasst. **BREAKING** für Formular und gespeichertes Kennzeichen (wird ignoriert und aus dem Zeitraum berechnet).
@@ -36,12 +37,13 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 ### Modified Capabilities
 
 - `oberflaeche`: Navigation (Gruppen, Symbole, Tab-Leiste, Kontomenü, „Kalender“ statt „Reservierungen“, „Aufgaben“ oben), Startseite (Aufgabenhinweise, Fortschritt); neue Anforderungen für Symbolsatz, Typografie, Seitenaufbau mit einer Hauptaktion, eingeklappte Seltenaktionen, kompakte Listen, gegliederte Formulare, Normalfall-Optimierung, Kalenderbereich mit Liste/Kalender, Gruppierung nach Tagen, Unterscheidung der Eintragsarten, Farbthema und Archiv.
-- `bootsreservierung`: Tour-Kennzeichen wird aus der Dauer abgeleitet statt angegeben.
+- `bootsreservierung`: Tour-Kennzeichen wird aus der Dauer abgeleitet; Gäste und Mindestbesatzungsprüfung entfallen (REMOVED), Bemerkung wird längerer Freitext.
 - `reservierungsverwaltung`: Reservierungen erscheinen im Bereich Kalender (Kalender bisher nur in der Spec, nicht umgesetzt), Anlegen vom Boot aus ohne Tour-Angabe, Standardzeitraum „kommende“.
 - `arbeitsverwaltung`: Arbeitseinsatz-Formular mit Umschalter Stunden/Zeitraum; Arbeitstermine erscheinen im Bereich Kalender, Standardansicht „kommende“.
 - `amtsverwaltung`: beendete Ämter nur noch im Archiv statt in einer eigenen Amtshistorie.
 - `mitgliederverzeichnis`: Scheine, Funklizenzen und Mitgliedsart als Symbole mit Tooltip.
-- `tourgebuehren`: „gekennzeichnet“ wird zu „gilt als Tour“.
+- `tourgebuehren`: „gekennzeichnet“ wird zu „gilt als Tour“; nur Mitglieder sind gebührenpflichtig, keine Gästeforderungen.
+- `finanzverwaltung`: Tourgebühren werden nur für Mitglieder angelegt.
 
 ## Impact
 
