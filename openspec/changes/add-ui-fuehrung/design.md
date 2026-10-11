@@ -38,6 +38,18 @@ Die Oberfläche besteht aus askama-Vorlagen (`crates/vereinsakte-web/templates`)
 
 **Formulare.** `_forms.html` erhält Makros für `section(title, intro)` und Pflichtkennzeichnung (`*` plus `aria-required`, Legende „* Pflichtfeld“). Die Aktionsleiste wird `position: sticky; bottom: 0` nur unter 48 rem, mit Hintergrund und Rand; Seitenabstand unten gleicht die Höhe aus, damit nichts verdeckt wird (auch über der Tab-Leiste: Formularseiten blenden die Tab-Leiste aus, `body.has-form`).
 
+**Scheine und Mitgliedsart als Symbole.** Pro Schein-/Lizenzart ein Symbol mit `title` (Tooltip) und `<span class="visually-hidden">` (Text für Hilfstechnik); Tooltips allein genügen weder für Touch noch für Tastatur, daher steht derselbe Text auf der Mitgliedsseite und die Zeile ist per Fokus mit `title` lesbar, am Handy erscheint er als Beschriftung unter dem Symbol-Block. Nur vorhandene Scheine werden gezeigt (keine leeren Platzhalter), damit die Zeile kurz bleibt. Mitgliedsart: ein Symbol je Art (Zuordnung in der View, Text im Tooltip).
+
+**Tour aus der Dauer.** `Reservation::is_tour()` im Kern: Ende-Kalendertag (Ortszeit) > Beginn-Kalendertag. Das gespeicherte Feld `tour` wird nicht mehr gelesen oder geschrieben (Spalte bleibt, kein Migrationsschritt; Export/Import ignorieren sie beim Lesen). Alle Stellen, die `r.tour` nutzen (Gebühren, Anzeige, Filter, Audit), wechseln auf die Methode. Alternative: Mindestdauer in Stunden — zu willkürlich; „Übernachtung“ entspricht der Satzungsdefinition. Offen: Nachtfahrt über Mitternacht gilt damit als Tour; akzeptiert, weil sie Übernachtung an Bord bedeutet.
+
+**Kalender serverseitig als HTML-Raster.** Monatsraster (`<table>` mit `<caption>`, Wochentagsköpfen, Tageszellen mit Einträgen als Links) und Wochenansicht als Tagesliste; berechnet in der View aus denselben Daten und Filtern wie die Liste, Darstellung per `?ansicht=kalender&monat=2026-07`. Mehrtägige Einträge erscheinen an jedem Tag; am Handy immer als Tagesliste der Woche. Kein JavaScript-Kalender, keine Bibliothek. Alternative: Gantt/Zeitstrahl je Boot — für die Bootsreservierung später denkbar, jetzt zu viel. Unterscheidung nie nur nach Farbe: Boot als Text, Beteiligung mit Symbol.
+
+**Archiv unter Protokoll.** Neue Seite `/protokoll/archiv` mit Reitern je Art (Ämter, Mitglieder, Sperren, Reservierungen, Termine); sie liest über bestehende Repositories mit „nur Vergangenes/Beendetes“. Tagesansichten filtern per Standard auf aktuell; `/aemter/historie` entfällt (Weiterleitung auf das Archiv). Mitgliedsseiten zeigen keine beendeten Ämter mehr. Zugriff wie vollständiges Protokoll (Vorstand, Revisoren). Alternative: Filter „auch Beendete“ in jeder Liste — verwischt den Normalfall, genau das, was vermieden werden soll.
+
+**Normalfall.** Voreinstellungen in Formularen (Heimrevier, Skipper = ich, Datum heute) und Zeitraumstandards in `ListQuery`; Ausnahmefilter hinter „Filter“-`<details>`.
+
+**Aufgaben oben im Menü.** Nur der Menüpunkt kommt hier (Ziel: bestehende Aufgabenliste); das Kanban-Board mit Kommentaren, Bildern und Markdown ist `add-aufgabenboard` und setzt auf Navigation, Seitenkopf und Panels dieser Änderung auf.
+
 **Umsetzungsreihenfolge.** Erst Fundament (Sprite, Tokens, Layout, Navigation), dann Bausteine, dann Seiten bereichsweise — nach jedem Bereich Tests und Screenshots, damit keine große Umstellung am Ende scheitert.
 
 ## Risks / Trade-offs
@@ -47,6 +59,8 @@ Die Oberfläche besteht aus askama-Vorlagen (`crates/vereinsakte-web/templates`)
 - [`<details>` öffnet nicht automatisch bei Anker-Sprung] → Fehler-Rerender setzt `open` serverseitig; kein Anker nötig.
 - [Symbole ohne Beschriftung irritieren] → Navigation und Plaketten immer mit Text; reine Symbol-Schaltflächen nur in Tabellenzeilen mit `aria-label` und `title`.
 - [CSP und SVG `use`] → nur Fragmentverweise `#i-…` auf dasselbe Dokument, keine externen Ziele; per Test und im Browser-Screenshot geprüft.
+- [Tour-Regel ändert gespeicherte Bedeutung: bisher gesetzte Tour-Häkchen bei eintägigen Reservierungen entfallen] → vor der Umsetzung Bestandsdaten prüfen (Beispieldaten), Hinweis im README; Gebührenberechnung folgt der neuen Regel nur für künftige Anlage von Forderungen, bestehende Forderungen bleiben unverändert.
+- [Archiv blendet Daten aus, die jemand im Alltag sucht] → Seiten, die ein Archivdatum brauchen, verweisen mit Hinweis („Ältere Reservierungen im Archiv“); Suche nach Namen im Archiv.
 - [Mehr Seitengewicht] → Sprite unter 4 KB, CSS wächst auf geschätzt 12 KB; kein JavaScript neu.
 
 ## Migration Plan

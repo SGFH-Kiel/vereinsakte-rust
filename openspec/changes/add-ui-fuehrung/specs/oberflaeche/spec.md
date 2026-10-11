@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Navigation nach Berechtigung
-Die Hauptnavigation SHALL ihre Einträge in die Gruppen „Persönlich“ (Start, Meine Daten), „Verein“ (Mitglieder, Ämter, Boote, Reservierungen, Arbeit) und „Verwaltung“ (Finanzen nur für Vorstand und Revisoren, Protokoll für alle) gliedern, jeden Eintrag mit Symbol und Text zeigen und den aktuellen Bereich hervorheben. Konto und Abmelden SHALL in einem Kontomenü mit dem Namen und den Ämtern des Mitglieds liegen. Auf Bildschirmen unter 48 rem SHALL stattdessen eine untere Leiste Start, Boote, Reservierungen, Arbeit und „Mehr“ anbieten, wobei „Mehr“ alle übrigen Einträge und das Kontomenü öffnet; das SHALL ohne JavaScript funktionieren.
+Die Hauptnavigation SHALL ihre Einträge in die Gruppen „Persönlich“ (Start, Meine Daten), „Verein“ (Mitglieder, Ämter, Boote, Reservierungen, Aufgaben, Arbeit) und „Verwaltung“ (Finanzen nur für Vorstand und Revisoren, Protokoll für alle) gliedern, jeden Eintrag mit Symbol und Text zeigen und den aktuellen Bereich hervorheben. Konto und Abmelden SHALL in einem Kontomenü mit dem Namen und den Ämtern des Mitglieds liegen. Auf Bildschirmen unter 48 rem SHALL stattdessen eine untere Leiste Start, Boote, Reservierungen, Arbeit und „Mehr“ anbieten, wobei „Mehr“ alle übrigen Einträge und das Kontomenü öffnet; das SHALL ohne JavaScript funktionieren.
 
 #### Scenario: Navigation für Greta
 - **WHEN** Greta ohne Amt eine Seite öffnet
@@ -100,3 +100,47 @@ Mengen mit Soll und Ist (Arbeitsstunden, Saisonfortschritt) SHALL zusätzlich zu
 #### Scenario: Arbeitsstunden
 - **WHEN** ein Mitglied mit 4,5 von 10 Stunden die Startseite öffnet
 - **THEN** zeigt die Fortschrittsanzeige 45 % und der Text nennt „4,5 von 10 Stunden“
+
+### Requirement: Auf den Normalfall optimiert
+Jede Ansicht, jedes Formular und jede Liste SHALL den häufigsten Fall mit den wenigsten Schritten bedienen: sinnvolle Vorbelegungen, Standardfilter auf das Aktuelle (kommende Reservierungen und Termine, laufende Saison, aktive Mitglieder und Ämter) und Ausnahmen oder Seltenes einen Schritt entfernt. Pflichtangaben SHALL nur verlangt werden, wo sie fachlich nötig sind.
+
+#### Scenario: Reservierung im Heimrevier
+- **WHEN** ein Mitglied das Reservierungsformular öffnet
+- **THEN** sind das Heimrevier vorbelegt, das Mitglied selbst als Skipper gesetzt und nur Boot und Zeitraum auszufüllen
+
+#### Scenario: Aktuelles zuerst
+- **WHEN** eine Liste mit zeitlichem Bezug ohne Filter geöffnet wird
+- **THEN** zeigt sie nur Aktuelles und Kommendes, und ein Hinweis verweist auf das Archiv
+
+### Requirement: Liste oder Kalender
+Datensätze mit Zeitbezug (Reservierungen, Arbeitstermine) SHALL über einen Umschalter „Liste / Kalender“ in beiden Darstellungen verfügbar sein. Die gewählte Darstellung SHALL in der Adresse stehen, Filter SHALL in beiden gelten, und der Kalender SHALL ohne JavaScript bedienbar sein, mit Blättern nach Monat und Woche und Sprung auf heute. Zustand und Beteiligung SHALL im Kalender nicht allein durch Farbe erkennbar sein.
+
+#### Scenario: Umschalten
+- **WHEN** ein Mitglied in der Reservierungsliste „Kalender“ wählt
+- **THEN** erscheinen dieselben Reservierungen im Kalender mit denselben Filtern
+
+#### Scenario: Kalender per Tastatur
+- **WHEN** der Kalender nur mit der Tastatur bedient wird
+- **THEN** sind Blättern, Heute und jeder Eintrag erreichbar
+
+### Requirement: Archiv für Nicht-Aktuelles
+Datensätze, die nicht mehr aktuell sind (beendete Ämter, ausgeschiedene Mitglieder, aufgehobene und abgelaufene Sperren, vergangene Reservierungen und Arbeitstermine), SHALL aus allen Tagesansichten verschwinden und ausschließlich im Archiv beim Protokoll erscheinen. Das Archiv SHALL nach Art und Zeitraum filterbar sein.
+
+#### Scenario: Ehemaliges Amt
+- **WHEN** ein Amt beendet wurde
+- **THEN** erscheint es nicht mehr in Ämterübersicht, Mitgliederseite und Mitgliederliste, sondern im Archiv unter „Ämter“
+
+#### Scenario: Archiv filtern
+- **WHEN** der Vorstand das Archiv nach „Reservierungen“ und dem Jahr 2025 filtert
+- **THEN** erscheinen die vergangenen Reservierungen dieses Jahres
+
+#### Scenario: Nicht berechtigt
+- **WHEN** Greta ohne Amt das Archiv öffnen will
+- **THEN** wird dies mit 403 abgelehnt
+
+### Requirement: Archiv nur für Berechtigte, Finanzen ausgenommen
+Das Archiv SHALL nur einsehen dürfen, wer das Protokoll vollständig einsehen darf (Vorstand und Revisoren). Finanzielle Datensätze wie stornierte Forderungen sind keine Archivdaten und SHALL in der Kontoansicht sichtbar bleiben.
+
+#### Scenario: Stornierte Forderung
+- **WHEN** der Kassenwart das Konto eines Mitglieds mit einer stornierten Forderung öffnet
+- **THEN** ist die Forderung dort weiterhin mit Stornogrund zu sehen
