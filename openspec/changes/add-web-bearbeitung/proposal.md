@@ -33,6 +33,6 @@ Die Weboberfläche zeigt bisher nur „Meine Daten“ und das Mitgliederverzeich
 
 - `crates/vereinsakte-core`: Berechtigungsprüfung aus `ClubRecord::authorize` auf Teildaten herauslösen (`Authorizer`), neue Rechte-Aufzählung; Fachregeln bleiben unverändert.
 - `crates/vereinsakte-app`: schreibende Anwendungsfälle je Bereich und neue Schreib-Ports mit Versionsprüfung; Änderungsprotokoll.
-- `crates/vereinsakte-storage`: Migration `0003` (Tabelle `audit_log`), SQLite-Implementierungen der Schreib-Ports, jeweils in einer Transaktion samt Protokolleintrag.
+- `crates/vereinsakte-storage`: Migration `0002` (Tabelle `audit_log`), SQLite-Implementierungen der Schreib-Ports, jeweils in einer Transaktion samt Protokolleintrag.
 - `crates/vereinsakte-web`: Formular-Handler, Templates, Stylesheet und (optional) ein kleines eigenes Skript für die mobile Navigation; Content-Security-Policy bleibt streng (`'self'`).
 - Keine neuen Laufzeit-Abhängigkeiten außer ggf. einem Test-Hilfsmittel für Bildschirmfotos.

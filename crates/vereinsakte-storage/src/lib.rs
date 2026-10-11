@@ -1,5 +1,6 @@
 //! SQLite-Speicherung der Vereinsakte in einem relationalen Schema.
 
+mod commit;
 pub mod db;
 mod read;
 pub mod repo;

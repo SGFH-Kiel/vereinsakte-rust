@@ -48,7 +48,7 @@ Kassenwart und Oberbootswart gehören nach Spec `aemter` zum Vorstand und haben 
 
 ### 2. Schreibpfad: Befehle je Aggregat statt Laden der ganzen Akte
 
-Je Bereich gibt es einen Befehls-Dienst in der App-Schicht (`MemberCommands`, `BoatCommands`, `WorkCommands`, `ReservationCommands`, `FinanceCommands`, `OfficeCommands`). Jeder Befehl: Principal bestimmen → Berechtigung prüfen → betroffene Daten über den Port mit Version laden → Fachregel des Core anwenden → mit Versionsprüfung speichern (`UPDATE … WHERE version = ?`) und Protokolleintrag schreiben, alles in einer Transaktion. Reine Anhänge (Einzahlung, Abnahme, Widerruf, Protokoll) brauchen keine Version.
+Technisch gibt es dafür einen einzigen schreibenden Port `ChangeRepository::commit(changes, audit)`: `Change` ist `Save{record, expected}` oder `Delete{kind, key, expected}` über die zwölf Fachobjekte (`Record`), alle Änderungen und Protokolleinträge laufen in einer Transaktion und scheitern gemeinsam mit `Conflict`. Lesen übernehmen die vorhandenen Ports, die je Bereich um gezielte Abfragen erweitert werden. Je Bereich gibt es einen Befehls-Dienst in der App-Schicht (`MemberCommands`, `BoatCommands`, `WorkCommands`, `ReservationCommands`, `FinanceCommands`, `OfficeCommands`). Jeder Befehl: Principal bestimmen → Berechtigung prüfen → betroffene Daten über den Port mit Version laden → Fachregel des Core anwenden → mit Versionsprüfung speichern (`UPDATE … WHERE version = ?`) und Protokolleintrag schreiben, alles in einer Transaktion. Reine Anhänge (Einzahlung, Abnahme, Widerruf, Protokoll) brauchen keine Version.
 
 Die Core-Fachregeln, die heute `ClubRecord` brauchen (z. B. Gesamtprüfung einer Reservierung), werden wie schon `MemberYear`/`PermitHistory`/`Offices` auf Teildaten herausgelöst (`ReservationCheck` mit Boot, Besatzung, überschneidenden Reservierungen und Erlaubnissen der Beteiligten). Die Speicherschicht liefert genau diese Teildaten per gezielter Abfrage.
 
@@ -64,7 +64,7 @@ Jede Aktion ist ein normales HTML-Formular. Ein Formular-Typ je Aktion parst die
 
 ### 5. Änderungsprotokoll als unveränderliche Tabelle
 
-Neue Migration `0003`: `audit_log(id, at, actor_id, action, object_kind, object_id, subject_member_id, summary)` mit Indizes auf `at`, `actor_id`, `subject_member_id` und Triggern, die `UPDATE`/`DELETE` abbrechen. Der Eintrag entsteht in derselben Transaktion wie die Änderung. Es werden Feldnamen, keine Werte gespeichert (Datenschutz). Der Export der Akte enthält das Protokoll nicht; es wird getrennt gesichert.
+Neue Migration `0002`: `audit_log(id, at, actor_id, action, object_kind, object_id, subject_member_id, summary)` mit Indizes auf `at`, `actor_id`, `subject_member_id` und Triggern, die `UPDATE`/`DELETE` abbrechen. Der Eintrag entsteht in derselben Transaktion wie die Änderung. Es werden Feldnamen, keine Werte gespeichert (Datenschutz). Der Export der Akte enthält das Protokoll nicht; es wird getrennt gesichert.
 
 ### 6. Designsystem ohne Framework
 
@@ -96,7 +96,7 @@ Eine Matrix-Tabelle (Mitglied der Beispielakte × `Capability`) prüft Core und 
 
 ## Migration Plan
 
-1. Migration `0003` legt `audit_log` an (`vereinsakte migrate` bzw. automatisch bei `serve`); bestehende Daten bleiben unberührt.
+1. Migration `0002` legt `audit_log` an (`vereinsakte migrate` bzw. automatisch bei `serve`); bestehende Daten bleiben unberührt.
 2. Auslieferung gruppenweise; Rückfall ist das Zurücksetzen der Programmversion, die Tabelle `audit_log` stört alte Versionen nicht.
 3. Vor der ersten Nutzung Sicherung mit `vereinsakte export`.
 

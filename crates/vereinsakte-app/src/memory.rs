@@ -8,10 +8,13 @@ use async_trait::async_trait;
 use vereinsakte_core::boat::Boat;
 use vereinsakte_core::club_record::ClubRecord;
 use vereinsakte_core::ids::MemberId;
+use vereinsakte_core::issues::RecordIssue;
 use vereinsakte_core::member::Member;
 use vereinsakte_core::office::Office;
 use vereinsakte_core::time::Timestamp;
 
+use crate::audit::{AuditEntry, AuditFilter, AuditRecord, AuditRepository};
+use crate::changes::{Change, ChangeRepository, Record, RecordKind};
 use crate::error::AppError;
 use crate::ports::*;
 
@@ -19,7 +22,8 @@ use crate::ports::*;
 #[derive(Debug, Default)]
 pub struct MemoryStore {
     record: Mutex<ClubRecord>,
-    versions: Mutex<HashMap<MemberId, Version>>,
+    versions: Mutex<HashMap<(RecordKind, String), Version>>,
+    audit: Mutex<Vec<AuditRecord>>,
     available: Mutex<bool>,
 }
 
@@ -28,6 +32,7 @@ impl MemoryStore {
         Self {
             record: Mutex::new(record),
             versions: Mutex::default(),
+            audit: Mutex::default(),
             available: Mutex::new(true),
         }
     }
@@ -46,9 +51,19 @@ impl MemoryStore {
         self.versions
             .lock()
             .expect("Lock")
-            .get(&id)
+            .get(&(RecordKind::Member, id.to_string()))
             .copied()
             .unwrap_or(Version(1))
+    }
+
+    /// Alle Protokolleinträge (für Prüfungen in Tests).
+    pub fn audit_entries(&self) -> Vec<AuditEntry> {
+        self.audit
+            .lock()
+            .expect("Lock")
+            .iter()
+            .map(|r| r.entry.clone())
+            .collect()
     }
 
     fn with<T>(&self, f: impl FnOnce(&ClubRecord) -> T) -> Result<T, AppError> {
@@ -97,19 +112,18 @@ impl MemberRepository for MemoryStore {
     }
 
     async fn save_member(&self, member: &Member, expected: Version) -> Result<Version, AppError> {
-        let mut record = self.record.lock().expect("Lock");
-        let mut versions = self.versions.lock().expect("Lock");
-        let current = versions.get(&member.id).copied().unwrap_or(Version(1));
-        if current != expected {
-            return Err(AppError::Conflict);
+        {
+            let record = self.record.lock().expect("Lock");
+            if record.member(member.id).is_none() {
+                return Err(AppError::NotFound(format!("Mitglied {}", member.id)));
+            }
         }
-        let slot = record
-            .member_mut(member.id)
-            .ok_or_else(|| AppError::NotFound(format!("Mitglied {}", member.id)))?;
-        *slot = member.clone();
-        let next = current.next();
-        versions.insert(member.id, next);
-        Ok(next)
+        self.commit(
+            vec![Change::update(Record::Member(member.clone()), expected)],
+            vec![],
+        )
+        .await?;
+        Ok(self.version(member.id))
     }
 }
 
@@ -247,5 +261,283 @@ mod tests {
         assert!(store.ping().await.is_ok());
         store.set_available(false);
         assert!(store.ping().await.is_err());
+    }
+}
+
+/// Ersetzt oder hängt `item` an, je nachdem ob ein Element mit gleichem Schlüssel existiert.
+fn put<T: Clone>(items: &mut Vec<T>, item: &T, same: impl Fn(&T) -> bool) {
+    match items.iter_mut().find(|x| same(x)) {
+        Some(slot) => *slot = item.clone(),
+        None => items.push(item.clone()),
+    }
+}
+
+fn exists(record: &ClubRecord, r: &Record) -> bool {
+    let key = r.key();
+    macro_rules! has {
+        ($items:expr, $k:expr) => {
+            $items.iter().any(|x| $k(x) == key)
+        };
+    }
+    match r.kind() {
+        RecordKind::Member => has!(record.members, |x: &Member| x.id.to_string()),
+        RecordKind::Boat => has!(record.boats, |x: &Boat| x.id.to_string()),
+        RecordKind::Office => has!(record.offices, |x: &Office| x.id.to_string()),
+        RecordKind::Checkout => has!(
+            record.boat_checkouts,
+            |x: &vereinsakte_core::boat_permit::BoatCheckout| x.id.to_string()
+        ),
+        RecordKind::Revocation => has!(
+            record.revocations,
+            |x: &vereinsakte_core::boat_permit::Revocation| x.id.to_string()
+        ),
+        RecordKind::WorkEvent => has!(
+            record.work_events,
+            |x: &vereinsakte_core::work_event::WorkEvent| x.id.to_string()
+        ),
+        RecordKind::Task => has!(record.tasks, |x: &vereinsakte_core::task::Task| x
+            .id
+            .to_string()),
+        RecordKind::WorkEntry => has!(
+            record.work_entries,
+            |x: &vereinsakte_core::work_hours::WorkEntry| x.id.to_string()
+        ),
+        RecordKind::HourTransfer => has!(
+            record.hour_transfers,
+            |x: &vereinsakte_core::work_hours::HourTransfer| x.id.to_string()
+        ),
+        RecordKind::Season => has!(record.seasons, |x: &vereinsakte_core::fees::Season| x
+            .year
+            .to_string()),
+        RecordKind::AnnualRecord => has!(
+            record.annual_records,
+            |x: &vereinsakte_core::sailing_permit::AnnualRecord| format!("{}:{}", x.member, x.year)
+        ),
+        RecordKind::Reservation => has!(
+            record.reservations,
+            |x: &vereinsakte_core::reservation::Reservation| x.id.to_string()
+        ),
+    }
+}
+
+fn save(record: &mut ClubRecord, r: &Record) {
+    let key = r.key();
+    match r {
+        Record::Member(x) => put(&mut record.members, x, |o| o.id.to_string() == key),
+        Record::Boat(x) => put(&mut record.boats, x, |o| o.id.to_string() == key),
+        Record::Office(x) => put(&mut record.offices, x, |o| o.id.to_string() == key),
+        Record::Checkout(x) => put(&mut record.boat_checkouts, x, |o| o.id.to_string() == key),
+        Record::Revocation(x) => put(&mut record.revocations, x, |o| o.id.to_string() == key),
+        Record::WorkEvent(x) => put(&mut record.work_events, x, |o| o.id.to_string() == key),
+        Record::Task(x) => put(&mut record.tasks, x, |o| o.id.to_string() == key),
+        Record::WorkEntry(x) => put(&mut record.work_entries, x, |o| o.id.to_string() == key),
+        Record::HourTransfer(x) => put(&mut record.hour_transfers, x, |o| o.id.to_string() == key),
+        Record::Season(x) => put(&mut record.seasons, x, |o| o.year.to_string() == key),
+        Record::AnnualRecord(x) => put(&mut record.annual_records, x, |o| {
+            format!("{}:{}", o.member, o.year) == key
+        }),
+        Record::Reservation(x) => put(&mut record.reservations, x, |o| o.id.to_string() == key),
+    }
+}
+
+fn remove(record: &mut ClubRecord, kind: RecordKind, key: &str) {
+    match kind {
+        RecordKind::Member => record.members.retain(|x| x.id.to_string() != key),
+        RecordKind::Boat => record.boats.retain(|x| x.id.to_string() != key),
+        RecordKind::Office => record.offices.retain(|x| x.id.to_string() != key),
+        RecordKind::Checkout => record.boat_checkouts.retain(|x| x.id.to_string() != key),
+        RecordKind::Revocation => record.revocations.retain(|x| x.id.to_string() != key),
+        RecordKind::WorkEvent => record.work_events.retain(|x| x.id.to_string() != key),
+        RecordKind::Task => record.tasks.retain(|x| x.id.to_string() != key),
+        RecordKind::WorkEntry => record.work_entries.retain(|x| x.id.to_string() != key),
+        RecordKind::HourTransfer => record.hour_transfers.retain(|x| x.id.to_string() != key),
+        RecordKind::Season => record.seasons.retain(|x| x.year.to_string() != key),
+        RecordKind::AnnualRecord => record
+            .annual_records
+            .retain(|x| format!("{}:{}", x.member, x.year) != key),
+        RecordKind::Reservation => record.reservations.retain(|x| x.id.to_string() != key),
+    }
+}
+
+#[async_trait]
+impl ChangeRepository for MemoryStore {
+    async fn commit(&self, changes: Vec<Change>, audit: Vec<AuditEntry>) -> Result<(), AppError> {
+        if !*self.available.lock().expect("Lock") {
+            return Err(AppError::Storage("Datenbank nicht erreichbar".into()));
+        }
+        let mut record = self.record.lock().expect("Lock");
+        let mut versions = self.versions.lock().expect("Lock");
+        let mut next = record.clone();
+        let mut next_versions = versions.clone();
+        for change in &changes {
+            match change {
+                Change::Save {
+                    record: r,
+                    expected,
+                } => {
+                    let key = (r.kind(), r.key());
+                    let current = next_versions.get(&key).copied().unwrap_or(Version(1));
+                    let version = match (exists(&next, r), expected) {
+                        (true, Some(e)) if *e == current => current.next(),
+                        (false, None) => Version(1),
+                        _ => return Err(AppError::Conflict),
+                    };
+                    save(&mut next, r);
+                    next_versions.insert(key, version);
+                }
+                Change::Delete {
+                    kind,
+                    key,
+                    expected,
+                } => {
+                    let k = (*kind, key.clone());
+                    let current = next_versions.get(&k).copied().unwrap_or(Version(1));
+                    if current != *expected {
+                        return Err(AppError::Conflict);
+                    }
+                    remove(&mut next, *kind, key);
+                    next_versions.remove(&k);
+                }
+            }
+        }
+        // Anmeldekonten bleiben ohne Beachtung der Schreibweise eindeutig.
+        let mut seen = std::collections::HashSet::new();
+        for login in next.members.iter().filter_map(|m| m.login_email.as_deref()) {
+            if !seen.insert(login.to_lowercase()) {
+                return Err(AppError::Invalid(vec![RecordIssue::DuplicateLoginEmail(
+                    login.to_lowercase(),
+                )]));
+            }
+        }
+        *record = next;
+        *versions = next_versions;
+        let mut log = self.audit.lock().expect("Lock");
+        for entry in audit {
+            let id = log.len() as i64 + 1;
+            log.push(AuditRecord { id, entry });
+        }
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl AuditRepository for MemoryStore {
+    async fn audit(&self, filter: &AuditFilter) -> Result<Vec<AuditRecord>, AppError> {
+        let log = self.audit.lock().expect("Lock");
+        let mut found: Vec<AuditRecord> = log
+            .iter()
+            .filter(|r| {
+                let e = &r.entry;
+                filter.from.is_none_or(|from| e.at >= from)
+                    && filter.to.is_none_or(|to| e.at < to)
+                    && filter.actor.is_none_or(|a| e.actor == a)
+                    && filter.action.as_ref().is_none_or(|a| &e.action == a)
+                    && filter
+                        .involving
+                        .is_none_or(|m| e.actor == m || e.subject == Some(m))
+            })
+            .cloned()
+            .collect();
+        found.sort_by(|a, b| (b.entry.at, b.id).cmp(&(a.entry.at, a.id)));
+        let iter = found.into_iter().skip(filter.offset as usize);
+        Ok(match filter.limit {
+            Some(limit) => iter.take(limit as usize).collect(),
+            None => iter.collect(),
+        })
+    }
+}
+
+#[cfg(test)]
+mod commit_tests {
+    use vereinsakte_core::example::{self, ANNA, BEN, EVA, FILOU};
+    use vereinsakte_core::time::club_time;
+
+    use super::*;
+
+    fn entry(actor: MemberId) -> AuditEntry {
+        AuditEntry {
+            at: club_time(2026, 10, 9, 12, 0),
+            actor,
+            action: "boat.edit".into(),
+            object_kind: "boat".into(),
+            object_id: FILOU.to_string(),
+            subject: None,
+            summary: "Boot geändert".into(),
+        }
+    }
+
+    #[tokio::test]
+    async fn commit_saves_change_and_audit_together() {
+        let store = MemoryStore::new(example::club());
+        let mut boat = example::club().boat(FILOU).unwrap().clone();
+        boat.name = "Filou II".into();
+        store
+            .commit(
+                vec![Change::update(Record::Boat(boat), Version(1))],
+                vec![entry(EVA)],
+            )
+            .await
+            .unwrap();
+        assert_eq!(store.snapshot().boat(FILOU).unwrap().name, "Filou II");
+        assert_eq!(store.audit_entries().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn conflict_changes_nothing() {
+        let store = MemoryStore::new(example::club());
+        let club = example::club();
+        let mut boat = club.boat(FILOU).unwrap().clone();
+        boat.name = "X".into();
+        let mut anna = club.member(ANNA).unwrap().clone();
+        anna.address.city = "Y".into();
+        let result = store
+            .commit(
+                vec![
+                    Change::update(Record::Boat(boat), Version(1)),
+                    Change::update(Record::Member(anna), Version(9)),
+                ],
+                vec![entry(EVA)],
+            )
+            .await;
+        assert_eq!(result, Err(AppError::Conflict));
+        assert_eq!(store.snapshot(), club);
+        assert!(store.audit_entries().is_empty());
+    }
+
+    #[tokio::test]
+    async fn two_members_with_their_own_versions_are_both_saved() {
+        let store = MemoryStore::new(example::club());
+        let club = example::club();
+        for (id, city) in [(ANNA, "A"), (BEN, "B")] {
+            let mut m = club.member(id).unwrap().clone();
+            m.address.city = city.into();
+            store
+                .commit(vec![Change::update(Record::Member(m), Version(1))], vec![])
+                .await
+                .unwrap();
+        }
+        let snap = store.snapshot();
+        assert_eq!(snap.member(ANNA).unwrap().address.city, "A");
+        assert_eq!(snap.member(BEN).unwrap().address.city, "B");
+    }
+
+    #[tokio::test]
+    async fn duplicate_login_email_is_invalid() {
+        let store = MemoryStore::new(example::club());
+        let club = example::club();
+        let mut ben = club.member(BEN).unwrap().clone();
+        ben.login_email = club
+            .member(ANNA)
+            .unwrap()
+            .login_email
+            .clone()
+            .map(|l| l.to_uppercase());
+        let result = store
+            .commit(
+                vec![Change::update(Record::Member(ben), Version(1))],
+                vec![],
+            )
+            .await;
+        assert!(matches!(result, Err(AppError::Invalid(_))));
     }
 }

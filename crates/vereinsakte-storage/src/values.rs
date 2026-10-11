@@ -205,7 +205,7 @@ where
 
 // --- Schreiben ---------------------------------------------------------------
 
-fn bind_all<'q>(
+pub(crate) fn bind_all<'q>(
     mut query: sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>>,
     values: impl IntoIterator<Item = Val>,
 ) -> sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>> {
@@ -266,7 +266,7 @@ pub(crate) async fn upsert(
     Ok(())
 }
 
-fn where_clause(key: &[(&str, Val)]) -> String {
+pub(crate) fn where_clause(key: &[(&str, Val)]) -> String {
     key.iter()
         .map(|(n, _)| format!("{n} = ?"))
         .collect::<Vec<_>>()

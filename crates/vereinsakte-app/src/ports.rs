@@ -151,7 +151,14 @@ pub trait Health: Send + Sync {
 
 /// Alle Ports der Vereinsakte zusammen (eine Datenbank).
 pub trait ClubStore:
-    MemberRepository + OfficeRepository + BoatRepository + YearRepository + PermitRepository + Health
+    MemberRepository
+    + OfficeRepository
+    + BoatRepository
+    + YearRepository
+    + PermitRepository
+    + Health
+    + crate::changes::ChangeRepository
+    + crate::audit::AuditRepository
 {
 }
 
@@ -162,6 +169,8 @@ impl<T> ClubStore for T where
         + YearRepository
         + PermitRepository
         + Health
+        + crate::changes::ChangeRepository
+        + crate::audit::AuditRepository
 {
 }
 

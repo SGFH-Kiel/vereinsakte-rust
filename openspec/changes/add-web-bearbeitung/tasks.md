@@ -9,8 +9,8 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 2. Schreib-Ports, Protokoll und Teildaten-Regeln
 
-- [ ] 2.1 Migration `0003` mit `audit_log` (Indizes auf `at`, `actor_id`, `subject_member_id`; Trigger gegen `UPDATE`/`DELETE`) und `AuditRepository` (anhängen in der Transaktion des Befehls, filtern, seitenweise lesen); Tests: Eintrag wird mit der Änderung gespeichert, bei Rollback fehlt er, Änderung/Löschen schlägt fehl, Filter nach Zeitraum, Akteur, Art
-- [ ] 2.2 Schreib-Ports mit Versionsprüfung für Boote (inkl. Besatzungsregeln, Anforderungen, Sperren, Freigaben), Ämter, Arbeitseinsätze/-termine/Aufgaben/Überträge/Abgeltungen, Reservierungen, Saisons/Gebühren/Jahresnachweise sowie reine Anhänge (Forderung, Einzahlung, Abnahme, Widerruf) in `vereinsakte-app` definieren, In-Memory-Implementierungen und SQLite-Implementierungen in `vereinsakte-storage` bereitstellen; Tests je Port: speichern, veraltete Version → `Conflict` und unverändert, Zeilen anderer Objekte (`rowid`) unberührt
+- [x] 2.1 Migration `0002` mit `audit_log` (Indizes auf `at`, `actor_id`, `subject_member_id`; Trigger gegen `UPDATE`/`DELETE`) und `AuditRepository` (anhängen in der Transaktion des Befehls, filtern, seitenweise lesen); Tests: Eintrag wird mit der Änderung gespeichert, bei Rollback fehlt er, Änderung/Löschen schlägt fehl, Filter nach Zeitraum, Akteur, Art
+- [x] 2.2 Schreibenden Port `ChangeRepository::commit` (Änderungen `Save`/`Delete` über alle zwölf Fachobjekte mit Versionsprüfung, plus Protokolleinträge in derselben Transaktion) in `vereinsakte-app` definieren, In-Memory-Implementierungen und SQLite-Implementierungen in `vereinsakte-storage` bereitstellen; Tests je Port: speichern, veraltete Version → `Conflict` und unverändert, Zeilen anderer Objekte (`rowid`) unberührt
 - [ ] 2.3 Reservierungsprüfung, Beitrags- und Tourgebührenberechnung auf Teildaten herauslösen (`ReservationCheck`, `FeePlan`); Tests: für alle Beispiel-Reservierungen und Mitglieder liefert die Teildaten-Prüfung dieselben Verstöße wie die Prüfung auf der ganzen Akte, bestehende Core-Tests unverändert grün
 
 ## 3. Designsystem und Grundgerüst

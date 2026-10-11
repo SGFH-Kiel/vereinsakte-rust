@@ -2,7 +2,7 @@
 
 use vereinsakte_core::issues::RecordIssue;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum AppError {
     #[error("nicht gefunden: {0}")]
     NotFound(String),

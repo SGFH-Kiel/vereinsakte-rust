@@ -36,6 +36,10 @@ impl SqliteClubStore {
         Self { db }
     }
 
+    pub(crate) fn db(&self) -> &Database {
+        &self.db
+    }
+
     /// Sicherung: die gesamte Akte (ohne Anmeldeidentitäten).
     pub async fn export(&self) -> Result<ClubRecord, StorageError> {
         let mut tx = self.db.pool().begin().await?;
@@ -67,7 +71,7 @@ impl SqliteClubStore {
 }
 
 /// Meldet die erste Verletzung eines Fremdschlüssels als unbekannten Verweis.
-async fn check_foreign_keys(conn: &mut SqliteConnection) -> Result<(), StorageError> {
+pub(crate) async fn check_foreign_keys(conn: &mut SqliteConnection) -> Result<(), StorageError> {
     let Some(violation) = sqlx::query("PRAGMA foreign_key_check")
         .fetch_optional(&mut *conn)
         .await?
