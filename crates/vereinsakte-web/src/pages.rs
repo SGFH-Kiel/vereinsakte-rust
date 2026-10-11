@@ -66,6 +66,7 @@ fn navigation(_principal: &Principal, path: &str) -> Vec<NavItem> {
         ("/", "Start"),
         ("/meine-daten", "Meine Daten"),
         ("/mitglieder", "Mitglieder"),
+        ("/boote", "Boote"),
         ("/aemter", "Ämter"),
     ]
     .into_iter()

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Boote</h1><p class="muted">Saison {{ v.season }}</p></div>
+  {% if v.can_create %}<div class="actions"><a class="btn primary" href="/boote/neu">Boot anlegen</a></div>{% endif %}
+</div>
+<section class="card">
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Boot</th><th>Typ</th><th>Klasse</th><th>Zustand</th></tr></thead>
+    <tbody>
+    {% for row in v.rows %}
+      <tr>
+        <td data-label="Boot"><a href="/boote/{{ row.id }}">{{ row.name }}</a></td>
+        <td data-label="Typ">{{ row.boat_type }}</td>
+        <td data-label="Klasse">{{ row.class }}</td>
+        <td data-label="Zustand">
+          {% if let Some(reason) = row.blocked %}<span class="badge danger">gesperrt</span> <span class="muted">{{ reason }}</span>
+          {% else if row.released %}<span class="badge ok">✓ freigegeben</span>
+          {% else %}<span class="badge warn">nicht freigegeben</span>{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4">Noch keine Boote erfasst.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

@@ -1235,3 +1235,222 @@ async fn resigning_validates_the_date_and_removes_the_office() {
         "nicht mehr in der aktuellen Übersicht"
     );
 }
+
+// --- Gruppe 6: Boote -------------------------------------------------------------
+
+fn boat_path(boat: vereinsakte_core::ids::BoatId) -> String {
+    format!("/boote/{boat}")
+}
+
+#[tokio::test]
+async fn boat_list_and_page_show_state_and_rights_dependent_forms() {
+    use vereinsakte_core::example::FILOU;
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let list = greta.get("/boote").await;
+    assert_eq!(list.status, StatusCode::OK);
+    assert!(
+        list.body.contains("Filou")
+            && list.body.contains("Trigon")
+            && list.body.contains("freigegeben")
+    );
+    assert!(!list.body.contains("Boot anlegen"));
+    let page = greta.get(&boat_path(FILOU)).await;
+    assert!(page.body.contains("Deine Eignung") && page.body.contains("nicht möglich"));
+    for hidden in ["/sperren\"", "/abnahme\"", "/widerruf\"", "/bearbeiten"] {
+        assert!(!page.body.contains(hidden), "Greta sieht {hidden} nicht");
+    }
+    let mut david = logged_in(&h, 104).await;
+    let page = david.get(&boat_path(FILOU)).await;
+    assert!(
+        page.body.contains("/sperren\"")
+            && page.body.contains("/abnahme\"")
+            && page.body.contains("/bearbeiten")
+    );
+    assert!(
+        !page.body.contains("/widerruf\""),
+        "Widerruf nur für den Vorstand"
+    );
+    assert!(
+        logged_in(&h, 106)
+            .await
+            .get("/boote")
+            .await
+            .body
+            .contains("Boot anlegen")
+    );
+}
+
+#[tokio::test]
+async fn warden_blocks_and_lifts_and_others_are_refused() {
+    use vereinsakte_core::example::{FILOU, HARALD_BLAUZAHN};
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let path = boat_path(HARALD_BLAUZAHN);
+    let page = ben.get(&path).await;
+    let token = csrf(&page.body);
+    let blocked = ben
+        .post(
+            &format!("{path}/sperren"),
+            &[("csrf", &token), ("reason", "Mast defekt")],
+        )
+        .await;
+    assert_eq!(blocked.status, StatusCode::SEE_OTHER, "{}", blocked.body);
+    let page = ben.get(&path).await;
+    assert!(page.body.contains("Das Boot wurde gesperrt.") && page.body.contains("Mast defekt"));
+    assert!(page.body.contains("Sperre aufheben"));
+    assert!(ben.get("/boote").await.body.contains("gesperrt"));
+    let foreign = ben
+        .post(
+            &format!("{}/sperren", boat_path(FILOU)),
+            &[("csrf", &token), ("reason", "x")],
+        )
+        .await;
+    assert_eq!(foreign.status, StatusCode::FORBIDDEN);
+    let lifted = ben
+        .post(&format!("{path}/entsperren"), &[("csrf", &token)])
+        .await;
+    assert_eq!(lifted.status, StatusCode::SEE_OTHER);
+    let again = ben
+        .post(&format!("{path}/entsperren"), &[("csrf", &token)])
+        .await;
+    assert_eq!(again.status, StatusCode::SEE_OTHER);
+    assert!(
+        ben.get(&path)
+            .await
+            .body
+            .contains("Es gibt keine offene Sperre.")
+    );
+    let empty = ben
+        .post(
+            &format!("{path}/sperren"),
+            &[("csrf", &token), ("reason", "")],
+        )
+        .await;
+    assert_eq!(empty.status, StatusCode::SEE_OTHER);
+    assert!(
+        ben.get(&path)
+            .await
+            .body
+            .contains("Bitte einen Grund angeben.")
+    );
+    let mut greta = logged_in(&h, 107).await;
+    let greta_token = csrf(&greta.get(&path).await.body);
+    let denied = greta
+        .post(
+            &format!("{path}/sperren"),
+            &[("csrf", &greta_token), ("reason", "x")],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn checkout_and_revocation_change_the_boat_permit_shown_to_the_member() {
+    use vereinsakte_core::example::FILOU;
+    let h = dev();
+    let path = boat_path(FILOU);
+    let mut david = logged_in(&h, 104).await;
+    let token = csrf(&david.get(&path).await.body);
+    let done = david
+        .post(
+            &format!("{path}/abnahme"),
+            &[("csrf", &token), ("member", "107"), ("result", "passed")],
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::SEE_OTHER, "{}", done.body);
+    let mut greta = logged_in(&h, 107).await;
+    let page = greta.get(&path).await;
+    assert!(!page.body.contains("keine bestandene Bootsabnahme"));
+    let denied = david
+        .post(
+            &format!("{path}/widerruf"),
+            &[("csrf", &token), ("member", "107"), ("reason", "x")],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    let mut eva = logged_in(&h, 105).await;
+    let eva_token = csrf(&eva.get(&path).await.body);
+    let revoked = eva
+        .post(
+            &format!("{path}/widerruf"),
+            &[
+                ("csrf", &eva_token),
+                ("member", "107"),
+                ("reason", "Unfall"),
+            ],
+        )
+        .await;
+    assert_eq!(revoked.status, StatusCode::SEE_OTHER);
+    assert!(
+        greta
+            .get(&path)
+            .await
+            .body
+            .contains("Bootserlaubnis widerrufen")
+    );
+    let mut greta_post = logged_in(&h, 107).await;
+    let denied = greta_post
+        .post(
+            &format!("{path}/abnahme"),
+            &[
+                ("csrf", &csrf(&greta.get(&path).await.body)),
+                ("member", "107"),
+            ],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn boat_forms_validate_and_create() {
+    let h = dev();
+    let mut frank = logged_in(&h, 106).await;
+    let form = frank.get("/boote/neu").await;
+    assert_eq!(form.status, StatusCode::OK);
+    let token = csrf(&form.body);
+    let bad = frank
+        .post(
+            "/boote/neu",
+            &[
+                ("csrf", &token),
+                ("name", "Neptun"),
+                ("boat_type", "dinghy"),
+                ("length", "abc"),
+            ],
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(
+        bad.body.contains("Bitte eine positive Zahl eingeben.")
+            && bad.body.contains("value=\"Neptun\"")
+    );
+    let ok = frank
+        .post(
+            "/boote/neu",
+            &[
+                ("csrf", &token),
+                ("name", "Neptun"),
+                ("boat_type", "dinghy"),
+                ("length", "4,5"),
+                ("skipper_requirement", "SKS | SSS"),
+                ("home_min_members", "1"),
+                ("home_min_persons", "2"),
+            ],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    let page = frank.get(ok.location()).await;
+    assert!(
+        page.body.contains("Das Boot wurde angelegt.")
+            && page.body.contains("SKS | SSS")
+            && page.body.contains("4,5 m")
+    );
+    let edit = frank.get(&format!("{}/bearbeiten", ok.location())).await;
+    assert_eq!(edit.status, StatusCode::OK);
+    assert!(edit.body.contains("SKS | SSS"));
+    assert_eq!(
+        logged_in(&h, 107).await.get("/boote/neu").await.status,
+        StatusCode::FORBIDDEN
+    );
+}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="breadcrumbs"><a href="/boote">Boote</a> › {{ p.name }}</div>
+<div class="page-head">
+  <div><h1>{{ p.name }}</h1><p class="muted">{{ p.boat_type }}</p></div>
+  {% if p.can_edit %}<div class="actions"><a class="btn" href="/boote/{{ p.id }}/bearbeiten">Bearbeiten</a></div>{% endif %}
+</div>
+
+<div class="grid cols-2">
+<section class="card">
+  <h2>Deine Eignung</h2>
+  {% if p.eligibility.skipper %}
+  <p><span class="badge ok">✓ erlaubt</span> Du darfst dieses Boot als Skipper führen.</p>
+  {% else %}
+  <p><span class="badge warn">nicht möglich</span> Du darfst dieses Boot derzeit nicht als Skipper führen:</p>
+  <ul>{% for reason in p.eligibility.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+<section class="card">
+  <h2>Zustand {{ p.season }}</h2>
+  <p>{% if p.released %}<span class="badge ok">✓ freigegeben</span>{% else %}<span class="badge warn">nicht freigegeben</span>{% endif %}</p>
+  {% for b in p.blocks %}
+    <p>{% if b.open %}<span class="badge danger">gesperrt</span>{% else %}<span class="badge">Sperre</span>{% endif %} {{ b.period }}: {{ b.reason }} <span class="muted">({{ b.by }})</span></p>
+  {% endfor %}
+  {% if p.can_release %}
+  <form method="post" action="/boote/{{ p.id }}/freigabe" class="inline">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <button type="submit" class="primary small">Für {{ p.season }} freigeben</button>
+  </form>
+  {% endif %}
+  {% if p.can_lift %}
+  <form method="post" action="/boote/{{ p.id }}/entsperren" class="inline">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <button type="submit" class="small">Sperre aufheben</button>
+  </form>
+  {% endif %}
+</section>
+</div>
+
+<section class="card">
+  <h2>Stammdaten</h2>
+  <dl>
+    {% for (label, value) in p.facts %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
+    <dt>Bootswarte</dt><dd>{% if p.wardens.is_empty() %}keine{% else %}{{ p.wardens|join(", ") }}{% endif %}</dd>
+    <dt>Abnehmer</dt><dd>{% if p.examiners.is_empty() %}keine{% else %}{{ p.examiners|join(", ") }}{% endif %}</dd>
+  </dl>
+</section>
+
+<section class="card">
+  <h2>Anforderungen und Besatzung</h2>
+  <h3>Skipper</h3>
+  {% if p.requirement.is_empty() %}<p>Keine zusätzlichen Anforderungen zur Bootserlaubnis.</p>{% else %}<p>Zusätzlich zur Bootserlaubnis (je Zeile eine Gruppe, mindestens eine Alternative nötig):</p><pre>{{ p.requirement }}</pre>{% endif %}
+  <h3>Besatzungsregeln</h3>
+  {% if p.crew_rules.is_empty() %}<p>Für kein Fahrtgebiet freigegeben.</p>{% else %}
+  <ul>{% for rule in p.crew_rules %}<li><strong>{{ rule.area }}:</strong> {{ rule.text }}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+
+{% if p.can_block %}
+<section class="card">
+  <h2>Boot sperren</h2>
+  <form method="post" action="/boote/{{ p.id }}/sperren" class="form-grid cols-2">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    {{ f::field("reason", "Grund", "", "", "text", "") }}
+    {{ f::field("start", "Ab (optional)", "", "", "date", "leer lassen für jetzt") }}
+    {{ f::field("end", "Bis (optional)", "", "", "date", "leer lassen für unbefristet") }}
+    <div class="form-actions wide"><button type="submit" class="danger">Sperren</button></div>
+  </form>
+</section>
+{% endif %}
+
+{% if p.can_checkout %}
+<section class="card">
+  <h2>Bootsabnahme erfassen</h2>
+  <form method="post" action="/boote/{{ p.id }}/abnahme" class="form-grid cols-2">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <div class="field"><label for="f-member">Mitglied</label>
+      <select id="f-member" name="member">{% for (number, name) in p.members %}<option value="{{ number }}">{{ name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-result">Ergebnis</label>
+      <select id="f-result" name="result"><option value="passed">bestanden</option><option value="failed">nicht bestanden</option></select></div>
+    {{ f::field("remark", "Bemerkung (optional)", "", "", "text", "") }}
+    <div class="form-actions wide"><button type="submit" class="primary">Abnahme speichern</button></div>
+  </form>
+</section>
+{% endif %}
+
+{% if p.can_revoke %}
+<section class="card">
+  <h2>Bootserlaubnis widerrufen</h2>
+  <form method="post" action="/boote/{{ p.id }}/widerruf" class="form-grid cols-2">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <div class="field"><label for="f-rmember">Mitglied</label>
+      <select id="f-rmember" name="member">{% for (number, name) in p.members %}<option value="{{ number }}">{{ name }}</option>{% endfor %}</select></div>
+    {{ f::field("reason", "Begründung", "", "", "text", "") }}
+    <div class="form-actions wide"><button type="submit" class="danger">Widerrufen</button></div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

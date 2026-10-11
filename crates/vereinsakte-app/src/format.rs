@@ -14,3 +14,18 @@ pub fn hours(value: f64) -> String {
 pub fn date(t: Timestamp) -> String {
     t.format("%d.%m.%Y").to_string()
 }
+
+/// Dezimalzahl mit Komma oder Punkt.
+pub fn parse_decimal(input: &str) -> Option<f64> {
+    input
+        .trim()
+        .replace(',', ".")
+        .parse::<f64>()
+        .ok()
+        .filter(|v| v.is_finite())
+}
+
+/// Meter oder ähnliches mit höchstens zwei Nachkommastellen, deutsch.
+pub fn number(value: f64) -> String {
+    hours(value)
+}

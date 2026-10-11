@@ -3,6 +3,7 @@
 
 pub mod audit;
 pub mod auth;
+pub mod boats;
 pub mod changes;
 pub mod commands;
 pub mod directory;

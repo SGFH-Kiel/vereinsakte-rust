@@ -13,7 +13,7 @@ use tower_sessions::{Expiry, SessionManagerLayer, SessionStore};
 use crate::error::not_found;
 use crate::session::csrf_guard;
 use crate::state::AppState;
-use crate::{login, members, offices, pages};
+use crate::{boats, login, members, offices, pages};
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
                    form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
@@ -52,6 +52,18 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
             post(members::remove_license),
         )
         .route("/meine-daten/bearbeiten", get(members::edit_own))
+        .route("/boote", get(boats::list))
+        .route("/boote/neu", get(boats::new).post(boats::new_submit))
+        .route("/boote/{id}", get(boats::show))
+        .route(
+            "/boote/{id}/bearbeiten",
+            get(boats::edit).post(boats::edit_submit),
+        )
+        .route("/boote/{id}/sperren", post(boats::block))
+        .route("/boote/{id}/entsperren", post(boats::lift))
+        .route("/boote/{id}/freigabe", post(boats::release))
+        .route("/boote/{id}/abnahme", post(boats::checkout))
+        .route("/boote/{id}/widerruf", post(boats::revoke))
         .route("/aemter", get(offices::overview).post(offices::appoint))
         .route("/aemter/historie", get(offices::history))
         .route("/aemter/{id}/abgeben", post(offices::resign));

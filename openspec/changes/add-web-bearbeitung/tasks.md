@@ -35,10 +35,10 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 6. Boote, Sperren, Abnahmen
 
-- [ ] 6.1 Bootsliste und Bootsseite mit Status, Ämtern, Anforderungen, Besatzungsregeln und eigener Eignung samt Begründung; Tests: gesperrte Filou zeigt Grund und Zeitraum, Anna erhält Eignung oder fehlende Anforderung
-- [ ] 6.2 Boot anlegen, Stammdaten, Anforderungsgruppen und Besatzungsregeln pflegen (Oberbootswart, Bootswart des Bootes, Vorstand; Anlegen nur Oberbootswart/Vorstand); Tests: Trigon anlegen, ungültige Besatzungsregel → Feldfehler, fremder Bootswart → 403
-- [ ] 6.3 Sperren, Aufheben und Saisonfreigabe über die `aemter`-Berechtigung mit Urheber und Zeitpunkt; Tests: Ben sperrt Harald Blauzahn, Ben sperrt Filou → 403, Aufheben ohne offene Sperre → Meldung, Greta sieht keine Schaltfläche
-- [ ] 6.4 Abnahmen und Widerrufe erfassen mit sofortiger Neuberechnung der Bootserlaubnis; Tests: Abnehmer erfasst Gretas Abnahme der Filou, Eva widerruft mit Begründung, Bootswart-Widerruf → 403
+- [x] 6.1 Bootsliste und Bootsseite mit Status, Ämtern, Anforderungen, Besatzungsregeln und eigener Eignung samt Begründung; Tests: gesperrte Filou zeigt Grund und Zeitraum, Anna erhält Eignung oder fehlende Anforderung
+- [x] 6.2 Boot anlegen, Stammdaten, Anforderungsgruppen und Besatzungsregeln pflegen (Oberbootswart, Bootswart des Bootes, Vorstand; Anlegen nur Oberbootswart/Vorstand); Tests: Trigon anlegen, ungültige Besatzungsregel → Feldfehler, fremder Bootswart → 403
+- [x] 6.3 Sperren, Aufheben und Saisonfreigabe über die `aemter`-Berechtigung mit Urheber und Zeitpunkt; Tests: Ben sperrt Harald Blauzahn, Ben sperrt Filou → 403, Aufheben ohne offene Sperre → Meldung, Greta sieht keine Schaltfläche
+- [x] 6.4 Abnahmen und Widerrufe erfassen mit sofortiger Neuberechnung der Bootserlaubnis; Tests: Abnehmer erfasst Gretas Abnahme der Filou, Eva widerruft mit Begründung, Bootswart-Widerruf → 403
 
 ## 7. Arbeit
 

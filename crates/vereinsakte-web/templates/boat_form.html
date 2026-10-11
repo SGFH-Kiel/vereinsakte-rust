@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="breadcrumbs"><a href="/boote">Boote</a> › {% if is_new %}Neues Boot{% else %}<a href="/boote/{{ id }}">{{ values.name }}</a> › Bearbeiten{% endif %}</div>
+<div class="page-head"><h1>{% if is_new %}Boot anlegen{% else %}{{ values.name }} bearbeiten{% endif %}</h1></div>
+<form method="post" action="{{ action }}" class="card">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  <h2>Stammdaten</h2>
+  <div class="form-grid cols-2">
+    {{ f::field("name", "Name", values.name, errors.get("name"), "text", "") }}
+    <div class="field">
+      <label for="f-type">Typ</label>
+      <select id="f-type" name="boat_type"><option value="dinghy"{% if values.dinghy %} selected{% endif %}>Jolle</option><option value="keelboat"{% if !values.dinghy %} selected{% endif %}>Kielboot</option></select>
+    </div>
+    {{ f::field("class", "Klasse", values.class, errors.get("class"), "text", "z. B. Matcher 37") }}
+    {{ f::field("year_built", "Baujahr", values.year_built, errors.get("year_built"), "text", "") }}
+    {{ f::field("length", "Länge (m)", values.length, errors.get("length"), "text", "") }}
+    {{ f::field("beam", "Breite (m)", values.beam, errors.get("beam"), "text", "") }}
+    {{ f::field("draft", "Tiefgang (m)", values.draft, errors.get("draft"), "text", "") }}
+    {{ f::field("sail_area", "Segelfläche (m²)", values.sail_area, errors.get("sail_area"), "text", "") }}
+    {{ f::field("berths", "Kojen", values.berths, errors.get("berths"), "text", "") }}
+    {{ f::field("engine", "Motor", values.engine, errors.get("engine"), "text", "") }}
+    {{ f::field("mooring", "Liegeplatz", values.mooring, errors.get("mooring"), "text", "") }}
+  </div>
+  <h2 class="spaced">Skipper-Anforderungen</h2>
+  <div class="field{% if !errors.get("skipper_requirement").is_empty() %} has-error{% endif %}">
+    <label for="f-req">Zusätzlich zur Bootserlaubnis</label>
+    <textarea id="f-req" name="skipper_requirement">{{ values.skipper_requirement }}</textarea>
+    <span class="hint">Je Zeile eine Gruppe; Alternativen mit „|“, z. B. „SKS | SSS“. Weitere Nachweise: „Funk:SRC“, „Boot:Filou“, „Typ:Jolle“.</span>
+    {% if !errors.get("skipper_requirement").is_empty() %}<span class="error-text">{{ errors.get("skipper_requirement") }}</span>{% endif %}
+  </div>
+  <h2 class="spaced">Besatzungsregeln</h2>
+  <p class="muted">Ohne Eintrag ist das Boot für das Fahrtgebiet nicht freigegeben.</p>
+  <div class="form-grid cols-2">
+    <fieldset><legend>Heimrevier</legend>
+      {{ f::field("home_min_members", "Mindestens Mitglieder", values.home_min_members, errors.get("home_min_members"), "text", "") }}
+      {{ f::field("home_min_persons", "Mindestens Personen", values.home_min_persons, errors.get("home_min_persons"), "text", "") }}
+      <label class="check"><input type="checkbox" name="home_co_skipper" value="1"{% if values.home_co_skipper %} checked{% endif %}> Co-Skipper erforderlich</label>
+    </fieldset>
+    <fieldset><legend>Außerhalb des Heimreviers</legend>
+      {{ f::field("outside_min_members", "Mindestens Mitglieder", values.outside_min_members, errors.get("outside_min_members"), "text", "") }}
+      {{ f::field("outside_min_persons", "Mindestens Personen", values.outside_min_persons, errors.get("outside_min_persons"), "text", "") }}
+      <label class="check"><input type="checkbox" name="outside_co_skipper" value="1"{% if values.outside_co_skipper %} checked{% endif %}> Co-Skipper erforderlich</label>
+    </fieldset>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="primary">Speichern</button>
+    <a class="btn" href="{% if is_new %}/boote{% else %}/boote/{{ id }}{% endif %}">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}
