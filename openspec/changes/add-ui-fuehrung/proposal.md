@@ -48,4 +48,4 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 - `crates/vereinsakte-web/src/tests.rs`: Navigations- und Layout-Tests angepasst, neue Tests (Symbolsatz vollständig, keine Inline-Styles, Fortschrittselement, eingeklappte Aktionen).
 - `tools/screenshots.mjs`, `README.md`: Screenshots und Beschreibung aktualisieren.
 - Keine neuen Abhängigkeiten, keine Datenbankänderung, keine Schnittstellenänderung.
-- Reihenfolge: **2. von 4**, nach `add-kontakt-sichtbarkeit` (Scheine, Mitgliedsart und Kontaktdaten sind dann bereits für alle sichtbar, die Mitgliederliste kann sie als Symbole zeigen); vor `add-aufgabenboard`, das Navigation, Seitenkopf, Archiv und Bausteine übernimmt.
+- Reihenfolge: **2. von 5**, nach `add-kontakt-sichtbarkeit` (Scheine, Mitgliedsart und Kontaktdaten sind dann bereits für alle sichtbar, die Mitgliederliste kann sie als Symbole zeigen); vor `add-aufgabenboard`, das Navigation, Seitenkopf, Archiv und Bausteine übernimmt.

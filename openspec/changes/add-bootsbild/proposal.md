@@ -28,4 +28,4 @@ Die Bootsliste besteht aus Namen und Zuständen; wer ein Boot nicht kennt (neue 
 - `crates/vereinsakte-app`: Use Cases Bild setzen/entfernen mit vorhandener Bootsberechtigung; gemeinsames Bildmodul (Erkennung, Grenzen) aus `add-aufgabenboard`.
 - `crates/vereinsakte-web`: Bootsliste, Bootsseite, Bootsformular (Bildfeld), Auslieferungsroute `/boote/{id}/bild`.
 - Keine neuen Abhängigkeiten (Upload kommt mit `add-aufgabenboard`).
-- Reihenfolge: **4. von 4**, nach `add-aufgabenboard` (wiederverwendet dessen Upload-Prüfung und Auslieferung) und nach `add-ui-fuehrung` (Karten der Bootsliste).
+- Reihenfolge: **4. von 5**, nach `add-aufgabenboard` (wiederverwendet dessen Upload-Prüfung und Auslieferung) und nach `add-ui-fuehrung` (Karten der Bootsliste).
