@@ -94,7 +94,7 @@ impl Record {
 pub enum Change {
     /// Anlegen (`expected: None`) oder Ändern (`expected: Some(Version)`).
     Save {
-        record: Record,
+        record: Box<Record>,
         expected: Option<Version>,
     },
     /// Löschen eines Fachobjekts mit Versionsprüfung.
@@ -108,14 +108,14 @@ pub enum Change {
 impl Change {
     pub fn create(record: Record) -> Self {
         Self::Save {
-            record,
+            record: Box::new(record),
             expected: None,
         }
     }
 
     pub fn update(record: Record, expected: Version) -> Self {
         Self::Save {
-            record,
+            record: Box::new(record),
             expected: Some(expected),
         }
     }

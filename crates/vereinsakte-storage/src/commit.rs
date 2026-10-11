@@ -92,7 +92,7 @@ async fn apply(conn: &mut SqliteConnection, change: &Change) -> Result<(), AppEr
     match change {
         Change::Save { record, expected } => {
             let expected = *expected;
-            match record {
+            match &**record {
                 Record::Member(x) => {
                     let existing = current(conn, "members", x.key()).await?;
                     let position = match (existing, expected) {

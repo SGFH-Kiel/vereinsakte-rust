@@ -438,7 +438,7 @@ impl AuditRepository for MemoryStore {
             })
             .cloned()
             .collect();
-        found.sort_by(|a, b| (b.entry.at, b.id).cmp(&(a.entry.at, a.id)));
+        found.sort_by_key(|r| std::cmp::Reverse((r.entry.at, r.id)));
         let iter = found.into_iter().skip(filter.offset as usize);
         Ok(match filter.limit {
             Some(limit) => iter.take(limit as usize).collect(),
