@@ -1,0 +1,81 @@
+# Tasks
+
+Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte auf (Feature `example` des Core, nur in `[dev-dependencies]`) und nutzen eine feste Uhr (2026-10-09 in Vereinszeit). Jede Gruppe endet mit `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings` und `cargo fmt --check` ohne Befunde. Schreibende Routen prüfen immer: erlaubt → Änderung und Protokolleintrag; verboten → 403, keine Änderung, kein Eintrag; veralteter Stand → 409.
+
+## 1. Rechte im Core
+
+- [ ] 1.1 `Capability` und `Authorizer` im Core einführen (Basis: `Offices` plus Aktor und Zusatzdaten), die Logik aus `ClubRecord::authorize` dorthin verschieben und `ClubRecord::authorize` delegieren lassen; verifizieren: alle bestehenden Core-Tests unverändert grün
+- [ ] 1.2 Rechtematrix aus design.md als `Capability`-Regeln umsetzen (eigene Kontaktdaten, Mitgliederverwaltung, Ämter, Boote, Arbeit, Reservierungen, Finanzen, Protokoll); Tests: Tabelle Mitglied der Beispielakte (Anna, Ben, Clara, Eva, Frank, Greta, Hannes) × Capability, darunter Ben darf Filou nicht sperren, Greta nichts Schreibendes, Revisor nur lesend, Amtswechsel wirkt sofort
+
+## 2. Schreib-Ports, Protokoll und Teildaten-Regeln
+
+- [ ] 2.1 Migration `0003` mit `audit_log` (Indizes auf `at`, `actor_id`, `subject_member_id`; Trigger gegen `UPDATE`/`DELETE`) und `AuditRepository` (anhängen in der Transaktion des Befehls, filtern, seitenweise lesen); Tests: Eintrag wird mit der Änderung gespeichert, bei Rollback fehlt er, Änderung/Löschen schlägt fehl, Filter nach Zeitraum, Akteur, Art
+- [ ] 2.2 Schreib-Ports mit Versionsprüfung für Boote (inkl. Besatzungsregeln, Anforderungen, Sperren, Freigaben), Ämter, Arbeitseinsätze/-termine/Aufgaben/Überträge/Abgeltungen, Reservierungen, Saisons/Gebühren/Jahresnachweise sowie reine Anhänge (Forderung, Einzahlung, Abnahme, Widerruf) in `vereinsakte-app` definieren, In-Memory-Implementierungen und SQLite-Implementierungen in `vereinsakte-storage` bereitstellen; Tests je Port: speichern, veraltete Version → `Conflict` und unverändert, Zeilen anderer Objekte (`rowid`) unberührt
+- [ ] 2.3 Reservierungsprüfung, Beitrags- und Tourgebührenberechnung auf Teildaten herauslösen (`ReservationCheck`, `FeePlan`); Tests: für alle Beispiel-Reservierungen und Mitglieder liefert die Teildaten-Prüfung dieselben Verstöße wie die Prüfung auf der ganzen Akte, bestehende Core-Tests unverändert grün
+
+## 3. Designsystem und Grundgerüst
+
+- [ ] 3.1 `app.css` mit Tokens (hell/dunkel), Basis, Komponenten (Karte, Datenliste, Tabelle mit Kartenansicht, Formularraster, Schaltflächen, Plakette, Meldung, Filterleiste, Seitenwechsel, Unternavigation) und Druckregeln; verifizieren: Bildschirmfotos bei 375 px und 1280 px (hell und dunkel) mit `tools/screenshots.mjs` (Playwright, vorinstalliertes Chromium) zeigen kein horizontales Scrollen und lesbare Kontraste
+- [ ] 3.2 Basislayout überarbeiten: Navigation nach Berechtigung mit aktuellem Bereich, Menü hinter `<details>` auf schmalen Bildschirmen, Flash-Meldungen aus der Sitzung, Breadcrumbs, `lang`, Skip-Link; Tests: Navigation für Greta ohne „Finanzen“ und „Protokoll“, für Eva mit beiden, Menü-Element ohne JavaScript vorhanden, keine Inline-Skripte oder -Stile im HTML (CSP)
+- [ ] 3.3 Formular-Infrastruktur in `vereinsakte-web`: Eingabetypen mit deutschen Zahl-, Betrags- und Datumsformaten, `FieldErrors`, Formularfragmente für Feld/Fehler/Hinweis, 422-Wiedergabe mit erhaltenen Eingaben, 403- und 409-Seiten, Post/Redirect/Get mit Flash; Tests: „12,50“ und „12.50“ ergeben 12,50 €, ungültiges Datum erzeugt Feldfehler, 409 erhält Eingaben
+- [ ] 3.4 Listen-Infrastruktur: Abfrageparameter-Typ (`q`, `status`, `jahr`, `seite`, `sort`), Seitenwechsel-Baustein, Teil-Template bei `HX-Request`; Test: gleiche Anfrage mit und ohne htmx liefert dieselben Zeilen, Seite 2 ab 26 Einträgen
+- [ ] 3.5 Startseite „Meine nächsten Schritte“ (offene Stunden, Konto, Termine, eigene Reservierungen, je nach Amt offene Bestätigungen und Aufgaben); Tests: Clara sieht „es fehlen 4,5 Arbeitsstunden“, Ben sieht offene Bestätigungen seines Bootes, Greta keine Amts-Hinweise
+
+## 4. Mitglieder
+
+- [ ] 4.1 Mitgliedsseite `/mitglieder/{nr}` mit Sichtbarkeit nach Rolle (Name/Ämter für alle; Kontakt, Segelerlaubnis, Stunden, Konto nur eigen oder berechtigt) und erweitertes Verzeichnis (Filter Mitgliedsart, Schein „SKS“); Tests: Greta sieht bei Clara keine Kontaktdaten, Eva alles, Filter „SKS“ liefert Anna, Ben, Clara, Eva, Frank
+- [ ] 4.2 Eigene Kontaktdaten bearbeiten (`/meine-daten/bearbeiten`) mit Meldeadress-Prüfung und Versionsfeld; Tests: Anna ändert Straße, Mitgliedsart per manuellem POST bleibt unverändert, Konflikt → 409 mit erhaltenen Eingaben
+- [ ] 4.3 Mitglied aufnehmen und Stammdaten/Mitgliedsart/Verlauf ändern (Vorstand): Nummernvorschlag, Doppelprüfung Nummer und Anmeldekonto, Vorstandszustimmung außerordentlicher Mitglieder, Austritt/Ausschluss mit Datum; Tests: neue Nummer, doppelte Nummer/Anmeldekonto (Schreibweise egal) am Feld, Inès im Dezember nicht mehr im Verzeichnis und ohne Anmeldung, Greta → 403
+- [ ] 4.4 Scheine und Funklizenzen erfassen, ändern, entfernen mit sofort neu berechneter Segelerlaubnis; Test: SKS für Frank ergänzen, Segelerlaubnis und Filter aktualisieren sich
+
+## 5. Ämter
+
+- [ ] 5.1 Ämterübersicht und Amtshistorie (`/aemter`); Tests: Greta sieht Eva als 1. Vorsitzende und Ben als Bootswart der Harald Blauzahn ohne Kontaktdaten, Historie nur für den Vorstand
+- [ ] 5.2 Ernennen und Abgeben inklusive Prüfhinweisen der Spec `aemter` und Berechtigungen (Vorstand alle, Oberbootswart Bootswarte/Abnehmer, Mitglied eigenes Amt); Tests: Bootswartin Greta darf anschließend die Filou sperren, Ben darf kein Vorstandsamt vergeben (403), Ende vor Beginn → Meldung, Doppelbesetzung → Hinweis, Bens Abgabe wirkt auf seiner nächsten Anfrage
+
+## 6. Boote, Sperren, Abnahmen
+
+- [ ] 6.1 Bootsliste und Bootsseite mit Status, Ämtern, Anforderungen, Besatzungsregeln und eigener Eignung samt Begründung; Tests: gesperrte Filou zeigt Grund und Zeitraum, Anna erhält Eignung oder fehlende Anforderung
+- [ ] 6.2 Boot anlegen, Stammdaten, Anforderungsgruppen und Besatzungsregeln pflegen (Oberbootswart, Bootswart des Bootes, Vorstand; Anlegen nur Oberbootswart/Vorstand); Tests: Trigon anlegen, ungültige Besatzungsregel → Feldfehler, fremder Bootswart → 403
+- [ ] 6.3 Sperren, Aufheben und Saisonfreigabe über die `aemter`-Berechtigung mit Urheber und Zeitpunkt; Tests: Ben sperrt Harald Blauzahn, Ben sperrt Filou → 403, Aufheben ohne offene Sperre → Meldung, Greta sieht keine Schaltfläche
+- [ ] 6.4 Abnahmen und Widerrufe erfassen mit sofortiger Neuberechnung der Bootserlaubnis; Tests: Abnehmer erfasst Gretas Abnahme der Filou, Eva widerruft mit Begründung, Bootswart-Widerruf → 403
+
+## 7. Arbeit
+
+- [ ] 7.1 Arbeitseinsätze erfassen, eigene unbestätigte ändern/löschen, Stundenübersicht je Jahr; Tests: Clara erfasst 3 Stunden an der Filou, beide Umfangsformen → Feldfehler, Änderung eines bestätigten Einsatzes → 403, Änderung hebt Bestätigung auf
+- [ ] 7.2 Offene Einsätze gesammelt bestätigen nach Zuständigkeit; Tests: Ben bestätigt Claras Einsatz an der Harald Blauzahn, eigener Einsatz → abgelehnt, Greta sieht die Liste nicht
+- [ ] 7.3 Arbeitstermine mit Plätzen und Anmeldung/Abmeldung; Tests: Anna meldet sich an und ist in der Teilnehmerliste, ausgebucht → keine Anmeldung, Anmeldung schreibt keine Stunden gut
+- [ ] 7.4 Aufgaben anlegen, Zuständige zuweisen, Status ändern; Tests: Zuständiger setzt „erledigt“ mit Zeitpunkt, fremdes Mitglied ohne Amt → 403, Stunden der Aufgabe über Einsätze sichtbar
+- [ ] 7.5 Stundenüberträge und finanzielle Abgeltung (Vorstand) mit Forderung im Konto; Tests: 5 Stunden bei 15 € → Forderung 75,00 €, Übertrag an sich selbst → Feldfehler, Rückstandsliste zeigt Clara
+
+## 8. Reservierungen
+
+- [ ] 8.1 Reservierungskalender (Woche/Monat) und Liste mit Filtern Boot, Zeitraum, „nur meine“; Tests: Filter „nur meine“ für Anna, Kalender ohne JavaScript als Liste nach Tagen
+- [ ] 8.2 Reservierung anlegen mit Co-Skipper, Crew, Gästen, eigenem Zeitraum, Tour-Kennzeichen, Bemerkung und der Gesamtprüfung aus 2.3 mit verständlichen Fehlern; Tests: gültige Reservierung mit Crew und Gast, Skipper ohne Abnahme, Überschneidung nennt die kollidierende Reservierung, gesperrtes Boot, fehlende Segelerlaubnis eines Crewmitglieds
+- [ ] 8.3 Reservierung ändern und stornieren (Skipper künftig, Berechtigte jederzeit, begonnene nur Vorstand) mit erneuter Prüfung und Anzeige der erwarteten Tourgebühr; Tests: Anna storniert, Greta fremde Reservierung → 403, Änderung wird erneut geprüft, Tourgebühr je Person angezeigt
+
+## 9. Finanzen
+
+- [ ] 9.1 Eigenes Konto (Kontostand, Forderungen mit Zustand, Einzahlungen) und fremde Konten für Kassenwart, Vorstand, Revisor; Tests: Anna „Guthaben“ „10,00 €“, Lukas offen 276,00 €, Greta auf fremdem Konto → 403, Revisor ohne Schaltflächen und POST → 403
+- [ ] 9.2 Forderungen und Einzahlungen buchen, Storno mit Pflichtbegründung; Tests: 240,00 € Einzahlung wirkt im Kontostand, negativer Betrag → Feldfehler, Schlüsselpfand-Storno bleibt mit Grund sichtbar und zählt nicht mehr, Löschen gibt es nicht
+- [ ] 9.3 Außenstände zum Stichtag mit Filter „überfällig“ und Sortierung; Test: Stichtag 20. Juli zeigt nur zu diesem Zeitpunkt überfällige Beträge, Adresse mit Filter ist verlinkbar
+- [ ] 9.4 Saisons und Gebührensätze pflegen; Jahresbeiträge gesammelt anlegen mit Vorschau ohne Doppelungen; Tests: Satz ändern lässt bestehende Forderungen unverändert, zweites Anlegen zeigt „bereits vorhanden“ und erzeugt keine Forderung
+- [ ] 9.5 Tourgebühren aus einer Tour-Reservierung berechnen, prüfen und anlegen (Mitglieder und Gastname), idempotent; Test: siebentägige Tour mit zwei Mitgliedern und einem Gast ergibt zwei plus eine Forderung, erneutes Anlegen ergibt keine Doppelung
+- [ ] 9.6 Jahresnachweis je Mitglied und Saison mit Druckansicht ohne Navigation; Test: Nachweis enthält Soll-/anrechenbare Stunden, Beitragsstand, Segelerlaubnis, Druckregel blendet Navigation aus
+
+## 10. Protokoll
+
+- [ ] 10.1 Protokollseite `/protokoll` mit Filtern Zeitraum, Akteur, Art, neueste zuerst; Mitglieder sehen nur Einträge, in denen sie handelnd oder betroffen sind; Tests: Revisor filtert „Einzahlung“, Clara sieht nur eigene Einträge, Greta kann `/protokoll` nur eingeschränkt öffnen, kein Eintrag enthält Feldwerte oder Sitzungsdaten
+- [ ] 10.2 Sicherstellen, dass jeder schreibende Anwendungsfall aus den Gruppen 4–9 einen Eintrag schreibt (Sammeltest über eine Liste aller Befehle) und bei Fehler keinen; Test: für jeden Befehl Erfolg → genau ein Eintrag, 403/409/422 → keiner
+
+## 11. Integration und Dokumentation
+
+- [ ] 11.1 Ende-zu-Ende-Test im Binary-Crate über SQLite und Entwicklungs-Login: Greta erfasst einen Einsatz, Ben bestätigt ihn, Eva nimmt ein Mitglied auf, der Kassenwart bucht eine Einzahlung, der Revisor liest alles und scheitert beim Schreiben, Protokoll enthält alle Aktionen; verifizieren mit `cargo test --workspace`
+- [ ] 11.2 Erscheinungsbild prüfen: `tools/screenshots.mjs` erzeugt Bildschirmfotos aller Hauptseiten bei 375 px und 1280 px (hell/dunkel) aus der Beispielakte; verifizieren: keine Seite scrollt seitwärts, Menü und Karten-Tabellen sind bedienbar, Befunde sind behoben
+- [ ] 11.3 `README.md` um Rechte-Übersicht (Matrix), Bedienung je Rolle, Entwicklungsmodus mit Rollenwechsel zum Testen und Sicherung inkl. Protokoll ergänzen; verifizieren: die beschriebenen Schritte laufen auf einer leeren Kopie durch
+- [ ] 11.4 Abschlussprüfung: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check` ohne Befunde; `cargo build --release -p vereinsakte` enthält keine Testdaten (Suche nach „Petersen“ im Binary ergibt nichts)
+
+## Workflow follow-up
+
+- Rechtematrix (Open Questions in design.md) vom Vorstand bestätigen lassen, bevor Gruppe 1 beginnt.
+- Nach Abschluss mit `/opsx:archive` archivieren.
