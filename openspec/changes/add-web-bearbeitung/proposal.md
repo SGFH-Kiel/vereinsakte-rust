@@ -19,7 +19,7 @@ Die Weboberfläche zeigt bisher nur „Meine Daten“ und das Mitgliederverzeich
 - `rechte`: Rollen und Rechtematrix für Lesen und Schreiben je Bereich, abgeleitet aus den aktuellen Ämtern; Verhalten bei fehlender Berechtigung.
 - `oberflaeche`: Design, Navigation, responsives Layout, Formular- und Tabellenverhalten, Rückmeldungen und Barrierefreiheit der Weboberfläche.
 - `aenderungsprotokoll`: Protokoll aller schreibenden Aktionen mit Urheber, Zeitpunkt, Gegenstand und Einsicht.
-- `mitgliederverwaltung`: Mitglieder ansehen, Kontaktdaten selbst pflegen, Mitglieder aufnehmen, ändern und austreten lassen, Scheine und Lizenzen pflegen.
+- `mitgliederverwaltung`: Mitglieder ansehen, Kontaktdaten sowie Scheine und Lizenzen (ohne Nachweis, auf Vertrauensbasis) selbst pflegen, Mitglieder aufnehmen, ändern und austreten lassen.
 - `amtsverwaltung`: Ämter einsehen, ernennen und abgeben.
 - `bootsverwaltung`: Boote und ihre Anforderungen pflegen, sperren, freigeben sowie Abnahmen und Widerrufe erfassen.
 - `arbeitsverwaltung`: Arbeitseinsätze, Bestätigungen, Arbeitstermine mit Anmeldungen, Aufgaben, Stundenüberträge und Abgeltungen.

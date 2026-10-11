@@ -5,7 +5,7 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 ## 1. Rechte im Core
 
 - [ ] 1.1 `Capability` und `Authorizer` im Core einführen (Basis: `Offices` plus Aktor und Zusatzdaten), die Logik aus `ClubRecord::authorize` dorthin verschieben und `ClubRecord::authorize` delegieren lassen; verifizieren: alle bestehenden Core-Tests unverändert grün
-- [ ] 1.2 Rechtematrix aus design.md als `Capability`-Regeln umsetzen (eigene Kontaktdaten, Mitgliederverwaltung, Ämter, Boote, Arbeit, Reservierungen, Finanzen, Protokoll); Tests: Tabelle Mitglied der Beispielakte (Anna, Ben, Clara, Eva, Frank, Greta, Hannes) × Capability, darunter Ben darf Filou nicht sperren, Greta nichts Schreibendes, Revisor nur lesend, Amtswechsel wirkt sofort
+- [ ] 1.2 Rechtematrix aus design.md als `Capability`-Regeln umsetzen (eigene Kontaktdaten/Scheine/Lizenzen, Mitgliederverwaltung, Ämter, Boote, Arbeit, Reservierungen, Finanzen, Protokoll); Tests: Tabelle Mitglied der Beispielakte (Anna, Ben, Clara, Eva, Frank, Greta, Hannes) × Capability, darunter Frank darf eigene, aber nicht Claras Scheine ändern, Ben darf Filou nicht sperren, Greta nichts Schreibendes, Revisor nur lesend, Amtswechsel wirkt sofort
 
 ## 2. Schreib-Ports, Protokoll und Teildaten-Regeln
 
@@ -26,7 +26,7 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 - [ ] 4.1 Mitgliedsseite `/mitglieder/{nr}` mit Sichtbarkeit nach Rolle (Name/Ämter für alle; Kontakt, Segelerlaubnis, Stunden, Konto nur eigen oder berechtigt) und erweitertes Verzeichnis (Filter Mitgliedsart, Schein „SKS“); Tests: Greta sieht bei Clara keine Kontaktdaten, Eva alles, Filter „SKS“ liefert Anna, Ben, Clara, Eva, Frank
 - [ ] 4.2 Eigene Kontaktdaten bearbeiten (`/meine-daten/bearbeiten`) mit Meldeadress-Prüfung und Versionsfeld; Tests: Anna ändert Straße, Mitgliedsart per manuellem POST bleibt unverändert, Konflikt → 409 mit erhaltenen Eingaben
 - [ ] 4.3 Mitglied aufnehmen und Stammdaten/Mitgliedsart/Verlauf ändern (Vorstand): Nummernvorschlag, Doppelprüfung Nummer und Anmeldekonto, Vorstandszustimmung außerordentlicher Mitglieder, Austritt/Ausschluss mit Datum; Tests: neue Nummer, doppelte Nummer/Anmeldekonto (Schreibweise egal) am Feld, Inès im Dezember nicht mehr im Verzeichnis und ohne Anmeldung, Greta → 403
-- [ ] 4.4 Scheine und Funklizenzen erfassen, ändern, entfernen mit sofort neu berechneter Segelerlaubnis; Test: SKS für Frank ergänzen, Segelerlaubnis und Filter aktualisieren sich
+- [ ] 4.4 Eigene Scheine und Funklizenzen auf „Meine Daten“ erfassen, ändern, entfernen (ohne Nachweis, ohne Freigabe; Vorstand darf für alle) mit sofort neu berechneter Segelerlaubnis und Protokolleintrag; Tests: Frank ergänzt SKS und Segelerlaubnis und Filter „SKS“ aktualisieren sich, Formular enthält kein Upload- oder Nachweisfeld, Anna ändert Claras Schein → 403, Eva ergänzt Claras Funklizenz, Entfernen erzeugt Protokolleintrag „Segelschein entfernt“
 
 ## 5. Ämter
 
@@ -77,5 +77,5 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## Workflow follow-up
 
-- Rechtematrix (Open Questions in design.md) vom Vorstand bestätigen lassen, bevor Gruppe 1 beginnt.
+- Verbleibende Annahmen der Rechtematrix (Open Questions in design.md) vom Vorstand bestätigen lassen, bevor Gruppe 1 beginnt.
 - Nach Abschluss mit `/opsx:archive` archivieren.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Ermöglicht im Web, Mitglieder anzusehen und zu verwalten: Mitglieder pflegen ihre Kontaktdaten selbst, der Vorstand nimmt Mitglieder auf, ändert Stammdaten, Mitgliedsart und Mitgliedschaftsverlauf und pflegt Scheine und Lizenzen.
+Ermöglicht im Web, Mitglieder anzusehen und zu verwalten: Mitglieder pflegen Kontaktdaten, Scheine und Lizenzen selbst, der Vorstand nimmt Mitglieder auf und ändert Stammdaten, Mitgliedsart und Mitgliedschaftsverlauf.
 
 ## ADDED Requirements
 
@@ -50,12 +50,31 @@ Der Vorstand SHALL Stammdaten, Mitgliedsart, Anmeldekonto und den Verlauf der Mi
 - **WHEN** der Vorstand für Inès einen Austritt zum 30.11.2026 erfasst
 - **THEN** steht sie im Dezember nicht mehr im Verzeichnis, ihre Daten und ihr Verlauf bleiben einsehbar
 
-### Requirement: Scheine und Lizenzen pflegen
-Der Vorstand SHALL Segelscheine mit Art, Datum und freier Bezeichnung sowie Funklizenzen erfassen, ändern und entfernen können. Die Segelerlaubnis des Mitglieds SHALL nach dem Speichern sofort neu berechnet erscheinen.
+### Requirement: Scheine und Lizenzen selbst pflegen
+Ein Mitglied SHALL seine eigenen Segelscheine mit Art, Datum und freier Bezeichnung sowie seine Funklizenzen erfassen, ändern und entfernen können. Das System SHALL dafür weder einen Nachweis verlangen noch speichern und keine Freigabe durch den Verein vorsehen. Der Vorstand SHALL Scheine und Lizenzen jedes Mitglieds ebenso pflegen können. Die Segelerlaubnis SHALL nach dem Speichern sofort neu berechnet erscheinen.
 
 #### Scenario: Schein ergänzen
-- **WHEN** der Vorstand für Frank einen SKS-Schein erfasst
-- **THEN** zeigt Franks Seite „SKS“ und die Mitgliederliste mit Filter „SKS“ enthält ihn
+- **WHEN** Frank auf „Meine Daten“ einen SKS-Schein erfasst
+- **THEN** zeigt seine Seite „SKS“, seine Segelerlaubnis ist neu berechnet und das Verzeichnis mit Filter „SKS“ enthält ihn
+
+#### Scenario: Kein Nachweis
+- **WHEN** ein Mitglied einen Schein erfasst
+- **THEN** enthält das Formular kein Feld für einen Nachweis oder Dateiupload
+
+#### Scenario: Fremder Schein
+- **WHEN** Anna den Schein von Clara ändern will
+- **THEN** wird dies mit 403 abgelehnt
+
+#### Scenario: Vorstand pflegt mit
+- **WHEN** Eva für Clara eine Funklizenz ergänzt
+- **THEN** wird sie gespeichert
+
+### Requirement: Änderungen an Scheinen sind nachvollziehbar
+Jede Änderung an Segelscheinen und Funklizenzen SHALL im Änderungsprotokoll mit handelndem Mitglied und Art der Änderung (hinzugefügt, geändert, entfernt) erscheinen, damit die Vertrauensbasis nachvollziehbar bleibt.
+
+#### Scenario: Eintrag bei Entfernen
+- **WHEN** Frank seinen SKS-Schein entfernt
+- **THEN** enthält das Protokoll „Segelschein entfernt“ mit Frank als Handelndem
 
 ### Requirement: Gleichzeitige Bearbeitung
 Ein Formular SHALL die Version des Mitglieds enthalten, auf der es beruht. Wurde das Mitglied zwischenzeitlich geändert, SHALL das Speichern abgelehnt, nichts verändert und der aktuelle Stand mit den eingegebenen Werten zum Abgleich angezeigt werden.

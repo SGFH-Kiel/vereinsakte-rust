@@ -16,7 +16,7 @@ Motivation und Umfang: siehe proposal.md. Die Anforderungen stehen in den Specs 
 
 **Non-Goals:**
 - Kein Rollen-Editor und keine frei konfigurierbaren Rechte: Rechte folgen fest den Ämtern der Satzung und der Segelordnung.
-- Keine Benachrichtigungen (E-Mail, Push), kein Dateiupload, keine Zahlungsanbindung.
+- Keine Benachrichtigungen (E-Mail, Push), kein Dateiupload (auch keine Nachweise zu Scheinen), keine Zahlungsanbindung.
 - Kein Einzelseiten-Frontend (SPA), kein CSS-Framework, kein Build-Schritt für Frontend-Dateien.
 - Keine Änderung der Fachregeln, der JSON-Struktur oder bestehender Routen.
 
@@ -32,8 +32,8 @@ Die App-Schicht bildet pro Anfrage einen `Principal` (Mitglied, aktive Ämter zu
 
 | Bereich | Mitglied | Bootswart/Abnehmer (Boot) | Oberbootswart | Kassenwart | Vorstand | Revisor |
 | --- | --- | --- | --- | --- | --- | --- |
-| Eigene Kontaktdaten | schreiben | schreiben | schreiben | schreiben | schreiben | schreiben |
-| Fremde Mitgliederdaten | Name, Ämter | wie Mitglied | wie Mitglied | lesen | lesen/schreiben | lesen |
+| Eigene Kontaktdaten, Scheine, Lizenzen | schreiben | schreiben | schreiben | schreiben | schreiben | schreiben |
+| Fremde Mitgliederdaten | Name, Ämter | wie Mitglied | wie Mitglied | lesen | lesen/schreiben (inkl. Scheine) | lesen |
 | Ämter | lesen | lesen | Bootswart/Abnehmer ernennen | lesen | alle schreiben | lesen |
 | Boote | lesen | eigene schreiben, sperren, abnehmen | schreiben | lesen | schreiben | lesen |
 | Arbeitseinsätze | eigene schreiben | Einsätze des Bootes bestätigen | wie Bootswart, alle Boote | lesen | alle, Abgeltung | lesen |
@@ -84,6 +84,8 @@ Eine Matrix-Tabelle (Mitglied der Beispielakte × `Capability`) prüft Core und 
 
 ## Risks / Trade-offs
 
+- [Selbst erfasste Scheine bestimmen die Segelerlaubnis ohne Prüfung] → bewusst vom Verein so entschieden (Vertrauensbasis); Absicherung über das Änderungsprotokoll, das alle Änderungen an Scheinen mit Urheber festhält, und über die Bootsabnahme durch Abnehmer/Bootswart.
+
 - [Umfang: alle Bereiche in einer Änderung] → Aufgabengruppen sind nach Abhängigkeit und Nutzen geordnet; jede Gruppe hinterlässt ein laufendes System mit grünen Tests, sodass sich nach jeder Gruppe ausliefern oder anhalten lässt.
 - [Anzeige und Server weichen bei Rechten ab] → `Authorizer` ist einzige Quelle, die Matrix-Tests prüfen beide Seiten.
 - [Teildaten-Refactoring der Core-Regeln ändert Fachverhalten] → bestehende Core-Tests bleiben unverändert, neue Äquivalenztests vergleichen Teildaten-Prüfung mit der Ganz-Akte-Prüfung für alle Beispiel-Reservierungen.
@@ -100,4 +102,4 @@ Eine Matrix-Tabelle (Mitglied der Beispielakte × `Capability`) prüft Core und 
 
 ## Open Questions
 
-- Annahmen der Rechtematrix, die der Verein bestätigen sollte (ändern Specs, daher vor der Umsetzung klären): (a) Der Revisor liest alles und ändert nichts. (b) Der Schriftwart hat keine Sonderrechte über den Vorstand hinaus. (c) Scheine und Lizenzen pflegt nur der Vorstand; Mitglieder können keine Nachweise selbst eintragen. (d) Alle aktiven Mitglieder sehen Boote, Reservierungskalender, Arbeitstermine und Aufgaben. (e) Jedes Mitglied sieht in „Protokoll“ nur die eigenen Einträge.
+- Annahmen der Rechtematrix, die der Verein bestätigen sollte (ändern Specs, daher vor der Umsetzung klären; entschieden: Mitglieder pflegen Scheine und Lizenzen selbst, ohne Nachweis): (a) Der Revisor liest alles und ändert nichts. (b) Der Schriftwart hat keine Sonderrechte über den Vorstand hinaus. (c) Alle aktiven Mitglieder sehen Boote, Reservierungskalender, Arbeitstermine und Aufgaben. (d) Jedes Mitglied sieht in „Protokoll“ nur die eigenen Einträge.

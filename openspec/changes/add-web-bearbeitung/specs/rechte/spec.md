@@ -25,18 +25,22 @@ Die Berechtigung SHALL je Bereich nach der Rechtematrix dieser Spec bestimmt wer
 - **THEN** sieht sie alle drei, aber weder fremde Konten noch fremde Kontaktdaten
 
 ### Requirement: Mitglied und eigene Daten
-Jedes aktive Mitglied SHALL seine eigenen Stammdaten, Segelerlaubnis, Arbeitsstunden und sein Konto lesen und seine Kontaktdaten (Anschrift, Telefonnummern, Kontakt-E-Mail) ändern dürfen. Es SHALL eigene Arbeitseinsätze erfassen und solange unbestätigt ändern oder löschen, sich zu Arbeitsterminen an- und abmelden und eigene Reservierungen anlegen und stornieren dürfen.
+Jedes aktive Mitglied SHALL seine eigenen Stammdaten, Segelerlaubnis, Arbeitsstunden und sein Konto lesen und seine Kontaktdaten (Anschrift, Telefonnummern, Kontakt-E-Mail) sowie seine eigenen Segelscheine und Funklizenzen ändern dürfen. Es SHALL eigene Arbeitseinsätze erfassen und solange unbestätigt ändern oder löschen, sich zu Arbeitsterminen an- und abmelden und eigene Reservierungen anlegen und stornieren dürfen.
 
 #### Scenario: Eigene Kontaktdaten
 - **WHEN** Anna ihre Telefonnummer ändert
 - **THEN** wird die Änderung gespeichert
+
+#### Scenario: Eigenen Schein erfassen
+- **WHEN** Frank einen eigenen SKS-Schein erfasst
+- **THEN** wird er ohne Nachweis und ohne Freigabe gespeichert
 
 #### Scenario: Fremde Kontaktdaten
 - **WHEN** Anna die Kontaktdaten von Clara ändern will
 - **THEN** wird die Aktion mit 403 abgelehnt und nichts gespeichert
 
 ### Requirement: Vorstand und Schriftwart
-Mitglieder aufnehmen, Stammdaten, Mitgliedsart, Mitgliedschaftsverlauf, Scheine und Lizenzen ändern sowie Ämter ernennen und abgeben SHALL nur der Vorstand (1. und 2. Vorsitzende, Kassenwart, Schriftwart, Oberbootswart) dürfen; Bootswarte und Abnehmer eines Bootes darf zusätzlich der Oberbootswart bestellen. Alle Mitgliederdaten lesen darf der Vorstand.
+Mitglieder aufnehmen, Stammdaten, Mitgliedsart und Mitgliedschaftsverlauf ändern sowie Ämter ernennen und abgeben SHALL nur der Vorstand (1. und 2. Vorsitzende, Kassenwart, Schriftwart, Oberbootswart) dürfen; Bootswarte und Abnehmer eines Bootes darf zusätzlich der Oberbootswart bestellen. Alle Mitgliederdaten lesen und die Scheine und Lizenzen jedes Mitglieds ändern darf der Vorstand.
 
 #### Scenario: Aufnahme durch den Vorstand
 - **WHEN** Eva als 1. Vorsitzende ein neues Mitglied erfasst
