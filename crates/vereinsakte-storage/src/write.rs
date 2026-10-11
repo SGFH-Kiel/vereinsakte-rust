@@ -124,6 +124,7 @@ impl Aggregate for Member {
                 ("membership_type", choice(&self.membership_type)),
                 ("child_of", opt_member(self.child_of)),
                 ("board_consent", boolean(self.board_consent)),
+                ("contact_blocked", boolean(self.contact_blocked)),
                 ("joined_at", ts(m.joined_at)),
                 ("provisional_until", opt_ts(m.provisional_until)),
                 ("limited_until", opt_ts(m.limited_until)),

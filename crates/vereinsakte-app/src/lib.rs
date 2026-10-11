@@ -6,6 +6,7 @@ pub mod auth;
 pub mod boats;
 pub mod changes;
 pub mod commands;
+pub mod contact;
 pub mod directory;
 pub mod error;
 pub mod finance;

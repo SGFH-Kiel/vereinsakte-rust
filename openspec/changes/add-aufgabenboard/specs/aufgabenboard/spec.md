@@ -1,6 +1,6 @@
 ## Purpose
 
-Macht Aufgaben im Web als Kanban-Board mit Kommentaren, Bildern und bearbeitbarer Markdown-Beschreibung nutzbar, damit Verteilung, Stand und Absprachen zu einer Aufgabe an einem Ort liegen.
+Macht Aufgaben im Web als Kanban-Board mit Kommentaren, Anhängen (Bilder, PDFs) und bearbeitbarer Markdown-Beschreibung nutzbar, damit Verteilung, Stand und Absprachen zu einer Aufgabe an einem Ort liegen.
 
 ## ADDED Requirements
 
@@ -46,7 +46,7 @@ Erledigte Aufgaben, deren Erledigung in einer früheren Saison liegt, SHALL nich
 - **THEN** steht sie in DONE
 
 ### Requirement: Aufgabenseite
-Jede Aufgabe SHALL eine Seite mit Titel, Status, Zuständigen, Boot, Fälligkeit, geschätzten und geleisteten Stunden, Beschreibung, Bildern, Kommentaren und dem Verlauf ihrer Statuswechsel haben, mit der Möglichkeit, den Status direkt dort zu ändern. Amtsträger SHALL Aufgaben anlegen und Titel, Zuständige, Boot, Fälligkeit und geschätzte Stunden ändern können.
+Jede Aufgabe SHALL eine Seite mit Titel, Status, Zuständigen, Boot, Fälligkeit, geschätzten und geleisteten Stunden, Beschreibung, Anhängen, Kommentaren und dem Verlauf ihrer Statuswechsel haben, mit der Möglichkeit, den Status direkt dort zu ändern. Amtsträger SHALL Aufgaben anlegen und Titel, Zuständige, Boot, Fälligkeit und geschätzte Stunden ändern können.
 
 #### Scenario: Seite öffnen
 - **WHEN** ein Mitglied auf eine Karte klickt
@@ -90,34 +90,42 @@ Jedes aktive Mitglied SHALL eine Aufgabe kommentieren können. Ein Kommentar SHA
 - **WHEN** Greta ihren Kommentar nach 30 Minuten ändern will
 - **THEN** wird dies abgelehnt, und der Vorstand kann ihn löschen
 
-### Requirement: Bilder hochladen
-Jedes aktive Mitglied SHALL zu einer Aufgabe Bilder im Format JPEG, PNG, WebP oder GIF hochladen können, bis 8 MB je Bild und 20 Bilder je Aufgabe, optional mit Bildbeschreibung (Alternativtext). Der Inhalt SHALL anhand der Dateikennung geprüft werden, nicht anhand des Namens; andere Formate, auch SVG, SHALL abgelehnt werden.
+### Requirement: Anhänge hochladen
+Jedes aktive Mitglied SHALL zu einer Aufgabe Bilder (JPEG, PNG, WebP oder GIF) und PDF-Dokumente hochladen können, bis 10 MB je Datei und 20 Anhänge je Aufgabe. Bilder SHALL optional eine Bildbeschreibung (Alternativtext), PDFs eine Bezeichnung tragen. Der Inhalt SHALL anhand der Dateikennung geprüft werden, nicht anhand des Namens oder des angegebenen Typs; andere Formate, auch SVG, SHALL abgelehnt werden.
 
 #### Scenario: Bild hochladen
 - **WHEN** Ben ein JPEG von 2 MB zur Aufgabe hochlädt
-- **THEN** erscheint es als Vorschaubild, und die Karte zählt ein Bild mehr
+- **THEN** erscheint es als Vorschaubild, und die Karte zählt einen Anhang mehr
+
+#### Scenario: PDF hochladen
+- **WHEN** Ben eine PDF-Datei „Angebot Segeltuch.pdf“ von 1 MB hochlädt
+- **THEN** erscheint sie als Dateizeile mit PDF-Symbol, Name und Größe, und die Karte zählt einen Anhang mehr
 
 #### Scenario: Falsches Format
-- **WHEN** eine als „bild.png“ benannte Textdatei oder eine SVG-Datei hochgeladen wird
-- **THEN** wird sie abgelehnt mit „Nur JPEG, PNG, WebP oder GIF sind erlaubt“
+- **WHEN** eine als „bild.png“ oder „angebot.pdf“ benannte Textdatei, eine SVG-Datei oder ein Word-Dokument hochgeladen wird
+- **THEN** wird sie abgelehnt mit „Erlaubt sind Bilder (JPEG, PNG, WebP, GIF) und PDF-Dokumente“
 
 #### Scenario: Zu groß
-- **WHEN** ein Bild über 8 MB hochgeladen wird
-- **THEN** wird es abgelehnt mit Nennung der Grenze
+- **WHEN** eine Datei über 10 MB hochgeladen wird
+- **THEN** wird sie abgelehnt mit Nennung der Grenze
 
-### Requirement: Bilder ansehen und löschen
-Bilder SHALL nur angemeldeten aktiven Mitgliedern ausgeliefert werden, in der Aufgabe als Vorschaubilder erscheinen und in voller Größe aufrufbar sein. Der Hochladende und der Vorstand SHALL ein Bild löschen können.
+### Requirement: Anhänge ansehen und löschen
+Anhänge SHALL nur angemeldeten aktiven Mitgliedern ausgeliefert werden. Bilder SHALL als Vorschau erscheinen und in voller Größe aufrufbar sein, PDFs SHALL als Datei zum Herunterladen mit ihrem Namen ausgeliefert werden und nicht in der Seite eingebettet erscheinen. Der Hochladende und der Vorstand SHALL einen Anhang löschen können.
 
 #### Scenario: Nicht angemeldet
-- **WHEN** die Adresse eines Bildes ohne Anmeldung aufgerufen wird
-- **THEN** wird auf die Anmeldung umgeleitet und kein Bild ausgeliefert
+- **WHEN** die Adresse eines Anhangs ohne Anmeldung aufgerufen wird
+- **THEN** wird auf die Anmeldung umgeleitet und nichts ausgeliefert
 
-#### Scenario: Fremdes Bild löschen
-- **WHEN** Greta das Bild von Ben löschen will
-- **THEN** wird dies mit 403 abgelehnt, und der Vorstand kann es löschen
+#### Scenario: PDF herunterladen
+- **WHEN** ein Mitglied die PDF-Zeile wählt
+- **THEN** lädt der Browser die Datei mit dem hochgeladenen Namen herunter
+
+#### Scenario: Fremden Anhang löschen
+- **WHEN** Greta den Anhang von Ben löschen will
+- **THEN** wird dies mit 403 abgelehnt, und der Vorstand kann ihn löschen
 
 ### Requirement: Protokoll der Aufgabenänderungen
-Statuswechsel, Zuweisung, Beschreibungsänderung, Kommentar und Bildänderungen SHALL im Änderungsprotokoll mit Aktion, Aufgabe und Akteur stehen. Das Protokoll SHALL weder Beschreibungs- noch Kommentartexte noch Bilddaten enthalten, nur Feldnamen und Kennungen.
+Statuswechsel, Zuweisung, Beschreibungsänderung, Kommentar und Anhangänderungen SHALL im Änderungsprotokoll mit Aktion, Aufgabe und Akteur stehen. Das Protokoll SHALL weder Beschreibungs- noch Kommentartexte noch Dateidaten enthalten, nur Feldnamen und Kennungen.
 
 #### Scenario: Kommentar im Protokoll
 - **WHEN** Greta kommentiert

@@ -37,6 +37,10 @@ pub struct Member {
     #[serde(default, skip_serializing_if = "is_false")]
     pub board_consent: bool,
     pub membership: Membership,
+    /// Sperrvermerk: andere Mitglieder (außer dem Vorstand) sehen weder
+    /// E-Mail noch Telefonnummern.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub contact_blocked: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub sailing_licenses: Vec<SailingLicense>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -81,6 +85,7 @@ impl Member {
             child_of: None,
             board_consent: false,
             membership: Membership::joined(joined_at),
+            contact_blocked: false,
             sailing_licenses: Vec::new(),
             radio_licenses: Vec::new(),
             account: MemberAccount::default(),
@@ -596,6 +601,23 @@ mod tests {
         assert!(hannes.get("login_email").is_none());
         let back: Member = serde_json::from_value(hannes).unwrap();
         assert_eq!(back.login_email, None);
+    }
+
+    #[test]
+    fn contact_block_defaults_to_off_and_is_only_written_when_set() {
+        let anna = example::anna();
+        assert!(!anna.contact_blocked);
+        let value = serde_json::to_value(&anna).unwrap();
+        assert!(value.get("contact_blocked").is_none());
+        // Alte Daten ohne das Merkmal
+        let back: Member = serde_json::from_value(value).unwrap();
+        assert!(!back.contact_blocked);
+        let mut blocked = anna;
+        blocked.contact_blocked = true;
+        let value = serde_json::to_value(&blocked).unwrap();
+        assert_eq!(value["contact_blocked"], json!(true));
+        let back: Member = serde_json::from_value(value).unwrap();
+        assert!(back.contact_blocked);
     }
 
     #[test]

@@ -16,7 +16,7 @@ use vereinsakte_core::time::Timestamp;
 
 use crate::db::{Database, StorageError};
 use crate::read::*;
-use crate::values::{Filter, get, get_choice, get_member, int, member, rows, text, ts};
+use crate::values::{Filter, get, get_bool, get_choice, get_member, int, member, rows, text, ts};
 use crate::write::{Aggregate, write_diff};
 
 /// Zum Zeitpunkt `?1` aktive Mitgliedschaft (Vergleich über `julianday`, weil
@@ -126,7 +126,7 @@ impl MemberRepository for SqliteClubStore {
     async fn active_members(&self, t: Timestamp) -> Result<Vec<MemberSummary>, AppError> {
         let mut conn = self.db.pool().acquire().await.map_err(StorageError::from)?;
         let sql = format!(
-            "SELECT id, first_name, last_name, membership_type, email, phone_landline, phone_business, phone_mobile
+            "SELECT id, first_name, last_name, membership_type, email, phone_landline, phone_business, phone_mobile, contact_blocked
              FROM members WHERE {ACTIVE_MEMBER} ORDER BY last_name, first_name"
         );
         let mut licenses: std::collections::HashMap<MemberId, Vec<String>> = Default::default();
@@ -163,6 +163,7 @@ impl MemberRepository for SqliteClubStore {
                         business: get(r, "phone_business")?,
                         mobile: get(r, "phone_mobile")?,
                     },
+                    contact_blocked: get_bool(r, "contact_blocked")?,
                 })
             })
             .collect();
@@ -386,6 +387,33 @@ mod tests {
         let store = empty().await;
         store.import(&example::club(), false).await.unwrap();
         store
+    }
+
+    #[tokio::test]
+    async fn contact_block_round_trips_and_reaches_summaries() {
+        let store = filled().await;
+        let mut record = store.export().await.unwrap();
+        record.member_mut(GRETA).unwrap().contact_blocked = true;
+        let store = empty().await;
+        store.import(&record, false).await.unwrap();
+        assert!(
+            store
+                .export()
+                .await
+                .unwrap()
+                .member(GRETA)
+                .unwrap()
+                .contact_blocked
+        );
+        let summaries = store.active_members(at(2026, 10, 9, 12, 0)).await.unwrap();
+        let greta = summaries.iter().find(|m| m.id == GRETA).unwrap();
+        assert!(greta.contact_blocked);
+        assert!(
+            summaries
+                .iter()
+                .filter(|m| m.id != GRETA)
+                .all(|m| !m.contact_blocked)
+        );
     }
 
     #[tokio::test]

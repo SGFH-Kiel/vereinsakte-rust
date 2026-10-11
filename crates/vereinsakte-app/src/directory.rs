@@ -1,16 +1,16 @@
-//! Sichtmodell Mitgliederverzeichnis: Kontaktdaten nur für Mitglieder mit Amt.
+//! Sichtmodell Mitgliederverzeichnis: Kontaktdaten vereinsintern sichtbar,
+//! außer bei Sperrvermerk.
 
 use vereinsakte_core::member::MembershipType;
 use vereinsakte_core::office::Offices;
 
+use crate::contact::ContactInfo;
 use crate::error::AppError;
 
 use crate::service::{ClubService, CurrentUser, office_labels};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectoryView {
-    /// Sieht das angemeldete Mitglied Kontaktdaten?
-    pub show_contact: bool,
     /// Darf das Mitglied neue Mitglieder aufnehmen?
     pub can_manage: bool,
     pub query: String,
@@ -34,16 +34,10 @@ pub struct DirectoryEntry {
     pub licenses: Vec<String>,
     pub name: String,
     pub offices: Vec<String>,
-    /// Nur gesetzt, wenn das angemeldete Mitglied ein Amt hat.
-    pub contact: Option<Contact>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Contact {
     pub member_number: u32,
     pub membership_type: String,
-    pub email: Option<String>,
-    pub phones: Vec<String>,
+    /// E-Mail und Telefon oder „gesperrt“.
+    pub contact: ContactInfo,
 }
 
 impl ClubService {
@@ -75,7 +69,7 @@ impl ClubService {
         let active = self.store.active_offices(now).await?;
         let offices = Offices::new(&active);
         let boats = self.store.boats().await?;
-        let show_contact = offices.holds(user.member, now, |_| true);
+        let principal = self.principal(user).await?;
         let needle = query.trim().to_lowercase();
 
         let entries = self
@@ -100,24 +94,19 @@ impl ClubService {
                 licenses: m.sailing_licenses.clone(),
                 name: format!("{}, {}", m.last_name, m.first_name),
                 offices: office_labels(&offices, &boats, m.id, now),
-                contact: show_contact.then(|| Contact {
-                    member_number: m.id.get(),
-                    membership_type: m.membership_type.to_string(),
-                    email: m.email.clone(),
-                    phones: [&m.phone.landline, &m.phone.business, &m.phone.mobile]
-                        .into_iter()
-                        .flatten()
-                        .cloned()
-                        .collect(),
-                }),
+                member_number: m.id.get(),
+                membership_type: m.membership_type.to_string(),
+                contact: ContactInfo::of(
+                    &principal,
+                    m.id,
+                    m.contact_blocked,
+                    m.email.as_ref(),
+                    &m.phone,
+                ),
             })
             .collect();
-        let can_manage = self
-            .principal(user)
-            .await?
-            .can(&vereinsakte_core::rights::Capability::ManageMembers);
+        let can_manage = principal.can(&vereinsakte_core::rights::Capability::ManageMembers);
         Ok(DirectoryView {
-            show_contact,
             can_manage,
             membership_type: filter
                 .membership_type
@@ -132,7 +121,7 @@ impl ClubService {
 
 #[cfg(test)]
 mod tests {
-    use vereinsakte_core::example::{BEN, GRETA};
+    use vereinsakte_core::example::{BEN, EVA, GRETA, HANNES};
     use vereinsakte_core::time::club_time;
 
     use super::*;
@@ -158,31 +147,81 @@ mod tests {
         assert_eq!(names, sorted);
     }
 
+    fn entry<'a>(view: &'a DirectoryView, name: &str) -> &'a DirectoryEntry {
+        view.entries.iter().find(|e| e.name == name).unwrap()
+    }
+
     #[tokio::test]
-    async fn contact_data_only_for_office_holders() {
+    async fn contact_data_is_visible_to_every_member() {
         let (service, _) = service();
         let greta = service
             .directory(&CurrentUser { member: GRETA }, "")
             .await
             .unwrap();
-        assert!(!greta.show_contact);
-        assert!(greta.entries.iter().all(|e| e.contact.is_none()));
-        assert!(!format!("{greta:?}").contains("@example.org"));
+        // Mitglied ohne Amt sieht E-Mail und Telefon, Nummer und Art.
+        let anna = entry(&greta, "Petersen, Anna");
+        assert!(matches!(
+            &anna.contact,
+            ContactInfo::Visible { email: Some(email), .. } if email == "anna.petersen@example.org"
+        ));
+        assert_eq!(anna.member_number, 101);
+        assert!(!anna.membership_type.is_empty());
+    }
 
-        let ben = service
-            .directory(&CurrentUser { member: BEN }, "")
+    #[tokio::test]
+    async fn blocked_contact_is_hidden_except_for_self_and_board() {
+        let (service, _) = service();
+        // Hannes setzt den Sperrvermerk.
+        service
+            .set_contact_blocked(&CurrentUser { member: HANNES }, HANNES, true)
             .await
             .unwrap();
-        assert!(ben.show_contact);
-        let anna = ben
-            .entries
-            .iter()
-            .find(|e| e.name == "Petersen, Anna")
+        let name = "Petersen, Hannes";
+        for viewer in [GRETA, BEN] {
+            let view = service
+                .directory(&CurrentUser { member: viewer }, "")
+                .await
+                .unwrap();
+            assert_eq!(entry(&view, name).contact, ContactInfo::Blocked);
+            // Weder E-Mail noch Nummern tauchen im Sichtmodell auf.
+            let dump = format!("{:?}", entry(&view, name));
+            assert!(!dump.contains('@'), "{dump}");
+        }
+        for viewer in [HANNES, EVA] {
+            let view = service
+                .directory(&CurrentUser { member: viewer }, "")
+                .await
+                .unwrap();
+            assert!(matches!(
+                entry(&view, name).contact,
+                ContactInfo::Visible { .. }
+            ));
+        }
+        // Zurücknehmen macht sie wieder sichtbar.
+        service
+            .set_contact_blocked(&CurrentUser { member: HANNES }, HANNES, false)
+            .await
             .unwrap();
-        assert_eq!(
-            anna.contact.as_ref().unwrap().email.as_deref(),
-            Some("anna.petersen@example.org")
-        );
+        let view = service
+            .directory(&CurrentUser { member: GRETA }, "")
+            .await
+            .unwrap();
+        assert!(matches!(
+            entry(&view, name).contact,
+            ContactInfo::Visible { .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn only_the_member_sets_the_flag() {
+        let (service, _) = service();
+        for actor in [EVA, GRETA] {
+            let err = service
+                .set_contact_blocked(&CurrentUser { member: actor }, HANNES, true)
+                .await
+                .unwrap_err();
+            assert_eq!(err, AppError::Forbidden);
+        }
     }
 
     #[tokio::test]

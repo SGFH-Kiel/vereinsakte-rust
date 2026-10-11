@@ -52,7 +52,7 @@ pub trait AuditRepository: Send + Sync {
 }
 
 /// Alle Aktionsarten des Protokolls mit deutscher Bezeichnung.
-pub const ACTIONS: [(&str, &str); 38] = [
+pub const ACTIONS: [(&str, &str); 39] = [
     ("boat.block", "Boot gesperrt"),
     ("boat.unblock", "Sperre aufgehoben"),
     ("boat.release", "Boot für Saison freigegeben"),
@@ -75,6 +75,7 @@ pub const ACTIONS: [(&str, &str); 38] = [
     ("member.create", "Mitglied aufgenommen"),
     ("member.edit", "Mitglied geändert"),
     ("member.contact", "Kontaktdaten geändert"),
+    ("member.contact_block", "Sperrvermerk geändert"),
     ("member.leave", "Austritt erfasst"),
     ("member.expel", "Ausschluss erfasst"),
     ("member.license.add", "Schein oder Lizenz hinzugefügt"),
@@ -394,6 +395,10 @@ mod sweep {
             "member.contact",
             service.update_contact(&user(ANNA), ANNA, form.version, &contact)
         );
+        logged!(
+            "member.contact_block",
+            service.set_contact_blocked(&user(ANNA), ANNA, true)
+        );
         let input = |number| MemberInput {
             number,
             first_name: "Nora".into(),
@@ -655,6 +660,7 @@ mod sweep {
         refused!(service.block_boat(&user(GRETA), FILOU, "x", None, None));
         refused!(service.post_payment(&user(JONAS), ANNA, "-1".parse().unwrap(), None, ""));
         refused!(service.update_contact(&user(ANNA), ANNA, 999, &contact));
+        refused!(service.set_contact_blocked(&user(GRETA), ANNA, true));
         refused!(service.create_member(&user(GRETA), &input(None)));
         refused!(service.approve_compensation(&user(EVA), BEN, 2026, "5", None, ""));
     }

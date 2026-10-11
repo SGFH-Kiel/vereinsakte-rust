@@ -9,6 +9,7 @@ use vereinsakte_core::rights::Capability;
 use vereinsakte_core::time::{Timestamp, club_time};
 
 use crate::commands::audit;
+use crate::contact::ContactInfo;
 use crate::error::AppError;
 use crate::format;
 use crate::scope::{BoatScope, MemberScope, Scope};
@@ -20,6 +21,7 @@ pub struct OfficeRow {
     pub role: String,
     pub holder: String,
     pub holder_id: u32,
+    pub contact: ContactInfo,
     pub since: String,
     pub until: Option<String>,
     pub can_resign: bool,
@@ -106,6 +108,7 @@ impl ClubService {
         offices: &[&Office],
         boats: &[Boat],
         names: &dyn Fn(MemberId) -> String,
+        contacts: &dyn Fn(MemberId) -> ContactInfo,
         can_resign: &dyn Fn(MemberId) -> bool,
     ) -> Vec<OfficeRow> {
         let mut sorted: Vec<&Office> = offices.to_vec();
@@ -117,6 +120,7 @@ impl ClubService {
                 role: role_label(boats, o.role),
                 holder: names(o.member),
                 holder_id: o.member.get(),
+                contact: contacts(o.member),
                 since: format::date(o.start),
                 until: o.end.map(format::date),
                 can_resign: o.end.is_none() && can_resign(o.member),
@@ -140,6 +144,23 @@ impl ClubService {
                 .iter()
                 .find(|m| m.id == id)
                 .map_or_else(|| format!("Mitglied {id}"), |m| m.full_name())
+        };
+        let contact_of = |id: MemberId| {
+            members.iter().find(|m| m.id == id).map_or(
+                ContactInfo::Visible {
+                    email: None,
+                    phones: vec![],
+                },
+                |m| {
+                    ContactInfo::of(
+                        &principal,
+                        m.id,
+                        m.contact_blocked,
+                        m.email.as_ref(),
+                        &m.phone,
+                    )
+                },
+            )
         };
         let record = &scoped.record;
         let active: Vec<&Office> = record
@@ -168,7 +189,13 @@ impl ClubService {
                 .copied()
                 .filter(|o| section_of(o.role) == index)
                 .collect();
-            section.rows = self.office_rows(&of_section, &record.boats, &name_of, &can_resign);
+            section.rows = self.office_rows(
+                &of_section,
+                &record.boats,
+                &name_of,
+                &contact_of,
+                &can_resign,
+            );
         }
         let can_appoint = principal.can(&Capability::Appoint(Role::Chair));
         let mut role_options: Vec<(String, String)> = [
@@ -225,7 +252,13 @@ impl ClubService {
                 .find(|m| m.id == id)
                 .map_or_else(|| format!("Mitglied {id}"), |m| m.full_name())
         };
-        Ok(self.office_rows(&all, &record.boats, &name_of, &|_| false))
+        Ok(self.office_rows(
+            &all,
+            &record.boats,
+            &name_of,
+            &|_| ContactInfo::Blocked,
+            &|_| false,
+        ))
     }
 
     /// Ernennt ein aktives Mitglied; liefert Hinweise der Prüfung (Doppelbesetzung usw.).
@@ -456,6 +489,30 @@ mod tests {
         assert_eq!(log[0].summary, "Ernennung: Bootswart (Filou)");
         let again = service.appoint(&user(FRANK), GRETA, role, None).await;
         assert!(matches!(again, Err(AppError::Rejected(_))), "schon inne");
+    }
+
+    #[tokio::test]
+    async fn overview_shows_holder_contact_unless_blocked() {
+        let (service, _) = service();
+        let find = |view: &OfficesView, holder: u32| {
+            view.sections
+                .iter()
+                .flat_map(|s| &s.rows)
+                .find(|r| r.holder_id == holder)
+                .unwrap()
+                .contact
+                .clone()
+        };
+        let view = service.offices_view(&user(GRETA)).await.unwrap();
+        assert!(matches!(find(&view, 102), ContactInfo::Visible { .. }));
+        service
+            .set_contact_blocked(&user(BEN), BEN, true)
+            .await
+            .unwrap();
+        let view = service.offices_view(&user(GRETA)).await.unwrap();
+        assert_eq!(find(&view, 102), ContactInfo::Blocked);
+        let view = service.offices_view(&user(EVA)).await.unwrap();
+        assert!(matches!(find(&view, 102), ContactInfo::Visible { .. }));
     }
 
     #[tokio::test]

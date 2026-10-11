@@ -43,6 +43,8 @@ pub struct MemberSummary {
     pub membership_type: MembershipType,
     pub email: Option<String>,
     pub phone: PhoneNumbers,
+    /// Sperrvermerk für E-Mail und Telefonnummern.
+    pub contact_blocked: bool,
     /// Segelscheine als Text, z. B. „SKS“.
     pub sailing_licenses: Vec<String>,
 }
@@ -62,6 +64,7 @@ impl From<&Member> for MemberSummary {
             membership_type: m.membership_type,
             email: m.email.clone(),
             phone: m.phone.clone(),
+            contact_blocked: m.contact_blocked,
             sailing_licenses: m
                 .sailing_licenses
                 .iter()

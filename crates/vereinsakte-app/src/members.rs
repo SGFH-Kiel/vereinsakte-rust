@@ -1,6 +1,7 @@
 //! Mitglieder ansehen und verwalten: Mitgliedsseite, Kontaktdaten, Aufnahme,
 //! Stammdaten, Mitgliedschaftsverlauf sowie Segelscheine und Funklizenzen.
 
+use crate::contact::ContactInfo;
 use chrono::NaiveDate;
 use vereinsakte_core::ids::MemberId;
 use vereinsakte_core::member::{
@@ -30,7 +31,10 @@ pub struct MemberPage {
     pub joined: String,
     pub left: Option<String>,
     pub active: bool,
-    /// Kontakt, Segelerlaubnis, Stunden und Konto – nur mit `ReadMember`.
+    pub member_number: u32,
+    /// E-Mail und Telefon für alle aktiven Mitglieder, außer bei Sperrvermerk.
+    pub contact: ContactInfo,
+    /// Anschrift, Segelerlaubnis, Stunden und Konto – nur mit `ReadMember`.
     pub details: Option<MyDataView>,
     pub is_self: bool,
     pub can_edit_profile: bool,
@@ -223,8 +227,21 @@ impl ClubService {
         let offices = self.store.active_offices(now).await?;
         let boats = self.store.boats().await?;
         let labels = office_labels(&Offices::new(&offices), &boats, id, now);
+        let contact = ContactInfo::of(
+            &principal,
+            id,
+            member.contact_blocked,
+            member.email.as_ref(),
+            &member.phone,
+        );
         let details = if may_read {
-            Some(self.member_data(id).await?)
+            let mut data = self.member_data(id).await?;
+            if contact == ContactInfo::Blocked {
+                // Auch Revisoren lesen gesperrte Kontaktdaten nicht.
+                data.email = None;
+                data.phones.clear();
+            }
+            Some(data)
         } else {
             None
         };
@@ -237,6 +254,8 @@ impl ClubService {
             joined: format::date(member.membership.joined_at),
             left: ended.map(format::date),
             active,
+            member_number: id.get(),
+            contact,
             details,
             is_self: principal.member == id,
             can_edit_profile: principal.can(&Capability::EditProfile(id)),
@@ -331,6 +350,36 @@ impl ClubService {
             id,
             Some(id),
             format!("Kontaktdaten geändert: {}", changed.join(", ")),
+        );
+        self.save(&old, &new, vec![entry]).await
+    }
+
+    /// Sperrvermerk für die eigenen Kontaktdaten setzen oder entfernen. Nur das
+    /// Mitglied selbst darf das; E-Mail und Telefon bleiben für den Vorstand sichtbar.
+    pub async fn set_contact_blocked(
+        &self,
+        user: &CurrentUser,
+        id: MemberId,
+        blocked: bool,
+    ) -> Result<(), AppError> {
+        let principal = self.principal(user).await?;
+        if principal.member != id {
+            return Err(AppError::Forbidden);
+        }
+        let old = self.load_member(id).await?;
+        let mut new = old.record.clone();
+        let member = new.member_mut(id).expect("geladen");
+        if member.contact_blocked == blocked {
+            return Ok(());
+        }
+        member.contact_blocked = blocked;
+        let entry = audit(
+            &principal,
+            "member.contact_block",
+            "member",
+            id,
+            Some(id),
+            "Sperrvermerk geändert".to_string(),
         );
         self.save(&old, &new, vec![entry]).await
     }
@@ -720,6 +769,37 @@ mod tests {
         assert!(seen_by_eva.can_manage);
         let own = service.member_page(&user(GRETA), GRETA).await.unwrap();
         assert!(own.details.is_some() && own.is_self && own.can_edit_profile);
+    }
+
+    #[tokio::test]
+    async fn member_page_shows_contact_to_everyone_unless_blocked() {
+        use vereinsakte_core::example::LUKAS;
+        let (service, _) = service();
+        let page = service.member_page(&user(GRETA), CLARA).await.unwrap();
+        assert!(matches!(page.contact, ContactInfo::Visible { .. }));
+        assert_eq!(page.member_number, 103);
+        assert!(
+            page.details.is_none(),
+            "Anschrift und Konto bleiben verborgen"
+        );
+
+        service
+            .set_contact_blocked(&user(CLARA), CLARA, true)
+            .await
+            .unwrap();
+        let by_greta = service.member_page(&user(GRETA), CLARA).await.unwrap();
+        assert_eq!(by_greta.contact, ContactInfo::Blocked);
+        // Revisor liest die Details, aber nicht die gesperrten Kontaktdaten.
+        let by_auditor = service.member_page(&user(LUKAS), CLARA).await.unwrap();
+        let details = by_auditor.details.expect("Revisor liest Details");
+        assert!(details.email.is_none() && details.phones.is_empty());
+        assert_eq!(by_auditor.contact, ContactInfo::Blocked);
+        // Vorstand und das Mitglied selbst sehen sie.
+        for viewer in [EVA, CLARA] {
+            let page = service.member_page(&user(viewer), CLARA).await.unwrap();
+            assert!(matches!(page.contact, ContactInfo::Visible { .. }));
+            assert!(page.details.unwrap().email.is_some());
+        }
     }
 
     #[tokio::test]
