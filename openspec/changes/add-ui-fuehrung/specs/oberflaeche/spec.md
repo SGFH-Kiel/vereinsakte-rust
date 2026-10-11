@@ -240,3 +240,18 @@ Zahlen, Beträge und Daten SHALL nach ihrem Wert, Text nach deutscher Sortierrei
 #### Scenario: Aktionsspalte
 - **WHEN** eine Tabelle eine Aktionsspalte hat
 - **THEN** ist deren Kopf kein Sortierlink
+
+### Requirement: Bootstyp als Symbol
+Wo ein Boot in Listen, Karten und im Kalender erscheint, SHALL sein Bootstyp als Symbol dargestellt werden: ein Symbol für Jolle und eines für Dickschiff (Kielboot). Der genaue Typ mit Klasse, zum Beispiel „Kielboot · Matcher 37“, SHALL als Tooltip und als für Hilfstechnik lesbarer Text erscheinen; der Bootsname bleibt sichtbarer Text.
+
+#### Scenario: Bootsliste
+- **WHEN** die Bootsliste geöffnet wird
+- **THEN** zeigt die Zeile der Filou das Jollen-Symbol und die der Trigon das Dickschiff-Symbol, deren Tooltip „Kielboot · Matcher 37“ nennt
+
+#### Scenario: Kalendereintrag
+- **WHEN** eine Reservierung der Trigon im Kalender erscheint
+- **THEN** steht vor dem Bootsnamen das Dickschiff-Symbol mit demselben Tooltip
+
+#### Scenario: Hilfstechnik
+- **WHEN** ein Screenreader die Zeile vorliest
+- **THEN** nennt er „Kielboot, Matcher 37“ zusätzlich zum Namen
