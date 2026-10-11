@@ -14,9 +14,12 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 - **Listen kompakter**: Name mit Nebenzeile statt vieler Spalten, Initialen-Kreis bei Personen, Zustandsplaketten mit Symbol, Zeilenaktionen als Symbol-Schaltflächen mit Beschriftung für Hilfstechnik; sinnvolle leere Zustände mit nächstem Schritt.
 - **Formulare gegliedert**: Felder in benannten Abschnitten, Pflicht und Hinweis klar abgesetzt, Aktionsleiste am Ende (auf dem Handy am unteren Rand sichtbar).
 - **Auf den Normalfall optimiert**: Voreinstellungen und Standardansichten bedienen den häufigsten Fall (kommende Reservierungen und Termine, aktuelle Besetzung, laufende Saison); Ausnahmen sind einen Schritt entfernt.
+- **Filterleiste statt Filterzeile**: Suche und Filter des Mitgliederverzeichnisses (und weiterer Listen mit mehreren Filtern) stehen in einer Leiste neben der Liste, am Handy einklappbar.
+- **Alle Tabellen sortierbar** per Klick auf den Spaltenkopf (aufsteigend/absteigend, in der Adresse, ohne JavaScript; am Handy per Auswahl).
 - **Mitgliederliste mit Symbolen**: Segelscheine, Funkscheine und Mitgliedsart erscheinen als Symbole mit Tooltip statt als Text.
 - **Tour ergibt sich aus der Buchungsdauer**: das Tour-Kennzeichen im Reservierungsformular entfällt; eine Reservierung gilt als Tour, sobald sie mindestens eine Übernachtung umfasst. **BREAKING** für Formular und gespeichertes Kennzeichen (wird ignoriert und aus dem Zeitraum berechnet).
-- **Kalender und Liste**: Reservierungen und Arbeitstermine sind wahlweise als Liste oder als Kalender (Monat/Woche) darstellbar, mit gleichen Filtern und verlinkbarer Adresse.
+- **Neuer Bereich „Kalender“** statt „Reservierungen“: zeigt Reservierungen und Arbeitstermine gemeinsam, wahlweise als Liste (nach Woche und Tag gruppiert) oder als Kalender (Monat/Woche), mit Filtern und verlinkbarer Adresse. Arbeitstermine sind durch Symbol, Beschriftung und Form klar von Reservierungen unterscheidbar. Reservieren geschieht über das Boot (Bootsseite und -liste), es gibt keinen Menüpunkt „Reservierungen“ mehr.
+- **Farbthema der Segelgruppe**: Marineblau, Blau, Cyan und Gelb nach der Vereinswebseite, mit Dunkelvariante und geprüftem Kontrast.
 - **Archiv statt Altlasten**: nicht mehr aktuelle Datensätze (beendete Ämter, ausgeschiedene Mitglieder, aufgehobene Sperren, vergangene Reservierungen und Arbeitstermine) verschwinden aus den Tagesansichten und stehen nur noch im Archiv beim Protokoll.
 - Aufgaben als Kanban-Board mit Kommentaren, Bildern und Markdown-Beschreibung sind **nicht** Teil dieser Änderung, sondern die eigene Änderung `add-aufgabenboard`; hier erscheinen „Aufgaben“ nur als Menüpunkt auf oberster Ebene.
 - Keine Änderung an Rechten, Fachregeln, Adressen oder Datenhaltung. Alle bisherigen Funktionen bleiben erreichbar.
@@ -29,10 +32,10 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 
 ### Modified Capabilities
 
-- `oberflaeche`: Navigation (Gruppen, Symbole, Tab-Leiste, Kontomenü, „Aufgaben“ oben), Startseite (Aufgabenhinweise, Fortschritt); neue Anforderungen für Symbolsatz, Typografie, Seitenaufbau mit einer Hauptaktion, eingeklappte Seltenaktionen, kompakte Listen, gegliederte Formulare, Normalfall-Optimierung, Kalender-/Listenumschaltung und Archiv.
+- `oberflaeche`: Navigation (Gruppen, Symbole, Tab-Leiste, Kontomenü, „Kalender“ statt „Reservierungen“, „Aufgaben“ oben), Startseite (Aufgabenhinweise, Fortschritt); neue Anforderungen für Symbolsatz, Typografie, Seitenaufbau mit einer Hauptaktion, eingeklappte Seltenaktionen, kompakte Listen, gegliederte Formulare, Normalfall-Optimierung, Kalenderbereich mit Liste/Kalender, Gruppierung nach Tagen, Unterscheidung der Eintragsarten, Farbthema und Archiv.
 - `bootsreservierung`: Tour-Kennzeichen wird aus der Dauer abgeleitet statt angegeben.
-- `reservierungsverwaltung`: Kalender- und Listenansicht (Kalender bisher nur in der Spec, nicht umgesetzt), Anlegen ohne Tour-Angabe, Standardzeitraum „kommende“.
-- `arbeitsverwaltung`: Arbeitstermine als Liste und Kalender, Standardansicht „kommende“.
+- `reservierungsverwaltung`: Reservierungen erscheinen im Bereich Kalender (Kalender bisher nur in der Spec, nicht umgesetzt), Anlegen vom Boot aus ohne Tour-Angabe, Standardzeitraum „kommende“.
+- `arbeitsverwaltung`: Arbeitstermine erscheinen im Bereich Kalender, Standardansicht „kommende“.
 - `amtsverwaltung`: beendete Ämter nur noch im Archiv statt in einer eigenen Amtshistorie.
 - `mitgliederverzeichnis`: Scheine, Funklizenzen und Mitgliedsart als Symbole mit Tooltip.
 - `tourgebuehren`: „gekennzeichnet“ wird zu „gilt als Tour“.
