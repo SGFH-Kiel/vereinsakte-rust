@@ -1,41 +1,34 @@
 ## ADDED Requirements
 
-### Requirement: Liste der Skipper eines Bootes
-Die Bootsseite SHALL für alle aktiven Mitglieder die Liste der aktiven Mitglieder zeigen, die das Boot nach Qualifikation als Skipper führen dürfen, das heißt eine nicht ruhende Bootserlaubnis für dieses Boot haben und die Skipper-Anforderungen des Bootes erfüllen. Die Liste SHALL die Segelerlaubnis der Saison weder auswerten noch anzeigen und stattdessen darauf hinweisen, dass sie zusätzlich nötig ist. Sie SHALL nach Name sortiert sein und durch Klick auf Spaltenköpfe sortierbar bleiben.
+### Requirement: Liste der Mitglieder mit Bootserlaubnis
+Die Bootsseite SHALL für alle aktiven Mitglieder die Liste der aktiven Mitglieder zeigen, denen die Bootserlaubnis für dieses Boot erteilt und nicht widerrufen wurde. Weitere Voraussetzungen (Skipper-Anforderungen, Scheine, Segelerlaubnis, Meldeadresse) SHALL für die Liste keine Rolle spielen. Die Liste SHALL nach Name sortiert und durch Klick auf Spaltenköpfe sortierbar sein.
 
-#### Scenario: Skipper der Filou
-- **WHEN** Greta die Bootsseite der Filou öffnet
-- **THEN** sieht sie David und die anderen Mitglieder mit bestandener Abnahme für die Filou, jeweils mit Namenslink
+#### Scenario: Erteilte Erlaubnis
+- **WHEN** Greta die Bootsseite der Filou öffnet und David die Abnahme der Filou bestanden hat
+- **THEN** steht David in der Liste, mit Link zu seinem Profil
 
-#### Scenario: Skipper-Anforderungen
-- **WHEN** die Dehler 31 SKS, SBF See und SRC verlangt und Clara SKS und SBF See, aber kein SRC hat
-- **THEN** erscheint Clara nicht in der Skipperliste der Dehler
+#### Scenario: Widerrufene Erlaubnis
+- **WHEN** die Bootserlaubnis eines Mitglieds für die Filou widerrufen wurde
+- **THEN** steht es nicht in der Liste
 
-#### Scenario: Segelerlaubnis nicht sichtbar
-- **WHEN** ein Mitglied die Bootserlaubnis hat, aber 2026 keine Segelerlaubnis
-- **THEN** erscheint es trotzdem in der Liste, und ein Hinweis nennt die Segelerlaubnis als zusätzliche Voraussetzung
+#### Scenario: Nicht bestandene Abnahme
+- **WHEN** ein Mitglied die Abnahme der Filou nicht bestanden hat
+- **THEN** steht es nicht in der Liste
 
-#### Scenario: Ruhende Erlaubnis
-- **WHEN** ein Mitglied eine ungültige Meldeadresse hat
-- **THEN** erscheint es nicht in der Liste
+#### Scenario: Weitere Voraussetzungen unerheblich
+- **WHEN** ein Mitglied die Bootserlaubnis für die Dehler 31 hat, aber den geforderten Funkschein nicht besitzt
+- **THEN** steht es trotzdem in der Liste der Dehler 31
 
-### Requirement: Liste der Co-Skipper eines Bootes
-Die Bootsseite SHALL zusätzlich je Fahrtgebiet mit Besatzungsregel die aktiven Mitglieder auflisten, die die Co-Skipper-Anforderungen dieser Regel erfüllen, ohne die Segelerlaubnis auszuwerten. Ein Fahrtgebiet ohne Co-Skipper-Anforderungen SHALL darauf hinweisen, dass kein zusätzlicher Nachweis verlangt wird.
-
-#### Scenario: Co-Skipper außerhalb
-- **WHEN** die Regel „außerhalb“ der Dehler 31 vom Co-Skipper [Bootserlaubnis „Harald Blauzahn“] und [SBF See] verlangt
-- **THEN** listet die Bootsseite unter „außerhalb“ die Mitglieder, die beides haben
-
-#### Scenario: Fahrtgebiet ohne Anforderung
-- **WHEN** die Regel für das Heimrevier keine Co-Skipper-Anforderung enthält
-- **THEN** steht dort „kein zusätzlicher Nachweis nötig“ statt einer Mitgliederliste
+#### Scenario: Ausgeschiedene
+- **WHEN** ein Mitglied mit Bootserlaubnis aus dem Verein ausgeschieden ist
+- **THEN** steht es nicht in der Liste
 
 ### Requirement: Kontaktaufnahme aus der Liste
-Zu jedem Eintrag der Skipper- und Co-Skipper-Listen SHALL der Name zur Profilseite führen und E-Mail sowie Telefonnummer nach der Spec `mitgliederverzeichnis` erscheinen, bei gesetztem Sperrvermerk als „Kontaktdaten gesperrt“. Die Liste SHALL nach Segelschein, Funklizenz und Mitgliedsart als Symbole zeigen.
+Zu jedem Eintrag der Liste SHALL der Name zur Profilseite führen und E-Mail sowie Telefonnummer nach der Spec `mitgliederverzeichnis` erscheinen, bei gesetztem Sperrvermerk als „Kontaktdaten gesperrt“. Die Liste SHALL Segelscheine, Funklizenzen und Mitgliedsart als Symbole zeigen.
 
 #### Scenario: Kontakt sichtbar
 - **WHEN** Greta die Liste der Filou öffnet
-- **THEN** stehen bei den Skippern ihre E-Mail und Telefonnummern, sofern kein Sperrvermerk gesetzt ist
+- **THEN** stehen bei den Mitgliedern E-Mail und Telefonnummern, sofern kein Sperrvermerk gesetzt ist
 
 #### Scenario: Gesperrt
 - **WHEN** David den Sperrvermerk gesetzt hat
