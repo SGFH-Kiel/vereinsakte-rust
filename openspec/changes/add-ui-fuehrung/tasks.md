@@ -8,6 +8,8 @@
 
 - [ ] 1.4 Sortierbaustein: `sort`/`dir` in `ListQuery`, deutscher Textvergleich, Makro `th_sort` mit Symbol und `aria-sort`, Auswahl „Sortieren nach“ für die Kartenansicht; Unit-Tests für Umlaute (Möller zwischen Lorenzen und Petersen), Beträge, Daten und unbekannte Schlüssel.
 
+- [ ] 1.5 `PersonRef` in den Views und Makro `person`, Stil für Personenlinks; Unit-Test: aktives Mitglied → Link, Gast und Ausgeschiedener → Text.
+
 ## 2. Navigation und Rahmen
 
 - [ ] 2.1 `pages.rs::navigation` liefert Gruppen (Persönlich, Verein, Verwaltung) mit Symbol, Ziel und Beschriftung nach Rechten sowie Initialen des Mitglieds; Unit-Test: Greta ohne „Finanzen“, Eva mit „Finanzen“, Gruppenreihenfolge, „Kalender“ statt „Reservierungen“ und „Aufgaben“ in der Gruppe Verein.
@@ -44,6 +46,8 @@
 
 - [ ] 7.1 Tagesansichten auf Aktuelles beschränken (Ämter, Mitgliedsseiten, Sperren, Reservierungen, Termine); Test: beendetes Amt fehlt in Ämterübersicht, Mitgliedsseite und Liste.
 - [ ] 7.2 Seite `/protokoll/archiv` mit Reitern und Filtern für Art und Zeitraum, Zugriff Vorstand und Revisoren, `/aemter/historie` leitet um; Tests: Ben gibt Amt ab → erscheint im Archiv, Greta erhält 403, Filter nach Reservierungen 2025, stornierte Forderung bleibt im Konto sichtbar.
+
+- [ ] 7.3 Alle Stellen mit Personennamen auf `PersonRef` umstellen (Verzeichnis, Ämter, Reservierungen, Kalender, Aufgaben, Bestätigungen, Arbeitsübersicht, Konten, Protokoll, Archiv, Kontomenü); Test: auf jeder Seite des End-to-End-Laufs, die den Namen eines aktiven Mitglieds zeigt, steht ein Link `/mitglieder/{nr}`; „Max Gast“ bleibt Text.
 
 ## 8. Formulare
 

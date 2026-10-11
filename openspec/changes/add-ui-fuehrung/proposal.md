@@ -15,6 +15,7 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 - **Formulare gegliedert**: Felder in benannten Abschnitten, Pflicht und Hinweis klar abgesetzt, Aktionsleiste am Ende (auf dem Handy am unteren Rand sichtbar).
 - **Auf den Normalfall optimiert**: Voreinstellungen und Standardansichten bedienen den häufigsten Fall (kommende Reservierungen und Termine, aktuelle Besetzung, laufende Saison); Ausnahmen sind einen Schritt entfernt.
 - **Filterleiste statt Filterzeile**: Suche und Filter des Mitgliederverzeichnisses (und weiterer Listen mit mehreren Filtern) stehen in einer Leiste neben der Liste, am Handy einklappbar.
+- **Namen sind Links**: Jeder Mitgliedsname führt zur Profilseite der Person (Gäste und Ausgeschiedene bleiben Text).
 - **Alle Tabellen sortierbar** per Klick auf den Spaltenkopf (aufsteigend/absteigend, in der Adresse, ohne JavaScript; am Handy per Auswahl).
 - **Mitgliederliste mit Symbolen**: Segelscheine, Funkscheine und Mitgliedsart erscheinen als Symbole mit Tooltip statt als Text. Ebenso der Bootstyp (zwei Symbole: Jolle, Dickschiff; der genaue Typ mit Klasse im Tooltip).
 - **Tour ergibt sich aus der Buchungsdauer**: das Tour-Kennzeichen im Reservierungsformular entfällt; eine Reservierung gilt als Tour, sobald sie mindestens eine Übernachtung umfasst. **BREAKING** für Formular und gespeichertes Kennzeichen (wird ignoriert und aus dem Zeitraum berechnet).

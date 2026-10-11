@@ -255,3 +255,18 @@ Wo ein Boot in Listen, Karten und im Kalender erscheint, SHALL sein Bootstyp als
 #### Scenario: Hilfstechnik
 - **WHEN** ein Screenreader die Zeile vorliest
 - **THEN** nennt er „Kielboot, Matcher 37“ zusätzlich zum Namen
+
+### Requirement: Personennamen als Links
+Überall, wo der Name eines Mitglieds erscheint (Listen, Karten, Kalender, Reservierungen, Ämter, Aufgaben, Bestätigungen, Konten, Protokoll, Kontomenü), SHALL der Name ein Link zur Profilseite dieses Mitglieds sein. Namen von Personen ohne Profilseite (Gäste, ausgeschiedene Mitglieder, Namen im Protokolltext von gelöschten Datensätzen) SHALL als einfacher Text erscheinen. Der Link SHALL einen unterscheidbaren Fokus haben und in Tabellen und Karten die Zeile nicht als Ganzes verlinken.
+
+#### Scenario: Skipper in der Reservierung
+- **WHEN** eine Reservierung mit Skipper Anna und Gast „Max Gast“ angezeigt wird
+- **THEN** ist „Anna Petersen“ ein Link zu ihrer Profilseite und „Max Gast“ einfacher Text
+
+#### Scenario: Eigener Name
+- **WHEN** Anna im Kontomenü ihren Namen anklickt
+- **THEN** öffnet ihre Profilseite
+
+#### Scenario: Ausgeschiedenes Mitglied
+- **WHEN** das Protokoll einen Eintrag eines ausgeschiedenen Mitglieds zeigt
+- **THEN** erscheint dessen Name als Text ohne Link
