@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="page-head"><div><h1>Arbeit</h1><p class="muted">Stunden aller Mitglieder {{ v.year }}</p></div></div>
+{% include "_work_nav.html" %}
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+<form method="get" action="/arbeit/uebersicht" class="filters">
+  {{ f::field("jahr", "Jahr", v.year, "", "number", "") }}
+  <label class="check"><input type="checkbox" name="rueckstand" value="1"{% if deficit %} checked{% endif %}> nur mit Rückstand</label>
+  <button type="submit" class="primary">Filtern</button>
+</form>
+<section class="card">
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Mitglied</th><th class="num">Soll</th><th class="num">Angerechnet</th><th>Stand</th></tr></thead>
+    <tbody>
+    {% for r in v.rows %}
+      <tr>
+        <td data-label="Mitglied"><a href="/mitglieder/{{ r.id }}">{{ r.name }}</a></td>
+        <td data-label="Soll" class="num">{{ r.required }}</td><td data-label="Angerechnet" class="num">{{ r.credited }}</td>
+        <td data-label="Stand">{% if let Some(missing) = r.missing %}<span class="badge warn">{{ missing }}</span>{% else %}<span class="badge ok">✓ erfüllt</span>{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4">Keine Mitglieder gefunden.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% if v.can_grant %}
+<div class="grid cols-2">
+<section class="card">
+  <h2>Stunden übertragen</h2>
+  <form method="post" action="/arbeit/uebertrag" class="form-grid">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}"><input type="hidden" name="year" value="{{ v.year }}">
+    <div class="field"><label for="f-from">Von</label><select id="f-from" name="from">{% for (n, name) in v.members %}<option value="{{ n }}">{{ name }}</option>{% endfor %}</select></div>
+    <div class="field{% if !errors.get("to").is_empty() %} has-error{% endif %}"><label for="f-to">An</label><select id="f-to" name="to">{% for (n, name) in v.members %}<option value="{{ n }}">{{ name }}</option>{% endfor %}</select>
+      {% if !errors.get("to").is_empty() %}<span class="error-text">{{ errors.get("to") }}</span>{% endif %}</div>
+    {{ f::field("hours", "Stunden", "", errors.get("hours"), "text", "") }}
+    {{ f::field("description", "Beschreibung (optional)", "", "", "text", "") }}
+    <div class="form-actions"><button type="submit" class="primary">Übertragen</button></div>
+  </form>
+</section>
+<section class="card">
+  <h2>Abgeltung genehmigen</h2>
+  <p class="muted">Stundensatz der Saison: {{ v.rate }} je Stunde. Es entsteht eine Forderung im Konto.</p>
+  <form method="post" action="/arbeit/abgeltung" class="form-grid">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}"><input type="hidden" name="year" value="{{ v.year }}">
+    <div class="field"><label for="f-cm">Mitglied</label><select id="f-cm" name="member">{% for (n, name) in v.members %}<option value="{{ n }}">{{ name }}</option>{% endfor %}</select></div>
+    {{ f::field("comp_hours", "Stunden", "", errors.get("comp_hours"), "text", "") }}
+    {{ f::field("amount", "Betrag in € (optional)", "", errors.get("amount"), "text", "leer lassen: Stunden × Stundensatz") }}
+    {{ f::field("reason", "Begründung (optional)", "", "", "text", "") }}
+    <div class="form-actions"><button type="submit" class="primary">Genehmigen</button></div>
+  </form>
+</section>
+</div>
+{% endif %}
+{% endblock %}

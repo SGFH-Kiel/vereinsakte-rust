@@ -67,6 +67,7 @@ fn navigation(_principal: &Principal, path: &str) -> Vec<NavItem> {
         ("/meine-daten", "Meine Daten"),
         ("/mitglieder", "Mitglieder"),
         ("/boote", "Boote"),
+        ("/arbeit", "Arbeit"),
         ("/aemter", "Ämter"),
     ]
     .into_iter()
@@ -139,6 +140,9 @@ pub fn render(template: &impl Template) -> Result<Response, WebError> {
 struct StartPage {
     layout: Layout,
     v: MyDataView,
+    confirmations: usize,
+    events: Vec<vereinsakte_app::work::EventLine>,
+    tasks: Vec<vereinsakte_app::work::TaskLine>,
 }
 
 /// Startseite: die nächsten Schritte des angemeldeten Mitglieds.
@@ -148,8 +152,38 @@ pub async fn home(
     RequireUser(user): RequireUser,
 ) -> Result<Response, WebError> {
     let v = state.club.my_data(&user).await?;
+    let principal = state.club.principal(&user).await?;
+    let confirmations = if principal.has_office() {
+        state.club.open_confirmations(&user).await?.len()
+    } else {
+        0
+    };
+    let events: Vec<_> = state
+        .club
+        .events_view(&user)
+        .await?
+        .events
+        .into_iter()
+        .filter(|e| !e.past)
+        .take(3)
+        .collect();
+    let tasks: Vec<_> = state
+        .club
+        .tasks_view(&user)
+        .await?
+        .tasks
+        .into_iter()
+        .filter(|t| t.status_key != "done" && t.can_update && !t.assignees.is_empty())
+        .filter(|t| t.assignees.contains(&principal.name))
+        .collect();
     let layout = Layout::build(&state, &session, Some(&user), "Start", "/").await?;
-    render(&StartPage { layout, v })
+    render(&StartPage {
+        layout,
+        v,
+        confirmations,
+        events,
+        tasks,
+    })
 }
 
 #[derive(Template)]

@@ -13,6 +13,7 @@ mod pages;
 mod router;
 pub mod session;
 pub mod state;
+mod work;
 
 pub use router::router;
 pub use state::{AppState, Settings};

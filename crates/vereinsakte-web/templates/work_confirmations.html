@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Arbeit</h1><p class="muted">Offene Bestätigungen</p></div></div>
+{% include "_work_nav.html" %}
+<section class="card">
+  {% if lines.is_empty() %}<p>Es gibt nichts zu bestätigen.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Mitglied</th><th>Datum</th><th class="num">Stunden</th><th>Gegenstand</th><th>Beschreibung</th><th></th></tr></thead>
+    <tbody>
+    {% for e in lines %}
+      <tr>
+        <td data-label="Mitglied">{{ e.member }}</td><td data-label="Datum">{{ e.date }}</td><td data-label="Stunden" class="num">{{ e.hours }}</td>
+        <td data-label="Gegenstand">{{ e.subject }}</td><td data-label="Beschreibung">{{ e.description }}</td>
+        <td data-label=""><form method="post" action="/arbeit/einsaetze/{{ e.id }}/bestaetigen" class="inline">
+          <input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary small">Bestätigen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

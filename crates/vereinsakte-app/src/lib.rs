@@ -9,6 +9,7 @@ pub mod commands;
 pub mod directory;
 pub mod error;
 pub mod format;
+pub mod hours;
 pub mod members;
 pub mod memory;
 pub mod my_data;
@@ -17,6 +18,8 @@ pub mod ports;
 pub mod principal;
 pub mod scope;
 pub mod service;
+pub mod work;
+pub mod work_plan;
 
 pub use error::{AppError, FieldError};
 pub use principal::Principal;

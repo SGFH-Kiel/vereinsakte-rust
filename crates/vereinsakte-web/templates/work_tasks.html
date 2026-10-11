@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="page-head"><div><h1>Arbeit</h1><p class="muted">Aufgaben</p></div></div>
+{% include "_work_nav.html" %}
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+{% for t in v.tasks %}
+<section class="card">
+  <h2>{{ t.title }} <span class="badge {% if t.status_key == "done" %}ok{% else if t.status_key == "in_progress" %}info{% else %}warn{% endif %}">{{ t.status }}</span></h2>
+  {% if !t.description.is_empty() %}<p>{{ t.description }}</p>{% endif %}
+  <dl>
+    <dt>Zuständig</dt><dd>{% if t.assignees.is_empty() %}noch niemand{% else %}{{ t.assignees|join(", ") }}{% endif %}</dd>
+    {% if !t.boat.is_empty() %}<dt>Boot</dt><dd>{{ t.boat }}</dd>{% endif %}
+    {% if !t.due.is_empty() %}<dt>Fällig</dt><dd>{{ t.due }}</dd>{% endif %}
+    <dt>Erfasste Stunden</dt><dd>{{ t.hours }}</dd>
+  </dl>
+  <div class="actions">
+  {% if t.can_update %}
+    <form method="post" action="/arbeit/aufgaben/{{ t.id }}/status" class="inline">
+      <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+      <select name="status" aria-label="Status">
+        <option value="open"{% if t.status_key == "open" %} selected{% endif %}>offen</option>
+        <option value="in_progress"{% if t.status_key == "in_progress" %} selected{% endif %}>in Arbeit</option>
+        <option value="done"{% if t.status_key == "done" %} selected{% endif %}>erledigt</option>
+      </select>
+      <button type="submit" class="small">Status setzen</button>
+    </form>
+  {% endif %}
+  {% if v.can_manage %}
+    <form method="post" action="/arbeit/aufgaben/{{ t.id }}/zuweisen" class="inline">
+      <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+      <select name="member" aria-label="Mitglied">{% for (number, name) in v.members %}<option value="{{ number }}">{{ name }}</option>{% endfor %}</select>
+      <button type="submit" class="small">Zuweisen</button>
+    </form>
+  {% endif %}
+  </div>
+</section>
+{% else %}
+<section class="card"><p>Es gibt keine Aufgaben.</p></section>
+{% endfor %}
+{% if v.can_manage %}
+<section class="card">
+  <h2>Aufgabe anlegen</h2>
+  <form method="post" action="/arbeit/aufgaben" class="form-grid cols-2">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    {{ f::field("title", "Titel", form.title, errors.get("title"), "text", "") }}
+    {{ f::field("due", "Fällig am (optional)", form.due, errors.get("due"), "date", "") }}
+    {{ f::field("hours", "Geschätzte Stunden (optional)", form.hours, errors.get("hours"), "text", "") }}
+    <div class="field"><label for="f-boat">Boot (optional)</label>
+      <select id="f-boat" name="boat"><option value="">kein bestimmtes Boot</option>{% for (key, label) in v.boats %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+    {{ f::field("description", "Beschreibung", form.description, "", "text", "") }}
+    <div class="form-actions wide"><button type="submit" class="primary">Anlegen</button></div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

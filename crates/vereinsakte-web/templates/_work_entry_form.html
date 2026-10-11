@@ -1,0 +1,25 @@
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+<form method="post" action="{{ action }}" class="form-grid cols-2">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  {{ f::field("date", "Datum", form.date, errors.get("date"), "date", "") }}
+  {{ f::field("hours", "Stunden", form.hours, errors.get("hours"), "text", "z. B. 2,5 – oder stattdessen einen Zeitraum angeben") }}
+  {{ f::field("start", "Beginn (optional)", form.start, errors.get("start"), "time", "") }}
+  {{ f::field("end", "Ende (optional)", form.end, errors.get("end"), "time", "") }}
+  <div class="field{% if !errors.get("subject").is_empty() %} has-error{% endif %}">
+    <label for="f-subject">Gegenstand</label>
+    <select id="f-subject" name="subject">
+      {% for (key, label) in subjects %}<option value="{{ key }}"{% if *key == form.subject %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    {% if !errors.get("subject").is_empty() %}<span class="error-text">{{ errors.get("subject") }}</span>{% endif %}
+  </div>
+  <div class="field">
+    <label for="f-reference">Bezug (optional)</label>
+    <select id="f-reference" name="reference">
+      <option value="">kein Bezug</option>
+      {% for (key, label) in references %}<option value="{{ key }}"{% if *key == form.reference %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  {{ f::field("description", "Beschreibung", form.description, errors.get("description"), "text", "") }}
+  <div class="form-actions wide"><button type="submit" class="primary">Speichern</button></div>
+</form>

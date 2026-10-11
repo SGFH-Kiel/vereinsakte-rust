@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="breadcrumbs"><a href="/arbeit">Arbeit</a> › Einsatz ändern</div>
+<div class="page-head"><h1>Einsatz ändern</h1></div>
+<p class="notice">Eine Änderung hebt die Bestätigung auf, falls der Einsatz schon bestätigt war.</p>
+<section class="card">
+{% include "_work_entry_form.html" %}
+</section>
+{% endblock %}

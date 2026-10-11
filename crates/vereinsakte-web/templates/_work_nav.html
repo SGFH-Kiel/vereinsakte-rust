@@ -1,0 +1,7 @@
+<nav class="subnav" aria-label="Arbeit">
+  <a href="/arbeit"{% if nav.current == "stunden" %} aria-current="page"{% endif %}>Meine Stunden</a>
+  <a href="/arbeit/termine"{% if nav.current == "termine" %} aria-current="page"{% endif %}>Arbeitstermine</a>
+  <a href="/arbeit/aufgaben"{% if nav.current == "aufgaben" %} aria-current="page"{% endif %}>Aufgaben</a>
+  {% if nav.confirm %}<a href="/arbeit/bestaetigungen"{% if nav.current == "bestaetigungen" %} aria-current="page"{% endif %}>Bestätigungen</a>{% endif %}
+  {% if nav.all %}<a href="/arbeit/uebersicht"{% if nav.current == "uebersicht" %} aria-current="page"{% endif %}>Alle Mitglieder</a>{% endif %}
+</nav>

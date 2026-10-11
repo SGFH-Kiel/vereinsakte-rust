@@ -9,6 +9,7 @@ use chrono::NaiveDate;
 use tower_sessions::Session;
 use vereinsakte_core::money::Money;
 
+use crate::error::WebError;
 use crate::session::{FlashKind, flash};
 
 /// Fehlermeldungen je Formularfeld (auf Deutsch) plus allgemeine Meldungen.
@@ -60,6 +61,24 @@ impl FieldErrors {
                 None
             }
         }
+    }
+}
+
+/// Feldfehler aus einer abgelehnten Eingabe; andere Fehler gehen weiter.
+pub fn errors_from(error: vereinsakte_app::AppError) -> Result<FieldErrors, WebError> {
+    match error {
+        vereinsakte_app::AppError::Rejected(list) => {
+            let mut errors = FieldErrors::new();
+            for e in list {
+                if e.field.is_empty() {
+                    errors.add_general(e.message);
+                } else {
+                    errors.add(&e.field, e.message);
+                }
+            }
+            Ok(errors)
+        }
+        other => Err(other.into()),
     }
 }
 

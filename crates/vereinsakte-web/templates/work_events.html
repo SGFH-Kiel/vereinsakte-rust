@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="page-head"><div><h1>Arbeit</h1><p class="muted">Arbeitstermine</p></div></div>
+{% include "_work_nav.html" %}
+{% for e in v.events %}
+<section class="card">
+  <h2>{{ e.title }}{% if e.past %} <span class="badge">vorbei</span>{% endif %}</h2>
+  <p>{{ e.when }}{% if !e.location.is_empty() %} · {{ e.location }}{% endif %}{% if !e.boat.is_empty() %} · Boot {{ e.boat }}{% endif %}</p>
+  {% if !e.description.is_empty() %}<p>{{ e.description }}</p>{% endif %}
+  <p>
+    {% if e.full %}<span class="badge warn">ausgebucht</span>{% else %}<span class="badge info">frei</span>{% endif %}
+    {{ e.registered }}{% if let Some(max) = e.max %} von {{ max }}{% endif %} angemeldet{% if !e.participants.is_empty() %}: {{ e.participants|join(", ") }}{% endif %}
+  </p>
+  <div class="actions">
+    {% if !e.past %}
+      {% if e.mine %}
+      <form method="post" action="/arbeit/termine/{{ e.id }}/abmelden"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit">Abmelden</button></form>
+      {% else if !e.full %}
+      <form method="post" action="/arbeit/termine/{{ e.id }}/anmelden"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary">Anmelden</button></form>
+      {% endif %}
+    {% endif %}
+    {% if v.can_manage %}<a class="btn" href="/arbeit/termine/{{ e.id }}/bearbeiten">Bearbeiten</a>{% endif %}
+  </div>
+  <p class="muted">Die Anmeldung schreibt keine Stunden gut; bitte nach dem Termin einen Einsatz erfassen.</p>
+</section>
+{% else %}
+<section class="card"><p>Derzeit sind keine Arbeitstermine angekündigt.</p></section>
+{% endfor %}
+{% if v.can_manage %}
+<section class="card">
+  <h2>Termin anlegen</h2>
+  {% include "_event_form.html" %}
+</section>
+{% endif %}
+{% endblock %}

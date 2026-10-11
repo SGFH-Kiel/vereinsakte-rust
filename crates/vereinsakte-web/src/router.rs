@@ -13,7 +13,7 @@ use tower_sessions::{Expiry, SessionManagerLayer, SessionStore};
 use crate::error::not_found;
 use crate::session::csrf_guard;
 use crate::state::AppState;
-use crate::{boats, login, members, offices, pages};
+use crate::{boats, login, members, offices, pages, work};
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
                    form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
@@ -64,6 +64,31 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/boote/{id}/freigabe", post(boats::release))
         .route("/boote/{id}/abnahme", post(boats::checkout))
         .route("/boote/{id}/widerruf", post(boats::revoke))
+        .route("/arbeit", get(work::hours))
+        .route("/arbeit/einsaetze", post(work::add_entry))
+        .route(
+            "/arbeit/einsaetze/{id}/bearbeiten",
+            get(work::edit_entry).post(work::edit_entry_submit),
+        )
+        .route("/arbeit/einsaetze/{id}/loeschen", post(work::delete_entry))
+        .route("/arbeit/einsaetze/{id}/bestaetigen", post(work::confirm))
+        .route("/arbeit/bestaetigungen", get(work::confirmations))
+        .route(
+            "/arbeit/termine",
+            get(work::events).post(work::create_event),
+        )
+        .route(
+            "/arbeit/termine/{id}/bearbeiten",
+            get(work::edit_event).post(work::edit_event_submit),
+        )
+        .route("/arbeit/termine/{id}/anmelden", post(work::register))
+        .route("/arbeit/termine/{id}/abmelden", post(work::unregister))
+        .route("/arbeit/aufgaben", get(work::tasks).post(work::create_task))
+        .route("/arbeit/aufgaben/{id}/zuweisen", post(work::assign_task))
+        .route("/arbeit/aufgaben/{id}/status", post(work::task_status))
+        .route("/arbeit/uebersicht", get(work::overview))
+        .route("/arbeit/uebertrag", post(work::transfer))
+        .route("/arbeit/abgeltung", post(work::compensate))
         .route("/aemter", get(offices::overview).post(offices::appoint))
         .route("/aemter/historie", get(offices::history))
         .route("/aemter/{id}/abgeben", post(offices::resign));

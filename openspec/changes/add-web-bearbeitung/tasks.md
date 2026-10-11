@@ -42,11 +42,11 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 7. Arbeit
 
-- [ ] 7.1 Arbeitseinsätze erfassen, eigene unbestätigte ändern/löschen, Stundenübersicht je Jahr; Tests: Clara erfasst 3 Stunden an der Filou, beide Umfangsformen → Feldfehler, Änderung eines bestätigten Einsatzes → 403, Änderung hebt Bestätigung auf
-- [ ] 7.2 Offene Einsätze gesammelt bestätigen nach Zuständigkeit (inkl. Karte „offene Bestätigungen“ auf der Startseite); Tests: Ben bestätigt Claras Einsatz an der Harald Blauzahn, eigener Einsatz → abgelehnt, Greta sieht die Liste nicht
-- [ ] 7.3 Arbeitstermine mit Plätzen und Anmeldung/Abmeldung (inkl. Karte „anstehende Termine“ auf der Startseite); Tests: Anna meldet sich an und ist in der Teilnehmerliste, ausgebucht → keine Anmeldung, Anmeldung schreibt keine Stunden gut
-- [ ] 7.4 Aufgaben anlegen, Zuständige zuweisen, Status ändern (inkl. Karte „meine Aufgaben“ auf der Startseite); Tests: Zuständiger setzt „erledigt“ mit Zeitpunkt, fremdes Mitglied ohne Amt → 403, Stunden der Aufgabe über Einsätze sichtbar
-- [ ] 7.5 Stundenüberträge und finanzielle Abgeltung (Vorstand) mit Forderung im Konto; Tests: 5 Stunden bei 15 € → Forderung 75,00 €, Übertrag an sich selbst → Feldfehler, Rückstandsliste zeigt Clara
+- [x] 7.1 Arbeitseinsätze erfassen, eigene unbestätigte ändern/löschen, Stundenübersicht je Jahr; Tests: Clara erfasst 3 Stunden an der Filou, beide Umfangsformen → Feldfehler, Änderung eines bestätigten Einsatzes → 403, Änderung hebt Bestätigung auf
+- [x] 7.2 Offene Einsätze gesammelt bestätigen nach Zuständigkeit (inkl. Karte „offene Bestätigungen“ auf der Startseite); Tests: Ben bestätigt Claras Einsatz an der Harald Blauzahn, eigener Einsatz → abgelehnt, Greta sieht die Liste nicht
+- [x] 7.3 Arbeitstermine mit Plätzen und Anmeldung/Abmeldung (inkl. Karte „anstehende Termine“ auf der Startseite); Tests: Anna meldet sich an und ist in der Teilnehmerliste, ausgebucht → keine Anmeldung, Anmeldung schreibt keine Stunden gut
+- [x] 7.4 Aufgaben anlegen, Zuständige zuweisen, Status ändern (inkl. Karte „meine Aufgaben“ auf der Startseite); Tests: Zuständiger setzt „erledigt“ mit Zeitpunkt, fremdes Mitglied ohne Amt → 403, Stunden der Aufgabe über Einsätze sichtbar
+- [x] 7.5 Stundenüberträge und finanzielle Abgeltung (Vorstand) mit Forderung im Konto; Tests: 5 Stunden bei 15 € → Forderung 75,00 €, Übertrag an sich selbst → Feldfehler, Rückstandsliste zeigt Clara
 
 ## 8. Reservierungen
 

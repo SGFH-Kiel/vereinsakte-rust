@@ -1454,3 +1454,333 @@ async fn boat_forms_validate_and_create() {
         StatusCode::FORBIDDEN
     );
 }
+
+// --- Gruppe 7: Arbeit --------------------------------------------------------------
+
+fn path_of(html: &str, prefix: &str, suffix: &str) -> String {
+    let start = html
+        .find(prefix)
+        .unwrap_or_else(|| panic!("{prefix} fehlt"))
+        + prefix.len();
+    let end = start + html[start..].find(suffix).unwrap();
+    html[start..end].to_string()
+}
+
+/// Kennung aus der ersten Adresse `prefix…/` nach der Textstelle `marker`.
+fn id_after(html: &str, marker: &str, prefix: &str) -> String {
+    let at = html
+        .find(marker)
+        .unwrap_or_else(|| panic!("{marker} fehlt"));
+    path_of(&html[at..], prefix, "/")
+}
+
+#[tokio::test]
+async fn member_records_work_and_confirmed_entries_are_locked() {
+    use vereinsakte_core::example::HARALD_BLAUZAHN;
+    let h = dev();
+    let mut clara = logged_in(&h, 103).await;
+    let page = clara.get("/arbeit").await;
+    assert_eq!(page.status, StatusCode::OK);
+    let token = csrf(&page.body);
+    let boat = HARALD_BLAUZAHN.to_string();
+    let both = clara
+        .post(
+            "/arbeit/einsaetze",
+            &[
+                ("csrf", &token),
+                ("date", "2026-10-01"),
+                ("hours", "3"),
+                ("start", "08:00"),
+                ("end", "10:00"),
+                ("subject", &boat),
+            ],
+        )
+        .await;
+    assert_eq!(both.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(both.body.contains("nicht beides") && both.body.contains("value=\"2026-10-01\""));
+    let ok = clara
+        .post(
+            "/arbeit/einsaetze",
+            &[
+                ("csrf", &token),
+                ("date", "2026-10-01"),
+                ("hours", "3"),
+                ("subject", &boat),
+                ("description", "Antifouling"),
+            ],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    let page = clara.get("/arbeit").await;
+    assert!(page.body.contains("Der Einsatz wurde erfasst") && page.body.contains("Antifouling"));
+    assert!(page.body.contains("unbestätigt") && page.body.contains("20,5"));
+    // Bestätigte Einsätze lassen sich nicht ändern.
+    let confirmed_row = path_of(&page.body, "bestätigt</span>", "</tr>");
+    assert!(
+        !confirmed_row.contains("/bearbeiten"),
+        "bestätigt ohne Ändern-Link"
+    );
+    let edit = path_of(&page.body, "/arbeit/einsaetze/", "/bearbeiten");
+    let form = clara
+        .get(&format!("/arbeit/einsaetze/{edit}/bearbeiten"))
+        .await;
+    assert_eq!(form.status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn warden_confirms_and_others_cannot() {
+    use vereinsakte_core::example::HARALD_BLAUZAHN;
+    let h = dev();
+    let mut clara = logged_in(&h, 103).await;
+    let token = csrf(&clara.get("/arbeit").await.body);
+    clara
+        .post(
+            "/arbeit/einsaetze",
+            &[
+                ("csrf", &token),
+                ("date", "2026-10-01"),
+                ("hours", "3"),
+                ("subject", &HARALD_BLAUZAHN.to_string()),
+            ],
+        )
+        .await;
+    let mut ben = logged_in(&h, 102).await;
+    let page = ben.get("/arbeit/bestaetigungen").await;
+    assert!(page.body.contains("Clara Jensen"));
+    let id = path_of(&page.body, "/arbeit/einsaetze/", "/bestaetigen");
+    let mut greta = logged_in(&h, 107).await;
+    let greta_token = csrf(&greta.get("/arbeit").await.body);
+    let denied = greta
+        .post(
+            &format!("/arbeit/einsaetze/{id}/bestaetigen"),
+            &[("csrf", &greta_token)],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    assert!(
+        !greta
+            .get("/arbeit")
+            .await
+            .body
+            .contains("/arbeit/bestaetigungen"),
+        "kein Reiter ohne Amt"
+    );
+    let ok = ben
+        .post(
+            &format!("/arbeit/einsaetze/{id}/bestaetigen"),
+            &[("csrf", &csrf(&page.body))],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER);
+    assert!(
+        ben.get("/arbeit/bestaetigungen")
+            .await
+            .body
+            .contains("nichts zu bestätigen")
+    );
+    assert!(clara.get("/arbeit").await.body.contains("23,5"));
+}
+
+#[tokio::test]
+async fn events_registration_and_start_page_card() {
+    let h = dev();
+    let mut frank = logged_in(&h, 106).await;
+    let page = frank.get("/arbeit/termine").await;
+    let token = csrf(&page.body);
+    let created = frank
+        .post(
+            "/arbeit/termine",
+            &[
+                ("csrf", &token),
+                ("title", "Herbstputz"),
+                ("date", "2026-11-07"),
+                ("start", "10:00"),
+                ("end", "14:00"),
+                ("max", "1"),
+            ],
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::SEE_OTHER, "{}", created.body);
+    let bad = frank
+        .post(
+            "/arbeit/termine",
+            &[
+                ("csrf", &token),
+                ("title", "Falsch"),
+                ("date", "2026-11-07"),
+                ("start", "14:00"),
+                ("end", "10:00"),
+            ],
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(bad.body.contains("Das Ende muss nach dem Beginn liegen."));
+    let page = frank.get("/arbeit/termine").await;
+    let id = id_after(&page.body, "Herbstputz", "/arbeit/termine/");
+    let mut anna = logged_in(&h, 101).await;
+    let anna_token = csrf(&anna.get("/arbeit/termine").await.body);
+    let ok = anna
+        .post(
+            &format!("/arbeit/termine/{id}/anmelden"),
+            &[("csrf", &anna_token)],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER);
+    assert!(
+        anna.get("/")
+            .await
+            .body
+            .contains("Anstehende Arbeitstermine")
+    );
+    let mut greta = logged_in(&h, 107).await;
+    let greta_token = csrf(&greta.get("/arbeit/termine").await.body);
+    let full = greta
+        .post(
+            &format!("/arbeit/termine/{id}/anmelden"),
+            &[("csrf", &greta_token)],
+        )
+        .await;
+    assert_eq!(full.status, StatusCode::SEE_OTHER);
+    let page = greta.get("/arbeit/termine").await;
+    assert!(page.body.contains("ausgebucht") && !page.body.contains("/bearbeiten"));
+    assert!(page.body.contains("schreibt keine Stunden gut"));
+    let denied = greta
+        .post(
+            "/arbeit/termine",
+            &[
+                ("csrf", &greta_token),
+                ("title", "x"),
+                ("date", "2026-11-07"),
+                ("start", "10:00"),
+                ("end", "11:00"),
+            ],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn tasks_are_created_assigned_and_shown_on_the_start_page() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let page = ben.get("/arbeit/aufgaben").await;
+    let token = csrf(&page.body);
+    let created = ben
+        .post(
+            "/arbeit/aufgaben",
+            &[
+                ("csrf", &token),
+                ("title", "Fender flicken"),
+                ("hours", "2,5"),
+            ],
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::SEE_OTHER, "{}", created.body);
+    let page = ben.get("/arbeit/aufgaben").await;
+    let id = id_after(&page.body, "Fender flicken", "/arbeit/aufgaben/");
+    let assigned = ben
+        .post(
+            &format!("/arbeit/aufgaben/{id}/zuweisen"),
+            &[("csrf", &token), ("member", "107")],
+        )
+        .await;
+    assert_eq!(assigned.status, StatusCode::SEE_OTHER);
+    let mut greta = logged_in(&h, 107).await;
+    let start = greta.get("/").await;
+    assert!(start.body.contains("Meine Aufgaben") && start.body.contains("Fender flicken"));
+    let greta_token = csrf(&start.body);
+    let done = greta
+        .post(
+            &format!("/arbeit/aufgaben/{id}/status"),
+            &[("csrf", &greta_token), ("status", "done")],
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::SEE_OTHER);
+    assert!(
+        greta
+            .get("/arbeit/aufgaben")
+            .await
+            .body
+            .contains("erledigt")
+    );
+    assert!(
+        !greta.get("/").await.body.contains("Meine Aufgaben"),
+        "erledigt ist nicht mehr offen"
+    );
+    let mut hannes = logged_in(&h, 108).await;
+    let hannes_token = csrf(&hannes.get("/arbeit/aufgaben").await.body);
+    let denied = hannes
+        .post(
+            &format!("/arbeit/aufgaben/{id}/status"),
+            &[("csrf", &hannes_token), ("status", "open")],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn board_sees_deficits_transfers_and_compensates() {
+    let h = dev();
+    let mut eva = logged_in(&h, 105).await;
+    let page = eva.get("/arbeit/uebersicht?rueckstand=1").await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert!(
+        page.body.contains("es fehlen 4,5 Arbeitsstunden") && page.body.contains("Jensen, Clara")
+    );
+    let token = csrf(&page.body);
+    let same = eva
+        .post(
+            "/arbeit/uebertrag",
+            &[
+                ("csrf", &token),
+                ("year", "2026"),
+                ("from", "103"),
+                ("to", "103"),
+                ("hours", "2"),
+            ],
+        )
+        .await;
+    assert_eq!(same.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let ok = eva
+        .post(
+            "/arbeit/uebertrag",
+            &[
+                ("csrf", &token),
+                ("year", "2026"),
+                ("from", "101"),
+                ("to", "103"),
+                ("hours", "5"),
+                ("description", "Ausgleich"),
+            ],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    let page = eva.get("/arbeit/uebersicht?rueckstand=1").await;
+    assert!(
+        !page.body.contains("Jensen, Clara"),
+        "Rückstand ausgeglichen"
+    );
+    let comp = eva
+        .post(
+            "/arbeit/abgeltung",
+            &[
+                ("csrf", &token),
+                ("year", "2026"),
+                ("member", "102"),
+                ("comp_hours", "5"),
+            ],
+        )
+        .await;
+    assert_eq!(comp.status, StatusCode::SEE_OTHER, "{}", comp.body);
+    assert!(eva.get("/arbeit/uebersicht").await.body.contains("75,00"));
+    let mut ben = logged_in(&h, 102).await;
+    assert!(
+        ben.get("/meine-daten").await.body.contains("75,00"),
+        "Forderung im Konto"
+    );
+    let mut greta = logged_in(&h, 107).await;
+    assert_eq!(
+        greta.get("/arbeit/uebersicht").await.status,
+        StatusCode::FORBIDDEN
+    );
+}

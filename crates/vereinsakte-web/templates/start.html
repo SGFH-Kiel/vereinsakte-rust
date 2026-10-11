@@ -26,4 +26,26 @@
     <p><a href="/meine-daten">Forderungen und Einzahlungen</a></p>
   </section>
 </div>
+{% if confirmations > 0 %}
+<section class="card">
+  <h2>Offene Bestätigungen</h2>
+  <p><span class="badge warn">{{ confirmations }}</span> Arbeitseinsätze warten auf deine Bestätigung. <a href="/arbeit/bestaetigungen">Jetzt prüfen</a></p>
+</section>
+{% endif %}
+{% if !events.is_empty() %}
+<section class="card">
+  <h2>Anstehende Arbeitstermine</h2>
+  <ul class="plain">
+  {% for e in events %}<li><strong>{{ e.title }}</strong> – {{ e.when }}{% if e.mine %} <span class="badge ok">angemeldet</span>{% endif %}</li>{% endfor %}
+  </ul>
+  <p><a href="/arbeit/termine">Alle Termine</a> · <a href="/arbeit">Einsatz erfassen</a></p>
+</section>
+{% endif %}
+{% if !tasks.is_empty() %}
+<section class="card">
+  <h2>Meine Aufgaben</h2>
+  <ul class="plain">{% for t in tasks %}<li>{{ t.title }} <span class="badge info">{{ t.status }}</span></li>{% endfor %}</ul>
+  <p><a href="/arbeit/aufgaben">Zu den Aufgaben</a></p>
+</section>
+{% endif %}
 {% endblock %}
