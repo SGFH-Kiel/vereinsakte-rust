@@ -772,6 +772,23 @@ async fn session_of_former_member_ends_and_asks_to_log_in() {
 
 // --- Gruppe 4: Mitglieder -------------------------------------------------------
 
+/// Wert eines Eingabefelds nach Name (auch wenn `type` zwischen Name und Wert steht).
+fn input_value(html: &str, name: &str) -> String {
+    let at = html
+        .find(&format!("name=\"{name}\""))
+        .unwrap_or_else(|| panic!("Feld {name} fehlt"));
+    let rest = &html[at..];
+    let tag_end = rest.find('>').unwrap();
+    let marker = "value=\"";
+    let start = rest[..tag_end]
+        .find(marker)
+        .map_or(tag_end, |i| i + marker.len());
+    if start >= tag_end {
+        return String::new();
+    }
+    rest[start..start + rest[start..].find('"').unwrap()].to_string()
+}
+
 fn field_value(html: &str, name: &str) -> String {
     let marker = format!("name=\"{name}\" value=\"");
     let start = html
@@ -1969,5 +1986,249 @@ async fn tour_page_shows_the_expected_fee() {
     assert!(
         page.body
             .contains("Die Forderungen legt der Kassenwart nach der Fahrt an.")
+    );
+}
+
+// --- Gruppe 9: Finanzen --------------------------------------------------------------
+
+#[tokio::test]
+async fn accounts_are_private_and_the_finance_menu_depends_on_rights() {
+    let h = dev();
+    let anna = logged_in(&h, 101).await.get("/konto").await;
+    assert!(anna.body.contains("Guthaben: 10,00") && anna.body.contains("Mein Konto"));
+    let lukas = logged_in(&h, 112).await.get("/konto").await;
+    assert!(lukas.body.contains("offen: 276,00"));
+    let mut greta = logged_in(&h, 107).await;
+    assert_eq!(
+        greta.get("/finanzen/konten/103").await.status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(greta.get("/finanzen").await.status, StatusCode::FORBIDDEN);
+    let own = greta.get("/konto").await;
+    assert!(
+        !own.body.contains("href=\"/finanzen\""),
+        "kein Menüpunkt Finanzen"
+    );
+    assert!(!own.body.contains("Einzahlung buchen"));
+    assert!(
+        logged_in(&h, 105)
+            .await
+            .get("/konto")
+            .await
+            .body
+            .contains("href=\"/finanzen\"")
+    );
+    // Revisor liest fremde Konten ohne Schaltflächen; Schreiben wird abgelehnt.
+    let mut lukas = logged_in(&h, 112).await;
+    let page = lukas.get("/finanzen/konten/103").await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert!(!page.body.contains("Einzahlung buchen") && !page.body.contains("/storno"));
+    let denied = lukas
+        .post(
+            "/finanzen/konten/103/einzahlung",
+            &[("csrf", &csrf(&page.body)), ("amount", "5")],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn treasurer_posts_payments_claims_and_cancellations() {
+    let h = dev();
+    let mut jonas = logged_in(&h, 110).await;
+    let page = jonas.get("/finanzen/konten/101").await;
+    let token = csrf(&page.body);
+    let ok = jonas
+        .post(
+            "/finanzen/konten/101/einzahlung",
+            &[
+                ("csrf", &token),
+                ("amount", "240,00"),
+                ("date", "2026-04-03"),
+                ("text", "Beitrag"),
+            ],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    let page = jonas.get("/finanzen/konten/101").await;
+    assert!(
+        page.body.contains("Die Einzahlung wurde gebucht.")
+            && page.body.contains("Guthaben: 250,00")
+    );
+    let negative = jonas
+        .post(
+            "/finanzen/konten/101/einzahlung",
+            &[("csrf", &token), ("amount", "-5")],
+        )
+        .await;
+    assert_eq!(negative.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(negative.body.contains("größer als 0"));
+    let bad = jonas
+        .post(
+            "/finanzen/konten/101/einzahlung",
+            &[("csrf", &token), ("amount", "viel")],
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let claim = jonas
+        .post(
+            "/finanzen/konten/101/forderung",
+            &[
+                ("csrf", &token),
+                ("claim_amount", "20"),
+                ("claim_text", "Schlüsselpfand"),
+            ],
+        )
+        .await;
+    assert_eq!(claim.status, StatusCode::SEE_OTHER, "{}", claim.body);
+    let page = jonas.get("/finanzen/konten/101").await;
+    let id = id_after(&page.body, "Schlüsselpfand", "/forderungen/");
+    let storno_path = format!("/finanzen/konten/101/forderungen/{id}/storno");
+    let without = jonas
+        .post(&storno_path, &[("csrf", &token), ("reason", "")])
+        .await;
+    assert_eq!(without.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(without.body.contains("Bitte eine Begründung angeben"));
+    let ok = jonas
+        .post(
+            &storno_path,
+            &[("csrf", &token), ("reason", "Schlüssel zurück")],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER);
+    let page = jonas.get("/finanzen/konten/101").await;
+    assert!(page.body.contains("storniert (Schlüssel zurück)"));
+    assert!(
+        !page.body.contains(&format!("{storno_path}\"")),
+        "Storno nur einmal"
+    );
+}
+
+#[tokio::test]
+async fn outstanding_amounts_are_sorted_and_filterable_by_url() {
+    let h = dev();
+    let mut eva = logged_in(&h, 105).await;
+    let page = eva.get("/finanzen").await;
+    assert!(page.body.contains("Meier, Lukas") || page.body.contains("Lukas Meier"));
+    assert!(page.body.contains("276,00") && page.body.contains("Summe"));
+    let overdue = eva
+        .get("/finanzen?stichtag=2026-10-09&ueberfaellig=1")
+        .await;
+    assert!(overdue.body.contains("checked") && overdue.body.contains("value=\"2026-10-09\""));
+}
+
+#[tokio::test]
+async fn season_rates_are_saved_and_validated() {
+    let h = dev();
+    let mut jonas = logged_in(&h, 110).await;
+    let page = jonas.get("/finanzen/saisons?jahr=2027").await;
+    assert!(page.body.contains("Saison 2027") && page.body.contains("name=\"annual_regular\""));
+    let token = csrf(&page.body);
+    let mut fields: Vec<(String, String)> = vec![
+        ("csrf".into(), token.clone()),
+        ("year".into(), "2027".into()),
+    ];
+    for name in ["hours_quota", "compensation_rate"] {
+        fields.push((name.into(), input_value(&page.body, name)));
+    }
+    for key in page
+        .body
+        .split("name=\"")
+        .skip(1)
+        .map(|r| r[..r.find('"').unwrap()].to_string())
+    {
+        if ["annual_", "admission_", "tour_"]
+            .iter()
+            .any(|p| key.starts_with(p))
+        {
+            fields.push((key.clone(), input_value(&page.body, &key)));
+        }
+    }
+    for f in fields.iter_mut().filter(|f| f.0 == "annual_regular") {
+        f.1 = "260,00".into();
+    }
+    let refs: Vec<(&str, &str)> = fields
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    let ok = jonas.post("/finanzen/saisons", &refs).await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    assert!(
+        jonas
+            .get("/finanzen/saisons?jahr=2027")
+            .await
+            .body
+            .contains("value=\"260,00\"")
+    );
+    let mut broken = refs.clone();
+    broken.push(("annual_student", "abc"));
+    let bad = jonas.post("/finanzen/saisons", &broken).await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(bad.body.contains("Bitte einen Betrag wie 12,50 angeben."));
+}
+
+#[tokio::test]
+async fn annual_fees_are_created_once() {
+    let h = dev();
+    let mut jonas = logged_in(&h, 110).await;
+    let page = jonas.get("/finanzen/beitraege?jahr=2027").await;
+    assert!(
+        page.body.contains("Jahresbeitrag 2027") && page.body.contains("Jahresbeiträge anlegen")
+    );
+    let token = csrf(&page.body);
+    let created = jonas
+        .post("/finanzen/beitraege", &[("csrf", &token), ("year", "2027")])
+        .await;
+    assert_eq!(created.status, StatusCode::SEE_OTHER);
+    let after = jonas.get("/finanzen/beitraege?jahr=2027").await;
+    assert!(
+        after.body.contains("Jahresbeiträge 2027 wurden angelegt")
+            && after.body.contains("bereits vorhanden")
+    );
+    assert!(after.body.contains("Es fehlen keine Jahresbeiträge."));
+    let again = jonas
+        .post("/finanzen/beitraege", &[("csrf", &token), ("year", "2027")])
+        .await;
+    assert_eq!(again.status, StatusCode::SEE_OTHER);
+    assert!(
+        jonas
+            .get("/finanzen/beitraege?jahr=2027")
+            .await
+            .body
+            .contains("nichts anzulegen")
+    );
+    let mut greta = logged_in(&h, 107).await;
+    let greta_page = greta.get("/konto").await;
+    let denied = greta
+        .post(
+            "/finanzen/beitraege",
+            &[("csrf", &csrf(&greta_page.body)), ("year", "2027")],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn tours_and_annual_proof_pages() {
+    let h = dev();
+    let mut jonas = logged_in(&h, 110).await;
+    let tours = jonas.get("/finanzen/touren").await;
+    assert_eq!(tours.status, StatusCode::OK);
+    assert!(tours.body.contains("Schruvtrekker") && tours.body.contains("abgerechnet"));
+    let proof = jonas.get("/finanzen/nachweis/103").await;
+    assert_eq!(proof.status, StatusCode::OK);
+    assert!(
+        proof.body.contains("Jahresnachweis 2026")
+            && proof.body.contains("20,5 angerechnet von 25")
+    );
+    assert!(proof.body.contains("4,5") && proof.body.contains("class=\"actions no-print\""));
+    let mut greta = logged_in(&h, 107).await;
+    assert_eq!(
+        greta.get("/finanzen/nachweis/103").await.status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        greta.get("/finanzen/touren").await.status,
+        StatusCode::FORBIDDEN
     );
 }

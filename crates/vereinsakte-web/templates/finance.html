@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="page-head"><div><h1>Finanzen</h1><p class="muted">Außenstände zum {{ at }}</p></div></div>
+{% include "_finance_nav.html" %}
+<form method="get" action="/finanzen" class="filters">
+  {{ f::field("stichtag", "Stichtag", at_iso, "", "date", "") }}
+  <label class="check"><input type="checkbox" name="ueberfaellig" value="1"{% if v.only_overdue %} checked{% endif %}> nur überfällige</label>
+  <button type="submit" class="primary">Anzeigen</button>
+</form>
+<section class="card">
+  {% if v.rows.is_empty() %}<p>Keine Außenstände.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Mitglied</th><th class="num">Offen</th><th class="num">Davon überfällig</th></tr></thead>
+    <tbody>
+    {% for r in v.rows %}
+      <tr><td data-label="Mitglied"><a href="/finanzen/konten/{{ r.member }}">{{ r.name }}</a></td><td data-label="Offen" class="num">{{ r.open }}</td><td data-label="Davon überfällig" class="num">{{ r.overdue }}</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><th>Summe</th><th class="num">{{ v.total_open }}</th><th class="num">{{ v.total_overdue }}</th></tr></tfoot>
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

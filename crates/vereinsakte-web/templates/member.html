@@ -20,6 +20,7 @@
   {% if p.details.is_none() %}<p class="muted">Kontaktdaten, Segelerlaubnis, Stunden und Konto sind nur für das Mitglied selbst, den Vorstand und die Revisoren sichtbar.</p>{% endif %}
 </section>
 {% if let Some(v) = p.details %}
+<p class="actions"><a class="btn" href="/finanzen/nachweis/{{ p.id }}">Jahresnachweis</a> <a class="btn" href="/finanzen/konten/{{ p.id }}">Konto</a></p>
 {% include "_member_details.html" %}
 {% endif %}
 {% endblock %}

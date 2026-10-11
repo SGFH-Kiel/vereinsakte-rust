@@ -56,12 +56,12 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 9. Finanzen
 
-- [ ] 9.1 Eigenes Konto (Kontostand, Forderungen mit Zustand, Einzahlungen) und fremde Konten für Kassenwart, Vorstand, Revisor; Tests: Anna „Guthaben“ „10,00 €“, Lukas offen 276,00 €, Greta auf fremdem Konto → 403, Revisor ohne Schaltflächen und POST → 403
-- [ ] 9.2 Forderungen und Einzahlungen buchen, Storno mit Pflichtbegründung; Tests: 240,00 € Einzahlung wirkt im Kontostand, negativer Betrag → Feldfehler, Schlüsselpfand-Storno bleibt mit Grund sichtbar und zählt nicht mehr, Löschen gibt es nicht
-- [ ] 9.3 Außenstände zum Stichtag mit Filter „überfällig“ und Sortierung; Test: Stichtag 20. Juli zeigt nur zu diesem Zeitpunkt überfällige Beträge, Adresse mit Filter ist verlinkbar
-- [ ] 9.4 Saisons und Gebührensätze pflegen; Jahresbeiträge gesammelt anlegen mit Vorschau ohne Doppelungen; Tests: Satz ändern lässt bestehende Forderungen unverändert, zweites Anlegen zeigt „bereits vorhanden“ und erzeugt keine Forderung
-- [ ] 9.5 Tourgebühren aus einer Tour-Reservierung berechnen, prüfen und anlegen (Mitglieder und Gastname), idempotent; Test: siebentägige Tour mit zwei Mitgliedern und einem Gast ergibt zwei plus eine Forderung, erneutes Anlegen ergibt keine Doppelung
-- [ ] 9.6 Jahresnachweis je Mitglied und Saison mit Druckansicht ohne Navigation; Test: Nachweis enthält Soll-/anrechenbare Stunden, Beitragsstand, Segelerlaubnis, Druckregel blendet Navigation aus
+- [x] 9.1 Eigenes Konto (Kontostand, Forderungen mit Zustand, Einzahlungen) und fremde Konten für Kassenwart, Vorstand, Revisor; Tests: Anna „Guthaben“ „10,00 €“, Lukas offen 276,00 €, Greta auf fremdem Konto → 403, Revisor ohne Schaltflächen und POST → 403
+- [x] 9.2 Forderungen und Einzahlungen buchen, Storno mit Pflichtbegründung; Tests: 240,00 € Einzahlung wirkt im Kontostand, negativer Betrag → Feldfehler, Schlüsselpfand-Storno bleibt mit Grund sichtbar und zählt nicht mehr, Löschen gibt es nicht
+- [x] 9.3 Außenstände zum Stichtag mit Filter „überfällig“ und Sortierung; Test: Stichtag 20. Juli zeigt nur zu diesem Zeitpunkt überfällige Beträge, Adresse mit Filter ist verlinkbar
+- [x] 9.4 Saisons und Gebührensätze pflegen; Jahresbeiträge gesammelt anlegen mit Vorschau ohne Doppelungen; Tests: Satz ändern lässt bestehende Forderungen unverändert, zweites Anlegen zeigt „bereits vorhanden“ und erzeugt keine Forderung
+- [x] 9.5 Tourgebühren aus einer Tour-Reservierung berechnen, prüfen und anlegen (Mitglieder und Gastname), idempotent; Test: siebentägige Tour mit zwei Mitgliedern und einem Gast ergibt zwei plus eine Forderung, erneutes Anlegen ergibt keine Doppelung
+- [x] 9.6 Jahresnachweis je Mitglied und Saison mit Druckansicht ohne Navigation; Test: Nachweis enthält Soll-/anrechenbare Stunden, Beitragsstand, Segelerlaubnis, Druckregel blendet Navigation aus
 
 ## 10. Protokoll
 

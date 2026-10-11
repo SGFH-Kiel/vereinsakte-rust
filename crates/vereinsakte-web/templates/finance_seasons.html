@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="page-head"><div><h1>Finanzen</h1><p class="muted">Saisons und Gebührensätze</p></div></div>
+{% include "_finance_nav.html" %}
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+<section class="card">
+  <h2>Gespeicherte Saisons</h2>
+  {% if v.seasons.is_empty() %}<p>Es gelten die Sätze der Beitragsordnung.</p>{% else %}
+  <ul class="plain">{% for s in v.seasons %}
+    <li><a href="/finanzen/saisons?jahr={{ s.year }}">Saison {{ s.year }}</a> – Soll {{ s.hours_quota }} Stunden, Stundensatz {{ s.rate }}{% if s.custom_fees %}, eigene Gebührentabelle{% endif %}</li>
+  {% endfor %}</ul>
+  {% endif %}
+</section>
+<form method="post" action="/finanzen/saisons" class="card">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <h2>Saison {{ v.form.year }}</h2>
+  <input type="hidden" name="year" value="{{ v.form.year }}">
+  <p class="muted">Änderungen gelten für künftig angelegte Forderungen; bestehende Forderungen bleiben unverändert.</p>
+  <div class="form-grid cols-2">
+    {{ f::field("hours_quota", "Soll-Stunden", v.form.hours_quota, errors.get("hours_quota"), "text", "") }}
+    {{ f::field("compensation_rate", "Stundensatz der Abgeltung (€)", v.form.compensation_rate, errors.get("compensation_rate"), "text", "") }}
+  </div>
+  <h3>Jahresbeitrag (€)</h3>
+  <div class="form-grid cols-2">{% for fee in v.form.annual %}{{ f::field(fee.key, fee.label, fee.value, errors.get(fee.key), "text", "") }}{% endfor %}</div>
+  <h3>Aufnahmegebühr (€)</h3>
+  <div class="form-grid cols-2">{% for fee in v.form.admission %}{{ f::field(fee.key, fee.label, fee.value, errors.get(fee.key), "text", "") }}{% endfor %}</div>
+  <h3>Tourgebühren (€)</h3>
+  <div class="form-grid cols-2">{% for fee in v.form.tour %}{{ f::field(fee.key, fee.label, fee.value, errors.get(fee.key), "text", "") }}{% endfor %}</div>
+  {% if v.can_edit %}<div class="form-actions"><button type="submit" class="primary">Saison speichern</button></div>{% endif %}
+</form>
+{% endblock %}

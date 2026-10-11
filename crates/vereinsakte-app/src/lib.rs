@@ -8,6 +8,7 @@ pub mod changes;
 pub mod commands;
 pub mod directory;
 pub mod error;
+pub mod finance;
 pub mod format;
 pub mod hours;
 pub mod members;

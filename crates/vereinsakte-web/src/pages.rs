@@ -53,7 +53,7 @@ pub struct DevBar {
 }
 
 /// Hauptnavigation nach Berechtigung; `path` bestimmt den aktuellen Bereich.
-fn navigation(_principal: &Principal, path: &str) -> Vec<NavItem> {
+fn navigation(principal: &Principal, path: &str) -> Vec<NavItem> {
     let path = path.split('?').next().unwrap_or(path);
     let current = |href: &str| {
         if href == "/" {
@@ -62,7 +62,7 @@ fn navigation(_principal: &Principal, path: &str) -> Vec<NavItem> {
             path == href || path.starts_with(&format!("{href}/"))
         }
     };
-    [
+    let mut items = vec![
         ("/", "Start"),
         ("/meine-daten", "Meine Daten"),
         ("/mitglieder", "Mitglieder"),
@@ -70,14 +70,19 @@ fn navigation(_principal: &Principal, path: &str) -> Vec<NavItem> {
         ("/reservierungen", "Reservierungen"),
         ("/arbeit", "Arbeit"),
         ("/aemter", "Ämter"),
-    ]
-    .into_iter()
-    .map(|(href, label)| NavItem {
-        href,
-        label,
-        current: current(href),
-    })
-    .collect()
+        ("/konto", "Konto"),
+    ];
+    if principal.can(&vereinsakte_core::rights::Capability::ReadAllAccounts) {
+        items.push(("/finanzen", "Finanzen"));
+    }
+    items
+        .into_iter()
+        .map(|(href, label)| NavItem {
+            href,
+            label,
+            current: current(href),
+        })
+        .collect()
 }
 
 impl Layout {

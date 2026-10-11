@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Jahresnachweis {{ p.year }}</h1><p class="muted">{{ p.name }}, Mitglied {{ p.number }}</p></div>
+  <div class="actions no-print"><a class="btn" href="/finanzen/konten/{{ p.member }}">Zum Konto</a></div>
+</div>
+<section class="card">
+  <dl>
+    <dt>Name</dt><dd>{{ p.name }}</dd>
+    <dt>Mitgliedsnummer</dt><dd>{{ p.number }}</dd>
+    <dt>Mitgliedsart</dt><dd>{{ p.membership_type }}</dd>
+    <dt>Arbeitsstunden</dt><dd>{{ p.credited }} angerechnet von {{ p.required }} Soll</dd>
+    <dt>Beitrag</dt><dd>{{ p.fee_state }}</dd>
+    <dt>Segelerlaubnis {{ p.year }}</dt>
+    <dd>{% if p.permit_granted %}<span class="badge ok">✓ erteilt</span>{% else %}<span class="badge warn">nicht erteilt</span><ul>{% for r in p.permit_reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}</dd>
+    <dt>Bootserlaubnisse</dt><dd>{% if p.boat_permits.is_empty() %}keine{% else %}{{ p.boat_permits|join(", ") }}{% endif %}</dd>
+  </dl>
+  <p class="no-print muted">Zum Drucken die Druckfunktion des Browsers verwenden (Strg+P); Navigation und Schaltflächen werden dabei ausgeblendet.</p>
+</section>
+{% endblock %}

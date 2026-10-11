@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Finanzen</h1><p class="muted">Tourgebühren</p></div></div>
+{% include "_finance_nav.html" %}
+<section class="card">
+  {% if v.rows.is_empty() %}<p>Es gibt keine Touren.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Tour</th><th>Skipper</th><th class="num">Berechnet</th><th class="num">Noch offen zu berechnen</th><th class="num">Summe</th><th></th></tr></thead>
+    <tbody>
+    {% for r in v.rows %}
+      <tr>
+        <td data-label="Tour"><a href="/reservierungen/{{ r.id }}">{{ r.boat }}, {{ r.when }}</a></td>
+        <td data-label="Skipper">{{ r.skipper }}</td>
+        <td data-label="Berechnet" class="num">{{ r.billed }}</td><td data-label="Noch offen zu berechnen" class="num">{{ r.missing }}</td><td data-label="Summe" class="num">{{ r.total }}</td>
+        <td data-label="">{% if v.can_bill && r.missing > 0 %}
+          <form method="post" action="/finanzen/touren/{{ r.id }}/abrechnen" class="inline"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary small">Abrechnen</button></form>
+        {% else %}<span class="badge ok">✓ abgerechnet</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

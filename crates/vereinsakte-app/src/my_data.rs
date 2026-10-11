@@ -75,6 +75,7 @@ impl ClaimState {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ClaimLine {
+    pub id: String,
     pub text: String,
     pub amount: String,
     pub due: Option<String>,
@@ -188,6 +189,7 @@ impl ClubService {
                     (None, None) => ClaimState::Open,
                 };
                 ClaimLine {
+                    id: c.id.to_string(),
                     text: c.text.clone(),
                     amount: c.amount.to_string(),
                     due: c.due_at.map(format::date),

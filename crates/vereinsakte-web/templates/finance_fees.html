@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Finanzen</h1><p class="muted">Jahresbeiträge {{ v.year }}</p></div></div>
+{% include "_finance_nav.html" %}
+<form method="get" action="/finanzen/beitraege" class="filters">
+  <div class="field"><label for="f-jahr">Saison</label><input id="f-jahr" type="number" name="jahr" value="{{ v.year }}"></div>
+  <button type="submit" class="primary">Vorschau</button>
+</form>
+<section class="card">
+  <p>{{ v.existing }} Mitglieder haben den Beitrag {{ v.year }} bereits (<em>bereits vorhanden</em>).</p>
+  {% if v.lines.is_empty() %}<p>Es fehlen keine Jahresbeiträge.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Mitglied</th><th>Forderung</th><th class="num">Betrag</th></tr></thead>
+    <tbody>{% for l in v.lines %}<tr><td data-label="Mitglied"><a href="/finanzen/konten/{{ l.member }}">{{ l.name }}</a></td><td data-label="Forderung">{{ l.text }}</td><td data-label="Betrag" class="num">{{ l.amount }}</td></tr>{% endfor %}</tbody>
+    <tfoot><tr><th colspan="2">Summe</th><th class="num">{{ v.total }}</th></tr></tfoot>
+  </table>
+  </div>
+  {% if v.can_create %}
+  <form method="post" action="/finanzen/beitraege" class="form-actions">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}"><input type="hidden" name="year" value="{{ v.year }}">
+    <button type="submit" class="primary">{{ v.lines.len() }} Jahresbeiträge anlegen</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

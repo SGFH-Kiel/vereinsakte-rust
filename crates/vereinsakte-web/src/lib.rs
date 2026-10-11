@@ -3,6 +3,7 @@
 
 mod boats;
 pub mod error;
+mod finance;
 pub mod forms;
 pub mod list;
 mod login;

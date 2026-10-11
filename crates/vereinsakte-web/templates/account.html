@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+{% if !v.is_self %}<div class="breadcrumbs"><a href="/finanzen">Finanzen</a> › Konto {{ v.name }}</div>{% endif %}
+<div class="page-head">
+  <div><h1>{% if v.is_self %}Mein Konto{% else %}Konto {{ v.name }}{% endif %}</h1><p class="muted">Mitglied {{ v.member }}</p></div>
+  <div class="actions"><a class="btn" href="/finanzen/nachweis/{{ v.member }}">Jahresnachweis</a></div>
+</div>
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+<section class="card">
+  <p>Kontostand: <strong>{{ v.balance.label() }}</strong></p>
+  <h2>Forderungen</h2>
+  {% if v.claims.is_empty() %}<p>Keine Forderungen.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Forderung</th><th class="num">Betrag</th><th>Fällig</th><th>Stand</th><th></th></tr></thead>
+    <tbody>
+    {% for c in v.claims %}
+      <tr>
+        <td data-label="Forderung">{{ c.text }}</td><td data-label="Betrag" class="num">{{ c.amount }}</td>
+        <td data-label="Fällig">{% if let Some(due) = c.due %}{{ due }}{% endif %}</td>
+        <td data-label="Stand">{{ c.state.label() }}</td>
+        <td data-label="">{% if v.can_post && !c.state.label().starts_with("storniert") %}
+          <form method="post" action="/finanzen/konten/{{ v.member }}/forderungen/{{ c.id }}/storno" class="inline">
+            <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+            <input type="text" name="reason" placeholder="Grund" aria-label="Grund des Stornos" required>
+            <button type="submit" class="small danger">Stornieren</button>
+          </form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  <h2 class="spaced">Einzahlungen</h2>
+  {% if v.payments.is_empty() %}<p>Keine Einzahlungen.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Datum</th><th class="num">Betrag</th><th>Verwendungszweck</th></tr></thead>
+    <tbody>{% for p in v.payments %}<tr><td data-label="Datum">{{ p.date }}</td><td data-label="Betrag" class="num">{{ p.amount }}</td><td data-label="Verwendungszweck">{{ p.text }}</td></tr>{% endfor %}</tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% if v.can_post %}
+<div class="grid cols-2">
+<section class="card">
+  <h2>Einzahlung buchen</h2>
+  <form method="post" action="/finanzen/konten/{{ v.member }}/einzahlung" class="form-grid">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    {{ f::field("amount", "Betrag in €", "", errors.get("amount"), "text", "z. B. 240,00") }}
+    {{ f::field("date", "Datum (optional)", "", errors.get("date"), "date", "leer lassen für heute") }}
+    {{ f::field("text", "Verwendungszweck", "", "", "text", "") }}
+    <div class="form-actions"><button type="submit" class="primary">Buchen</button></div>
+  </form>
+</section>
+<section class="card">
+  <h2>Forderung anlegen</h2>
+  <form method="post" action="/finanzen/konten/{{ v.member }}/forderung" class="form-grid">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    {{ f::field("claim_amount", "Betrag in €", "", errors.get("claim_amount"), "text", "") }}
+    {{ f::field("claim_text", "Text", "", errors.get("claim_text"), "text", "z. B. Schlüsselpfand") }}
+    {{ f::field("due", "Fällig am (optional)", "", errors.get("due"), "date", "") }}
+    <div class="form-actions"><button type="submit" class="primary">Anlegen</button></div>
+  </form>
+</section>
+</div>
+{% endif %}
+{% endblock %}
