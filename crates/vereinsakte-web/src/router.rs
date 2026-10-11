@@ -13,7 +13,7 @@ use tower_sessions::{Expiry, SessionManagerLayer, SessionStore};
 use crate::error::not_found;
 use crate::session::csrf_guard;
 use crate::state::AppState;
-use crate::{boats, finance, login, members, offices, pages, reservations, work};
+use crate::{audit, boats, finance, login, members, offices, pages, reservations, work};
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
                    form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
@@ -64,6 +64,7 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/boote/{id}/freigabe", post(boats::release))
         .route("/boote/{id}/abnahme", post(boats::checkout))
         .route("/boote/{id}/widerruf", post(boats::revoke))
+        .route("/protokoll", get(audit::show))
         .route("/konto", get(finance::own_account))
         .route("/finanzen", get(finance::outstanding))
         .route("/finanzen/konten/{nr}", get(finance::account))

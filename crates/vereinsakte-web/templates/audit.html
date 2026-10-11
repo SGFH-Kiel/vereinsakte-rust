@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="page-head"><div><h1>Protokoll</h1><p class="muted">{% if v.sees_all %}Alle Änderungen an der Vereinsakte{% else %}Änderungen, die dich betreffen oder die du vorgenommen hast{% endif %}</p></div></div>
+<form method="get" action="/protokoll" class="filters">
+  {{ f::field("von", "Von", from, "", "date", "") }}
+  {{ f::field("bis", "Bis", to, "", "date", "") }}
+  {% if v.sees_all %}
+  <div class="field"><label for="f-akteur">Handelnd</label>
+    <select id="f-akteur" name="akteur"><option value="">alle</option>
+      {% for (number, name) in v.members %}<option value="{{ number }}"{% if number.to_string() == actor %} selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select></div>
+  {% endif %}
+  <div class="field"><label for="f-art">Art</label>
+    <select id="f-art" name="art"><option value="">alle</option>
+      {% for (code, label) in v.actions %}<option value="{{ code }}"{% if *code == action %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></div>
+  <button type="submit" class="primary">Filtern</button>
+</form>
+<section class="card">
+  {% if rows.is_empty() %}<p>Keine Einträge gefunden.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Zeitpunkt</th><th>Handelnd</th><th>Aktion</th><th>Betrifft</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td data-label="Zeitpunkt">{{ r.when }}</td><td data-label="Handelnd">{{ r.actor }}</td>
+        <td data-label="Aktion"><strong>{{ r.action }}</strong><br><span class="muted">{{ r.summary }}</span></td>
+        <td data-label="Betrifft">{% if !r.subject.is_empty() %}{{ r.subject }}{% else %}<span class="muted">{{ r.object }}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% include "_pager.html" %}
+  {% endif %}
+</section>
+{% endblock %}

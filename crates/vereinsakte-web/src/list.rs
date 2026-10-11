@@ -17,6 +17,9 @@ pub struct ListQuery {
     pub seite: Option<usize>,
     #[serde(default)]
     pub sort: String,
+    /// Weitere Parameter, die in Seitenadressen erhalten bleiben (nicht aus der Adresse gelesen).
+    #[serde(skip)]
+    pub extra: Vec<(String, String)>,
 }
 
 impl ListQuery {
@@ -38,6 +41,11 @@ impl ListQuery {
         }
         if !self.sort.is_empty() {
             params.push(("sort", self.sort.clone()));
+        }
+        for (key, value) in &self.extra {
+            if !value.is_empty() {
+                params.push((key.as_str(), value.clone()));
+            }
         }
         if page > 1 {
             params.push(("seite", page.to_string()));

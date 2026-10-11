@@ -2232,3 +2232,72 @@ async fn tours_and_annual_proof_pages() {
         StatusCode::FORBIDDEN
     );
 }
+
+// --- Gruppe 10: Protokoll ------------------------------------------------------------
+
+#[tokio::test]
+async fn audit_page_is_filtered_by_role_and_never_shows_values() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let harald = vereinsakte_core::example::HARALD_BLAUZAHN;
+    let token = csrf(&ben.get(&format!("/boote/{harald}")).await.body);
+    ben.post(
+        &format!("/boote/{harald}/sperren"),
+        &[("csrf", &token), ("reason", "Mast defekt")],
+    )
+    .await;
+    let mut greta = logged_in(&h, 107).await;
+    let greta_token = csrf(&greta.get("/mitglieder/107/bearbeiten").await.body);
+    greta
+        .post(
+            "/mitglieder/107/scheine",
+            &[("csrf", &greta_token), ("kind", "sailing"), ("name", "SKS")],
+        )
+        .await;
+    let mut jonas = logged_in(&h, 110).await;
+    let jonas_token = csrf(&jonas.get("/finanzen/konten/101").await.body);
+    jonas
+        .post(
+            "/finanzen/konten/101/einzahlung",
+            &[
+                ("csrf", &jonas_token),
+                ("amount", "12,50"),
+                ("text", "geheim"),
+            ],
+        )
+        .await;
+    // Nur die Tabelle: Die Filterlisten nennen alle Aktionsarten.
+    let main_of = |html: &str| {
+        let main = &html[html.find("<main").unwrap()..];
+        main[main.find("</form>").unwrap()..].to_string()
+    };
+    // Revisor (Lukas) sieht alles und kann filtern.
+    let mut lukas = logged_in(&h, 112).await;
+    let all = main_of(&lukas.get("/protokoll").await.body);
+    assert!(
+        all.contains("Boot gesperrt")
+            && all.contains("Einzahlung gebucht")
+            && all.contains("Schein oder Lizenz hinzugefügt")
+    );
+    let filtered = main_of(&lukas.get("/protokoll?art=payment.post").await.body);
+    assert!(filtered.contains("Einzahlung gebucht") && !filtered.contains("Boot gesperrt"));
+    assert!(
+        !all.contains("12,50") && !all.contains("geheim"),
+        "keine Werte im Protokoll"
+    );
+    let by_actor = main_of(&lukas.get("/protokoll?akteur=102").await.body);
+    assert!(by_actor.contains("Boot gesperrt") && !by_actor.contains("Einzahlung gebucht"));
+    // Greta sieht nur die eigenen Einträge.
+    let own = main_of(&greta.get("/protokoll").await.body);
+    assert!(
+        own.contains("Schein oder Lizenz hinzugefügt")
+            && !own.contains("Boot gesperrt")
+            && !own.contains("Einzahlung gebucht")
+    );
+    assert!(
+        !own.contains("name=\"akteur\""),
+        "Filter nach Akteur nur mit Einsicht in alles"
+    );
+    // Navigation zeigt Protokoll allen Mitgliedern.
+    assert!(greta.get("/").await.body.contains("href=\"/protokoll\""));
+}

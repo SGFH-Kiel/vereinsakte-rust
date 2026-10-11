@@ -65,8 +65,8 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 10. Protokoll
 
-- [ ] 10.1 Protokollseite `/protokoll` mit Filtern Zeitraum, Akteur, Art, neueste zuerst; Mitglieder sehen nur Einträge, in denen sie handelnd oder betroffen sind; Tests: Revisor filtert „Einzahlung“, Greta sieht nur eigene Einträge, kein Eintrag enthält Feldwerte oder Sitzungsdaten
-- [ ] 10.2 Sicherstellen, dass jeder schreibende Anwendungsfall aus den Gruppen 4–9 einen Eintrag schreibt (Sammeltest über eine Liste aller Befehle) und bei Fehler keinen; Test: für jeden Befehl Erfolg → genau ein Eintrag, 403/409/422 → keiner
+- [x] 10.1 Protokollseite `/protokoll` mit Filtern Zeitraum, Akteur, Art, neueste zuerst; Mitglieder sehen nur Einträge, in denen sie handelnd oder betroffen sind; Tests: Revisor filtert „Einzahlung“, Greta sieht nur eigene Einträge, kein Eintrag enthält Feldwerte oder Sitzungsdaten
+- [x] 10.2 Sicherstellen, dass jeder schreibende Anwendungsfall aus den Gruppen 4–9 einen Eintrag schreibt (Sammeltest über eine Liste aller Befehle) und bei Fehler keinen; Test: für jeden Befehl Erfolg → genau ein Eintrag, 403/409/422 → keiner
 
 ## 11. Integration und Dokumentation
 

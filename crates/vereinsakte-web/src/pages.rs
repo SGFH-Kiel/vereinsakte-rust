@@ -71,6 +71,7 @@ fn navigation(principal: &Principal, path: &str) -> Vec<NavItem> {
         ("/arbeit", "Arbeit"),
         ("/aemter", "Ämter"),
         ("/konto", "Konto"),
+        ("/protokoll", "Protokoll"),
     ];
     if principal.can(&vereinsakte_core::rights::Capability::ReadAllAccounts) {
         items.push(("/finanzen", "Finanzen"));
