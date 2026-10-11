@@ -12,6 +12,7 @@ vereinsakte-app.workspace = true
 vereinsakte-storage.workspace = true
 vereinsakte-web.workspace = true
 anyhow.workspace = true
+axum.workspace = true
 clap.workspace = true
 figment.workspace = true
 serde.workspace = true
@@ -27,7 +28,6 @@ vereinsakte-core = { workspace = true, features = ["example"] }
 figment = { workspace = true, features = ["test"] }
 tempfile.workspace = true
 tower.workspace = true
-axum.workspace = true
 
 [lints]
 workspace = true

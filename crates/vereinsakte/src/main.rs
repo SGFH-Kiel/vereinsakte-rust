@@ -1,3 +1,3 @@
-fn main() {
-    vereinsakte::run();
+fn main() -> std::process::ExitCode {
+    vereinsakte::run()
 }

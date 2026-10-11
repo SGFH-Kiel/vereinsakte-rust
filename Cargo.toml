@@ -33,7 +33,7 @@ sqlx = { version = "0.8", default-features = false, features = ["sqlite", "runti
 tempfile = "3"
 thiserror = "2"
 time = "0.3"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal"] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["trace", "set-header"] }
 tower-sessions = "0.14"

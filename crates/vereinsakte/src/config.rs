@@ -117,6 +117,7 @@ impl Config {
 }
 
 #[cfg(test)]
+#[allow(clippy::result_large_err)] // Rückgabetyp von `Jail::expect_with` ist vorgegeben
 mod tests {
     use figment::Jail;
 

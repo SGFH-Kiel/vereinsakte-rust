@@ -1,5 +1,7 @@
-//! Programm `vereinsakte`.
+//! Programm `vereinsakte`: Server, Migration, Import und Export.
 
+pub mod cli;
 pub mod config;
+pub mod server;
 
-pub fn run() {}
+pub use cli::run;
