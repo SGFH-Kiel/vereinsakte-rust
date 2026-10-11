@@ -26,7 +26,7 @@ Aufgaben liegen als `Task` (Titel, Beschreibung, Boot, Zuständige, Stunden, Fä
 
 **Saisonarchiv rein berechnet.** „Archiviert“ ist kein gespeicherter Zustand: eine erledigte Aufgabe, deren `done_at` vor Beginn der laufenden Saison liegt, wird vom Board gefiltert und im Archiv (aus `add-ui-fuehrung`) gelistet. Kein Hintergrundjob, kein Datenmigrationsschritt, Wiederöffnen wirkt sofort. Saisonbeginn = 1. Januar des laufenden Jahres (Kalenderjahr, wie Segel- und Beitragsjahr im Verein); bei abweichenden `Season`-Daten gilt deren Beginn.
 
-**Anhänge: neue Tabellen, Bilddaten im BLOB.** Migration `0003_task_attachments.sql`: `task_comments(id, task_id FK, author, at, text, version)` und `task_images(id, task_id FK, uploader, at, filename, content_type, alt, size, data BLOB)`. Bilddaten in SQLite statt im Dateisystem: ein Backup, transaktional mit der Aufgabe, keine Pfadfragen; bei 20 × 8 MB je Aufgabe überschaubar für Vereinsgröße. Kommentare/Bilder lesen die Board-Ansicht nur als Zähler (eigene Abfrage), Bilddaten nie in Listenabfragen. Alternative: Dateisystem/Objektspeicher — zweiter Speicherort, schwieriger zu sichern. `ON DELETE CASCADE` wie bei Arbeitseinsätzen.
+**Anhänge: neue Tabellen, Bilddaten im BLOB.** Migration `0004_task_attachments.sql`: `task_comments(id, task_id FK, author, at, text, version)` und `task_images(id, task_id FK, uploader, at, filename, content_type, alt, size, data BLOB)`. Bilddaten in SQLite statt im Dateisystem: ein Backup, transaktional mit der Aufgabe, keine Pfadfragen; bei 20 × 8 MB je Aufgabe überschaubar für Vereinsgröße. Kommentare/Bilder lesen die Board-Ansicht nur als Zähler (eigene Abfrage), Bilddaten nie in Listenabfragen. Alternative: Dateisystem/Objektspeicher — zweiter Speicherort, schwieriger zu sichern. `ON DELETE CASCADE` wie bei Arbeitseinsätzen.
 
 **Upload sicher.** axum `Multipart` mit Bodygrenze 9 MB auf genau dieser Route; Inhalt wird an den Magic Bytes erkannt (JPEG/PNG/WebP/GIF), der Client-Typ ignoriert; keine Bildverarbeitung (keine Dekodierung → keine Dekoder-Angriffsfläche), keine Vorschaubilder auf dem Server, die Vorschau skaliert der Browser (CSS). Auslieferung mit festem `Content-Type` aus der Erkennung, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox`, `Cache-Control: private`. Dateiname wird nie im Pfad benutzt. SVG ist ausgeschlossen (Skripte). Alternative: serverseitig neu kodieren (Metadaten/EXIF entfernen) — wünschenswert für Standortdaten, aber braucht eine Bildbibliothek; als offene Frage vermerkt.
 
@@ -49,7 +49,7 @@ Aufgaben liegen als `Task` (Titel, Beschreibung, Boot, Zuständige, Stunden, Fä
 
 ## Migration Plan
 
-Neue Migration `0003` läuft beim Start; bestehende Aufgaben unverändert. Backup-Hinweis im README (SQLite-Datei enthält nun Bilder).
+Neue Migration `0004` läuft beim Start; bestehende Aufgaben unverändert. Backup-Hinweis im README (SQLite-Datei enthält nun Bilder).
 
 ## Open Questions
 

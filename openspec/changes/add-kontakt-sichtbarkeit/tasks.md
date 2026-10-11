@@ -3,7 +3,7 @@
 ## 1. Kern und Speicher
 
 - [ ] 1.1 `Member.contact_blocked` (Standard `false`, `serde(default)`) und `contact_visible(viewer, subject)` im Kern bzw. in der Anwendungsschicht; Unit-Tests: selbst, Vorstand, Amtsträger ohne Vorstand, normales Mitglied, mit und ohne Sperrvermerk; `cargo test -p vereinsakte-core -p vereinsakte-app` grün.
-- [ ] 1.2 Migration (nächste freie Nummer) mit `contact_blocked`, Lesen/Schreiben, alte Akten ohne Merkmal lesbar; Test: Round-trip, Import ohne Merkmal ergibt `false`.
+- [ ] 1.2 Migration `0003_contact_blocked.sql` mit `contact_blocked`, Lesen/Schreiben, alte Akten ohne Merkmal lesbar; Test: Round-trip, Import ohne Merkmal ergibt `false`.
 
 ## 2. Anwendungsfälle
 

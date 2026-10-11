@@ -29,8 +29,9 @@ Telefonnummern und E-Mail-Adressen sind unter Vereinsmitgliedern kein Geheimnis:
 ## Impact
 
 - `crates/vereinsakte-core`: Mitglied erhält `contact_blocked: bool` (Standard `false`, abwärtskompatibel beim Einlesen).
-- `crates/vereinsakte-storage`: Migration `0003`/nächste freie Nummer – Spalte `contact_blocked`; Lesen/Schreiben.
+- `crates/vereinsakte-storage`: Migration `0003` – Spalte `contact_blocked`; Lesen/Schreiben.
 - `crates/vereinsakte-app`: Sichtbarkeitsregel im Verzeichnis, in den Mitgliedsseiten und der Ämterübersicht; Use Case zum Setzen des Merkmals; Protokollaktion.
 - `crates/vereinsakte-web`: Vorlagen für Liste, Mitgliedsseite, Ämter, „Meine Daten“ (Schalter), Hinweis „Kontaktdaten gesperrt“; Tests der alten Regel („Greta sieht keine Kontaktdaten“) werden angepasst.
 - Datenschutz: Die Voreinstellung „sichtbar“ ist eine Änderung für Bestandsmitglieder; der Verein informiert sie vor dem Start (Hinweis im README und auf der Startseite einmalig, siehe Design).
 - Keine neuen Abhängigkeiten.
+- Reihenfolge: **1. von 3**, keine Voraussetzung; `add-ui-fuehrung` und `add-aufgabenboard` folgen danach.

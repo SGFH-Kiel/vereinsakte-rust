@@ -3,7 +3,7 @@
 ## 1. Kern und Speicher
 
 - [ ] 1.1 `TaskStatus::Waiting` (`waiting`), `TaskComment`, `TaskImage`-Metadaten im Kern; `set_status` löscht `done_at` auch für `Waiting`; Unit-Tests für alle Übergänge inkl. Wiederöffnen, `cargo test -p vereinsakte-core` grün.
-- [ ] 1.2 Migration `0003_task_attachments.sql` (Kommentare, Bilder als BLOB, Fremdschlüssel mit Cascade) und Lesen/Schreiben im Speicher mit Versionen; Test: Kommentar und Bild round-trip, Kaskade beim Löschen der Aufgabe, Listenabfragen laden keine Bilddaten (Test prüft Abfrage-Spalten).
+- [ ] 1.2 Migration `0004_task_attachments.sql` (Kommentare, Bilder als BLOB, Fremdschlüssel mit Cascade) und Lesen/Schreiben im Speicher mit Versionen; Test: Kommentar und Bild round-trip, Kaskade beim Löschen der Aufgabe, Listenabfragen laden keine Bilddaten (Test prüft Abfrage-Spalten).
 - [ ] 1.3 Saisonfilter: `board(season_start)` liefert Aufgaben pro Spalte ohne erledigte aus früheren Saisons und `archived_tasks()`; Unit-Tests für Mai 2026 erledigt im Juli 2026 (DONE) und im Januar 2027 (Archiv) sowie Wiederöffnen.
 
 ## 2. Anwendungsfälle und Rechte

@@ -23,7 +23,7 @@ Das Verzeichnis liefert Kontaktdaten bisher nur, wenn der Abfragende ein aktuell
 
 **Mitgliedsnummer, Art, Scheine, Funklizenzen für alle sichtbar.** Sie sind nicht sensibel und werden für die Symbole der Mitgliederliste gebraucht; das war bisher die Amtsbedingung, die entfällt.
 
-**Merkmal am Mitglied.** `contact_blocked: bool` mit `#[serde(default)]`; Spalte `contact_blocked INTEGER NOT NULL DEFAULT 0` in einer neuen Migration (nächste freie Nummer). Eigene Änderung ist ein eigener Schalter mit eigenem Use Case, damit „Meine Daten“ ihn auch ohne Änderung der übrigen Felder speichern kann; Rechte: nur das Mitglied selbst (Vorstand nicht, da Willenserklärung des Mitglieds).
+**Merkmal am Mitglied.** `contact_blocked: bool` mit `#[serde(default)]`; Spalte `contact_blocked INTEGER NOT NULL DEFAULT 0` in der Migration `0003_contact_blocked.sql`. Eigene Änderung ist ein eigener Schalter mit eigenem Use Case, damit „Meine Daten“ ihn auch ohne Änderung der übrigen Felder speichern kann; Rechte: nur das Mitglied selbst (Vorstand nicht, da Willenserklärung des Mitglieds).
 
 **Protokoll.** Aktion `member.contact_block_changed` mit Feld „Sperrvermerk“ (ohne Werte der Kontaktdaten); `ACTIONS`-Sweep-Test wird erweitert.
 

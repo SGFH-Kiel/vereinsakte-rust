@@ -29,9 +29,9 @@ Aufgaben sind das Werkzeug, mit dem der Verein Arbeit verteilt (Segel nähen, An
 ## Impact
 
 - `crates/vereinsakte-core`: `TaskStatus::Waiting`, `TaskComment`, `TaskImage` (Metadaten).
-- `crates/vereinsakte-storage`: Migration `0003` (Tabellen für Kommentare und Bilder, Bilddaten als BLOB), Status-Wert „waiting“.
+- `crates/vereinsakte-storage`: Migration `0004` (Tabellen für Kommentare und Bilder, Bilddaten als BLOB), Status-Wert „waiting“.
 - `crates/vereinsakte-app`: Use Cases für Board, Kommentar, Bild, Beschreibung, Archiv; Audit-Aktionen; Rechteprüfung.
 - `crates/vereinsakte-web`: Board- und Aufgabenseiten, Mehrteil-Upload (axum `multipart`), Bildauslieferung, Markdown-Rendern; eine kleine statische Datei `board.js` für Ziehen (optional).
 - Neue Abhängigkeiten: Markdown-Renderer (`pulldown-cmark`), axum-Feature `multipart`.
 - Backup/Export umfasst nun Bilddaten (Datenbankgröße wächst; README ergänzen).
-- Voraussetzung: `add-ui-fuehrung` (Navigation, Seitenkopf, Archiv).
+- Reihenfolge: **3. von 3**. Voraussetzung: `add-ui-fuehrung` (Navigation, Seitenkopf, Archiv, Panels); Migration folgt auf `0003` aus `add-kontakt-sichtbarkeit`.
