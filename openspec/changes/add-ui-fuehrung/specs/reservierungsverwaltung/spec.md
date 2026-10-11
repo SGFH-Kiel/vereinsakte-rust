@@ -20,11 +20,27 @@ Alle aktiven Mitglieder SHALL Reservierungen je Boot im Bereich „Kalender“ n
 - **THEN** erscheint er als Tagesliste der Woche ohne seitliches Scrollen
 
 ### Requirement: Reservierung anlegen
-Ein Mitglied SHALL von der Bootsseite oder der Bootsliste aus für ein Boot, einen Zeitraum und ein Fahrtgebiet eine Reservierung mit sich selbst als Skipper anlegen können, optional mit Co-Skipper, Crew, Gästen, eigenem Zeitraum an Bord und Bemerkung. Das Fahrtgebiet SHALL mit dem Heimrevier vorbelegt sein. Ein Tour-Kennzeichen SHALL nicht abgefragt werden; es ergibt sich aus der Dauer. Berechtigte nach der Spec `rechte` SHALL für andere Skipper reservieren können.
+Ein Mitglied SHALL von der Bootsseite oder der Bootsliste aus für ein Boot, einen Zeitraum und ein Fahrtgebiet eine Reservierung mit sich selbst als Skipper anlegen können, optional mit Co-Skipper, Crew, Gästen, eigenem Zeitraum an Bord und Bemerkung. Das Fahrtgebiet SHALL mit dem Heimrevier vorbelegt sein. Crew und Gäste SHALL im Formular als Listen der Mitfahrer erscheinen, denen man einzeln hinzufügen und die man einzeln entfernen kann, statt als Freitextfeld; Crew-Mitglieder SHALL aus den aktiven Mitgliedern gewählt werden, Gäste mit Name und optional Telefon eingegeben, beide mit optionalem eigenem Zeitraum an Bord. Ein Tour-Kennzeichen SHALL nicht abgefragt werden; es ergibt sich aus der Dauer. Berechtigte nach der Spec `rechte` SHALL für andere Skipper reservieren können.
 
 #### Scenario: Reservierung mit Crew
 - **WHEN** Anna die Schruvtrekker für Samstag 10–18 Uhr im Heimrevier mit Co-Skipper Ben, Crew Clara und Gast „Max Gast“ reserviert
 - **THEN** erscheint sie im Kalender mit allen Beteiligten
+
+#### Scenario: Crew hinzufügen und entfernen
+- **WHEN** Anna im Reservierungsformular Clara und David als Crew hinzufügt und David wieder entfernt
+- **THEN** zeigt die Liste nur Clara als Link zu ihrer Profilseite, und beim Speichern ist nur Clara Crew
+
+#### Scenario: Ohne JavaScript
+- **WHEN** ohne JavaScript „Hinzufügen“ gewählt wird
+- **THEN** erscheint dasselbe Formular mit dem neuen Mitfahrer in der Liste, ohne dass gespeichert wurde und mit erhaltenen übrigen Eingaben
+
+#### Scenario: Gast hinzufügen
+- **WHEN** Anna den Gast „Max Gast“ mit Telefonnummer hinzufügt
+- **THEN** steht er als Text (ohne Profillink) in der Liste der Mitfahrer
+
+#### Scenario: Doppelte Person
+- **WHEN** ein bereits eingetragenes Crew-Mitglied oder der Skipper erneut hinzugefügt wird
+- **THEN** zeigt das Formular „bereits an Bord“ und die Liste bleibt unverändert
 
 #### Scenario: Tour ohne Haken
 - **WHEN** Anna die Schruvtrekker vom 1. bis 7. Juli reserviert

@@ -35,6 +35,7 @@
 
 - [ ] 5.1 Kern: `Reservation::is_tour()` (Ende-Kalendertag nach Beginn-Kalendertag), Feld `tour` nicht mehr schreiben/lesen, Gebühren, Anzeige und Audit darauf umstellen; Unit-Tests für Nachmittag, 1.–7. Juli, Nachtfahrt über Mitternacht, verkürzte Tour; `cargo test -p vereinsakte-core -p vereinsakte-app -p vereinsakte-storage` grün.
 - [ ] 5.2 Web: Tour-Feld aus dem Reservierungsformular entfernen, Heimrevier und Skipper vorbelegen, Tour-Plakette und Gebührenanzeige aus der Berechnung; Tests: Formular ohne Tour-Feld, siebentägige Reservierung zeigt „Tour“ und Gebühr, Nachmittag nicht.
+- [ ] 5.3 Mitfahrerlisten im Reservierungsformular (Crew und Gäste) mit Hinzufügen/Entfernen ohne JavaScript (Formular-Rerender ohne Speichern) und per htmx als Ausschnitt, Crew als Namenslinks, Doppelte und Skipper abgelehnt, unsichtbare Standard-Speichern-Schaltfläche; Textarea-Format entfällt auch im Parser; Tests: Clara und David hinzufügen, David entfernen, nur Clara gespeichert, Link auf `/mitglieder/103`, doppelter Eintrag → „bereits an Bord“, Gast als Text, Eingaben bleiben beim Rerender, Eingabetaste speichert, Reservierungsdetail zeigt Crew als Links.
 
 ## 6. Bereich Kalender
 
