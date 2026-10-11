@@ -103,9 +103,13 @@ a:hover { color: var(--accent-strong); }
 .account .who { padding: 0 .75rem; }
 @media (min-width: 48rem) {
   .nav-button { display: none; }
-  .menu { display: flex; flex: 1; flex-direction: row; align-items: center; justify-content: space-between; padding: 0; gap: 1rem; }
-  .menu nav { flex-direction: row; flex-wrap: wrap; }
-  .account { flex-direction: row; align-items: center; border-top: 0; padding-top: 0; gap: .75rem; }
+  /* Menü auflösen: Marke und Konto stehen oben, die Navigation in einer eigenen Zeile. */
+  .menu { display: contents; }
+  .brand { order: 1; }
+  .account { order: 2; margin-left: auto; flex-direction: row; align-items: center; border-top: 0; padding-top: 0; gap: .75rem; }
+  .account .who { padding: 0; text-align: right; }
+  .menu nav { order: 3; flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; gap: .1rem; border-top: 1px solid var(--line); padding-top: .35rem; }
+  .menu a.nav-link { padding: 0 .75rem; min-height: 2.5rem; }
 }
 main { max-width: 72rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 .page-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }

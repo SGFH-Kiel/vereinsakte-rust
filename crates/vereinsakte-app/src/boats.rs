@@ -199,9 +199,17 @@ fn parse_requirement(text: &str, boats: &[Boat]) -> Result<Requirement, String> 
 }
 
 fn crew_rule_text(rule: &CrewRule) -> String {
+    let plural = |n: u8, one: &str, many: &str| {
+        if n == 1 {
+            format!("1 {one}")
+        } else {
+            format!("{n} {many}")
+        }
+    };
     let mut text = format!(
-        "mindestens {} Mitglieder, {} Personen",
-        rule.min_members, rule.min_persons
+        "mindestens {}, insgesamt mindestens {}",
+        plural(rule.min_members, "Mitglied", "Mitglieder"),
+        plural(rule.min_persons, "Person", "Personen"),
     );
     if rule.co_skipper_required {
         text.push_str(", Co-Skipper erforderlich");
