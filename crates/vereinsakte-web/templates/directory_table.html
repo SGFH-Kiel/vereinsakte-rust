@@ -1,0 +1,24 @@
+<table id="mitglieder-tabelle">
+  <thead>
+    <tr>
+      <th>Name</th><th>Ämter</th>
+      {% if v.show_contact %}<th>Nr.</th><th>Mitgliedsart</th><th>E-Mail</th><th>Telefon</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for entry in v.entries %}
+    <tr>
+      <td>{{ entry.name }}</td>
+      <td>{{ entry.offices|join(", ") }}</td>
+      {% if let Some(contact) = entry.contact %}
+      <td class="num">{{ contact.member_number }}</td>
+      <td>{{ contact.membership_type }}</td>
+      <td>{% if let Some(email) = contact.email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}</td>
+      <td>{{ contact.phones|join(", ") }}</td>
+      {% endif %}
+    </tr>
+  {% else %}
+    <tr><td colspan="6">Keine Mitglieder gefunden.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+  <meta name="csrf-token" content="{{ layout.csrf }}">
+  <title>{{ layout.title }} – Vereinsakte</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body hx-headers='{"X-CSRF-Token": "{{ layout.csrf }}"}'>
+{% if let Some(dev) = layout.dev_bar %}
+  <div class="devbar" role="region" aria-label="Entwicklungsmodus">
+    <span><strong>Entwicklungsmodus</strong> – angemeldet als {{ dev.current_name }}</span>
+    <form method="post" action="/dev/switch">
+      <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+      <input type="hidden" name="next" value="{{ dev.next }}">
+      <label>Wechseln zu
+        <select name="member">
+        {% for group in dev.groups %}
+          <optgroup label="{{ group.label }}">
+          {% for choice in group.choices %}
+            <option value="{{ choice.member }}"{% if choice.member.get() == dev.current %} selected{% endif %}>{{ choice.name }}{% if !choice.offices.is_empty() %} – {{ choice.offices|join(", ") }}{% endif %}</option>
+          {% endfor %}
+          </optgroup>
+        {% endfor %}
+        </select>
+      </label>
+      <button type="submit">Wechseln</button>
+    </form>
+  </div>
+{% endif %}
+  <header class="top">
+    <a class="brand" href="/">Vereinsakte <span class="muted">Segelgruppe an der FH Kiel</span></a>
+  {% if let Some(user) = layout.user %}
+    <nav>
+      <a href="/meine-daten">Meine Daten</a>
+      <a href="/mitglieder">Mitglieder</a>
+    </nav>
+    <div class="account">
+      <span>{{ user.name }}{% if !user.offices.is_empty() %} <span class="muted">({{ user.offices|join(", ") }})</span>{% endif %}</span>
+      <form method="post" action="/logout">
+        <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+        <button type="submit" class="link">Abmelden</button>
+      </form>
+    </div>
+  {% endif %}
+  </header>
+  <main>
+{% block content %}{% endblock %}
+  </main>
+</body>
+</html>

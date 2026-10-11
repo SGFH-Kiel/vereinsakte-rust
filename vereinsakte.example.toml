@@ -1,0 +1,21 @@
+# Beispielkonfiguration für die lokale Entwicklung.
+# Jeder Wert lässt sich per Umgebungsvariable überschreiben, z. B.
+#   VEREINSAKTE_PORT=9000  oder  VEREINSAKTE_ENTRA__TENANT_ID=...
+
+# Im Entwicklungsmodus läuft die Anmeldung ohne Microsoft Entra ID über eine
+# Auswahlliste der Mitglieder; Cookies werden ohne `Secure` gesetzt.
+mode = "development"
+
+listen = "127.0.0.1"
+port = 8080
+base_url = "http://localhost:8080"
+database = "vereinsakte.db"
+
+# Sitzungen laufen nach so vielen Minuten ohne Aktivität ab.
+session_idle_minutes = 480
+
+# Für den Produktionsmodus (mode = "production") erforderlich:
+# [entra]
+# tenant_id = "00000000-0000-0000-0000-000000000000"
+# client_id = "00000000-0000-0000-0000-000000000000"
+# client_secret = "…"   # besser per VEREINSAKTE_ENTRA__CLIENT_SECRET setzen

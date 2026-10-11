@@ -1,14 +1,46 @@
-[package]
-name = "vereinsakte-rust"
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "UNLICENSED"
+publish = false
 
-[dependencies]
+[workspace.dependencies]
+vereinsakte-core = { path = "crates/vereinsakte-core" }
+vereinsakte-app = { path = "crates/vereinsakte-app" }
+vereinsakte-storage = { path = "crates/vereinsakte-storage" }
+vereinsakte-web = { path = "crates/vereinsakte-web" }
+
 chrono = { version = "0.4", features = ["serde"] }
 rust_decimal = "1"
 serde = { version = "1", features = ["derive"] }
-uuid = { version = "1", features = ["v4", "serde"] }
-
-[dev-dependencies]
-rust_decimal_macros = "1"
 serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+rust_decimal_macros = "1"
+
+anyhow = "1"
+async-trait = "0.1"
+askama = "0.16"
+axum = { version = "0.8", features = ["macros"] }
+clap = { version = "4", features = ["derive", "env"] }
+figment = { version = "0.10", features = ["toml", "env"] }
+openidconnect = { version = "4", default-features = false, features = ["reqwest", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+sqlx = { version = "0.8", default-features = false, features = ["sqlite", "runtime-tokio", "migrate", "macros"] }
+tempfile = "3"
+thiserror = "2"
+time = "0.3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["trace", "set-header"] }
+tower-sessions = "0.14"
+tower-sessions-sqlx-store = { version = "0.15", features = ["sqlite"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+url = "2"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"

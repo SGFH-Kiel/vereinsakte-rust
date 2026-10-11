@@ -1,0 +1,28 @@
+/* Schlichtes Grundlayout der Vereinsakte. */
+:root { --accent: #00788a; --warn: #9a3412; --ok: #166534; --muted: #6b7280; --line: #e5e7eb; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: #111827; }
+main { max-width: 960px; margin: 0 auto; padding: 1rem; }
+a { color: var(--accent); }
+.top { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; padding: .75rem 1rem; border-bottom: 1px solid var(--line); }
+.top nav { display: flex; gap: 1rem; }
+.top .account { margin-left: auto; display: flex; gap: .75rem; align-items: center; }
+.brand { font-weight: 600; text-decoration: none; }
+.muted { color: var(--muted); font-weight: normal; }
+.devbar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; padding: .5rem 1rem; background: #fef3c7; border-bottom: 2px solid #f59e0b; }
+.devbar form { display: flex; gap: .5rem; align-items: center; margin: 0; }
+.warning { color: var(--warn); }
+.ok { color: var(--ok); }
+.pending { color: var(--warn); }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: .25rem 1rem; }
+dt { color: var(--muted); }
+dd { margin: 0; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num { text-align: right; white-space: nowrap; }
+button.link { background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; font: inherit; text-decoration: underline; }
+form.search { display: flex; gap: .5rem; align-items: end; margin-bottom: 1rem; }
+ul.choices { list-style: none; padding: 0; }
+ul.choices li { margin: .25rem 0; }
+ul.choices form { display: flex; gap: .75rem; align-items: center; }
+.error { text-align: center; padding-top: 4rem; }

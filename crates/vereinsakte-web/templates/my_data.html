@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ v.name }}</h1>
+{% if v.address_invalid %}
+<p class="warning">Deine Meldeadresse ist als ungültig markiert. Bis sie korrigiert ist, ruhen deine Bootserlaubnisse – bitte melde dich beim Vorstand.</p>
+{% endif %}
+
+<section>
+  <h2>Stammdaten</h2>
+  <dl>
+    <dt>Mitgliedsnummer</dt><dd>{{ v.member_number }}</dd>
+    <dt>Mitgliedsart</dt><dd>{{ v.membership_type }}</dd>
+    <dt>Eintritt</dt><dd>{{ v.joined }}</dd>
+    <dt>Anschrift</dt><dd>{{ v.street }}, {{ v.postal_code }} {{ v.city }}</dd>
+    {% for (label, number) in v.phones %}<dt>{{ label }}</dt><dd>{{ number }}</dd>{% endfor %}
+    {% if let Some(email) = v.email %}<dt>E-Mail</dt><dd>{{ email }}</dd>{% endif %}
+    {% if let Some(login) = v.login_email %}<dt>Anmeldekonto</dt><dd>{{ login }}</dd>{% endif %}
+    <dt>Segelscheine</dt><dd>{% if v.sailing_licenses.is_empty() %}keine{% else %}{{ v.sailing_licenses|join(", ") }}{% endif %}</dd>
+    <dt>Funklizenzen</dt><dd>{% if v.radio_licenses.is_empty() %}keine{% else %}{{ v.radio_licenses|join(", ") }}{% endif %}</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>Segelerlaubnis {{ v.year }}</h2>
+  {% if v.sailing_permit.granted %}
+  <p class="ok">Du hast die Segelerlaubnis für {{ v.year }}.</p>
+  {% else %}
+  <p class="warning">Dir fehlt die Segelerlaubnis für {{ v.year }}:</p>
+  <ul>{% for reason in v.sailing_permit.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+  {% endif %}
+  <h3>Bootserlaubnisse</h3>
+  {% if v.boat_permits.is_empty() %}<p>keine</p>{% else %}
+  <ul>{% for boat in v.boat_permits %}<li>{{ boat }}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Arbeitsstunden {{ v.year }}</h2>
+  <p>Angerechnet: <strong>{{ v.credited_hours }}</strong> von {{ v.required_hours }} Stunden</p>
+  {% if v.work.is_empty() %}<p>Noch keine Einsätze erfasst.</p>{% else %}
+  <table>
+    <thead><tr><th>Datum</th><th>Stunden</th><th>Gegenstand</th><th>Beschreibung</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for line in v.work %}
+      <tr>
+        <td>{{ line.date }}</td><td class="num">{{ line.hours }}</td><td>{{ line.subject }}</td><td>{{ line.description }}</td>
+        <td>{% if line.confirmed %}bestätigt{% else %}<span class="pending">unbestätigt</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Konto</h2>
+  <p>Kontostand: <strong>{{ v.balance.label() }}</strong></p>
+  {% if !v.claims.is_empty() %}
+  <h3>Forderungen</h3>
+  <table>
+    <thead><tr><th>Forderung</th><th>Betrag</th><th>Fällig</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for claim in v.claims %}
+      <tr><td>{{ claim.text }}</td><td class="num">{{ claim.amount }}</td><td>{% if let Some(due) = claim.due %}{{ due }}{% endif %}</td><td>{{ claim.state.label() }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if !v.payments.is_empty() %}
+  <h3>Einzahlungen</h3>
+  <table>
+    <thead><tr><th>Datum</th><th>Betrag</th><th>Verwendungszweck</th></tr></thead>
+    <tbody>
+    {% for payment in v.payments %}
+      <tr><td>{{ payment.date }}</td><td class="num">{{ payment.amount }}</td><td>{{ payment.text }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endblock %}

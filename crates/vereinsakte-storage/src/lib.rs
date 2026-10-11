@@ -1,0 +1,10 @@
+//! SQLite-Speicherung der Vereinsakte in einem relationalen Schema.
+
+pub mod db;
+mod read;
+pub mod repo;
+mod values;
+mod write;
+
+pub use db::{Database, StorageError};
+pub use repo::{SqliteClubStore, SqliteIdentityRepository};

@@ -1,0 +1,20 @@
+[package]
+name = "vereinsakte-app"
+description = "Anwendungsfälle, Zugriffsprüfung und Ports der Vereinsakte"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+vereinsakte-core.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+vereinsakte-core = { workspace = true, features = ["example"] }
+tokio.workspace = true
+
+[lints]
+workspace = true

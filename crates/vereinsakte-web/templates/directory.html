@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Mitglieder</h1>
+<form method="get" action="/mitglieder" class="search">
+  <label>Name suchen
+    <input type="search" name="q" value="{{ v.query }}" autocomplete="off"
+           hx-get="/mitglieder" hx-trigger="input changed delay:300ms, search"
+           hx-target="#mitglieder-tabelle" hx-swap="outerHTML">
+  </label>
+  <button type="submit">Suchen</button>
+</form>
+{% if !v.show_contact %}
+<p class="muted">Kontaktdaten sind nur für Mitglieder mit einem Amt sichtbar.</p>
+{% endif %}
+{% include "directory_table.html" %}
+{% endblock %}
