@@ -23,6 +23,7 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 - **Mitgliederliste mit Symbolen**: Segelscheine, Funkscheine und Mitgliedsart erscheinen als Symbole mit Tooltip statt als Text. Ebenso der Bootstyp (zwei Symbole: Jolle, Dickschiff; der genaue Typ mit Klasse im Tooltip).
 - **Tour ergibt sich aus der Buchungsdauer**: das Tour-Kennzeichen im Reservierungsformular entfällt; eine Reservierung gilt als Tour, sobald sie mindestens eine Übernachtung umfasst. **BREAKING** für Formular und gespeichertes Kennzeichen (wird ignoriert und aus dem Zeitraum berechnet).
 - **Neuer Bereich „Kalender“** statt „Reservierungen“: zeigt Reservierungen und Arbeitstermine gemeinsam, wahlweise als Liste (nach Woche und Tag gruppiert) oder als Kalender (Monat/Woche), mit Filtern und verlinkbarer Adresse. Arbeitstermine sind durch Symbol, Beschriftung und Form klar von Reservierungen unterscheidbar. Reservieren geschieht über das Boot (Bootsseite und -liste), es gibt keinen Menüpunkt „Reservierungen“ mehr.
+- **Einbindung in den Auftritt der Segelgruppe und professioneller Gesamteindruck**: Kopf mit Logo und Titel wie auf der Webseite, Überschriften in Amaranth (selbst gehostet), marineblauer Fuß mit Verweisen auf Webseite, Impressum und Datenschutz, gestaltete Anmeldung, Fehlerseiten und Druckansicht.
 - **Farbthema der Segelgruppe**: Marineblau, Blau, Cyan und Gelb nach der Vereinswebseite, mit Dunkelvariante und geprüftem Kontrast.
 - **Archiv statt Altlasten**: nicht mehr aktuelle Datensätze (beendete Ämter, ausgeschiedene Mitglieder, aufgehobene Sperren, vergangene Reservierungen und Arbeitstermine) verschwinden aus den Tagesansichten und stehen nur noch im Archiv beim Protokoll.
 - Aufgaben als Kanban-Board mit Kommentaren, Bildern und Markdown-Beschreibung sind **nicht** Teil dieser Änderung, sondern die eigene Änderung `add-aufgabenboard`; hier erscheinen „Aufgaben“ nur als Menüpunkt auf oberster Ebene.
@@ -48,7 +49,7 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 ## Impact
 
 - `crates/vereinsakte-core` (Reservierung: Tour berechnet), `crates/vereinsakte-app` (Zeitraum-Standards, Archiv-Ansichten), `crates/vereinsakte-web` (Kalenderansichten, Archiv), Reservierungsformular ohne Tour-Feld; Speicherspalte `tour` bleibt bestehen und wird nicht mehr gelesen (keine Migration).
-- `crates/vereinsakte-web`: `templates/*` (Basislayout, nahezu alle Seiten und Bausteine), `static/app.css`, neue Symbol-Vorlage `templates/_icons.html`, `src/pages.rs` (Navigationsgruppen, Initialen), kleine View-Erweiterungen für Hinweise auf der Startseite.
+- `crates/vereinsakte-web`: `templates/*` (Basislayout, nahezu alle Seiten und Bausteine), `static/app.css`, neue Assets (`static/img/sgfh-logo.svg`, `static/fonts/Amaranth-*.woff2` mit OFL-Lizenz), neue Symbol-Vorlage `templates/_icons.html`, `src/pages.rs` (Navigationsgruppen, Initialen), kleine View-Erweiterungen für Hinweise auf der Startseite.
 - `crates/vereinsakte-web/src/tests.rs`: Navigations- und Layout-Tests angepasst, neue Tests (Symbolsatz vollständig, keine Inline-Styles, Fortschrittselement, eingeklappte Aktionen).
 - `tools/screenshots.mjs`, `README.md`: Screenshots und Beschreibung aktualisieren.
 - Keine neuen Abhängigkeiten, keine Datenbankänderung, keine Schnittstellenänderung.

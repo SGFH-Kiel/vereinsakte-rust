@@ -10,11 +10,15 @@
 
 - [ ] 1.5 `PersonRef` in den Views und Makro `person`, Stil für Personenlinks; Unit-Test: aktives Mitglied → Link, Gast und Ausgeschiedener → Text.
 
+- [ ] 1.6 Assets einbinden: Vereinslogo als `static/img/sgfh-logo.svg`, Amaranth Regular/Bold als WOFF2 mit `@font-face`, OFL-Lizenztext im Ordner, Favicon und `theme-color`; Prüfung: Seitenaufruf lädt Logo und Schrift von der eigenen Adresse (Test auf Pfade, HTTP 200, korrekter Typ), Netzwerk-Mitschnitt im Playwright-Lauf zeigt keine Anfrage nach außen.
+
 ## 2. Navigation und Rahmen
 
 - [ ] 2.1 `pages.rs::navigation` liefert Gruppen (Persönlich, Verein, Verwaltung) mit Symbol, Ziel und Beschriftung nach Rechten sowie Initialen des Mitglieds; Unit-Test: Greta ohne „Finanzen“, Eva mit „Finanzen“, Gruppenreihenfolge, „Kalender“ statt „Reservierungen“ und „Aufgaben“ in der Gruppe Verein.
 - [ ] 2.2 `base.html`: Seitenleiste ab 64 rem, Symbolleiste 48–64 rem, untere Tab-Leiste (Start, Boote, Kalender, Arbeit, Mehr) unter 48 rem mit Checkbox-Blatt für „Mehr“, Kontomenü mit Name, Ämtern und Abmelden; Tests: aktueller Bereich `aria-current`, Menü ohne JavaScript (Checkbox und Label vorhanden), Entwicklungsleiste bleibt.
 - [ ] 2.3 Meldungen (`flash`) und Fehlerseiten im neuen Stil mit Symbol; Test: bestehende Flash- und 403/404/409/422-Tests grün.
+- [ ] 2.4 Kopf und Fuß im Stil der Webseite (heller Kopf mit Logo, Titel, Untertitel, Plakette „Vereinsakte“, Kontomenü; marineblauer Fuß mit Links zu Webseite, Impressum, Datenschutz und Urheberzeile); Tabellenstil wie auf der Webseite; Tests: Kopf enthält Logo und Titel, Fuß enthält die drei Links, Logo führt zu `/`.
+- [ ] 2.5 Anmeldeseite (auch Entwicklungsanmeldung), Fehlerseiten 403/404/409/422/500, leere Zustände und Druckansicht des Jahresnachweises mit Briefkopf im neuen Stil; Tests: Fehlerseiten zeigen Symbol, Text und Link zur Startseite, Druck enthält Briefkopf ohne Navigation (Playwright-PDF, eine A4-Seite).
 
 ## 3. Startseite und „Meine Daten“
 
@@ -60,5 +64,6 @@
 
 ## 9. Abschluss
 
+- [ ] 9.0 Gesamteindruck abnehmen: Screenshots von Webseite (Start, Termine) und Vereinsakte (Start, Mitglieder, Boot, Kalender, Formular, Anmeldung, Fehler, Druck) nebeneinander prüfen: Logo, Farben, Überschriftenschrift, Fuß passen zusammen; Checkliste (keine nackten Browser-Elemente, Raster, Fokus, Texte ohne Fehler) abgehakt und Abweichungen behoben.
 - [ ] 9.1 `tools/screenshots.mjs` an neue Struktur anpassen, alle Seiten bei 375 und 1280 px, hell und dunkel; Prüfung: kein horizontales Scrollen, keine Inline-Style-Verletzung in der Konsole, Sichtprüfung der Hauptseiten.
 - [ ] 9.2 End-to-End-Test (alle Seiten × alle Mitglieder) und `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` grün; README (Oberfläche, Tour-Regel, Archiv, Screenshots) aktualisieren und die Befehle laufen wie beschrieben.

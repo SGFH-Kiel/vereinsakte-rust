@@ -270,3 +270,36 @@ Wo ein Boot in Listen, Karten und im Kalender erscheint, SHALL sein Bootstyp als
 #### Scenario: Ausgeschiedenes Mitglied
 - **WHEN** das Protokoll einen Eintrag eines ausgeschiedenen Mitglieds zeigt
 - **THEN** erscheint dessen Name als Text ohne Link
+
+### Requirement: Einbindung in den Auftritt der Segelgruppe
+Kopf und Fuß der Oberfläche SHALL sich am Auftritt der Webseite der Segelgruppe orientieren: ein heller Kopf mit dem Vereinslogo, dem Titel „Segelgruppe“ und der Zeile „an der Fachhochschule Kiel e.V.“ sowie dem Namen des Bereichs „Vereinsakte“, Überschriften in der Schrift der Webseite (Amaranth), ein marineblauer Fuß mit Urheberzeile und Verweisen auf die Webseite, Impressum und Datenschutz.
+
+#### Scenario: Kopf
+- **WHEN** eine beliebige Seite geöffnet wird
+- **THEN** zeigt der Kopf das Logo, „Segelgruppe“, „an der Fachhochschule Kiel e.V.“ und „Vereinsakte“, und das Logo führt zur Startseite
+
+#### Scenario: Fuß
+- **WHEN** eine beliebige angemeldete Seite bis zum Ende gescrollt wird
+- **THEN** steht ein marineblauer Fuß mit der Urheberzeile und Links zur Webseite, zum Impressum und zum Datenschutz
+
+### Requirement: Eigene Ressourcen für den Auftritt
+Logo, Schrift und Symbole des Auftritts SHALL von der eigenen Adresse der Vereinsakte stammen. Das Logo SHALL zur Startseite der Vereinsakte führen, und ein Verweis „Zur Webseite“ SHALL zur Webseite der Segelgruppe führen.
+
+#### Scenario: Eigene Ressourcen
+- **WHEN** eine Seite mit Logo und Überschriften geladen wird
+- **THEN** stammen Logo und Schrift von der Adresse der Vereinsakte und keine Anfrage geht an die Webseite der Segelgruppe
+
+### Requirement: Durchgängig professioneller Eindruck
+Alle Seiten SHALL einheitlich gestaltet sein, einschließlich Anmeldeseite, Fehlerseiten (403, 404, 409, 422, 500), leerer Zustände, Meldungen und der Druckansicht des Jahresnachweises mit Briefkopf der Segelgruppe. Es SHALL keine ungestalteten Standardelemente des Browsers (nackte Listen, Tabellen, Schaltflächen, Auswahlfelder) geben, Abstände SHALL einem festen Raster folgen und Texte SHALL ohne Rechtschreib- und Zeichensetzungsfehler sein.
+
+#### Scenario: Anmeldeseite
+- **WHEN** die Anmeldeseite ohne Sitzung geöffnet wird
+- **THEN** erscheint sie im Auftritt der Segelgruppe mit Logo, Titel und einer klar hervorgehobenen Anmeldeaktion
+
+#### Scenario: Fehlerseite
+- **WHEN** eine nicht vorhandene Adresse aufgerufen wird
+- **THEN** erscheint eine gestaltete Seite mit Symbol, verständlichem Text und Link zurück zur Startseite
+
+#### Scenario: Druck
+- **WHEN** der Jahresnachweis gedruckt wird
+- **THEN** enthält der Ausdruck Briefkopf mit Logo und Vereinsname, aber keine Navigation, und passt auf eine A4-Seite
