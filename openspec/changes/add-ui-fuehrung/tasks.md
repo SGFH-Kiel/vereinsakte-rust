@@ -52,7 +52,8 @@
 ## 8. Formulare
 
 - [ ] 8.1 `_forms.html` um Abschnitt-Makro, Pflichtkennzeichnung (`*`, `aria-required`) und Legende erweitern; haftende Aktionsleiste unter 48 rem ohne Feldüberdeckung, Tab-Leiste auf Formularseiten ausgeblendet; Test: Pflichtfelder gekennzeichnet, Fehlermeldungen unverändert am Feld.
-- [ ] 8.2 Alle Formulare (Mitglied, Amt, Boot, Reservierung, Arbeitseinsatz, Termin, Aufgabe, Finanzen) auf Abschnitte umstellen, Texte beibehalten; Test: `cargo test --workspace` grün und Screenshot „Mitglied aufnehmen“ bei 375 px zeigt letzte Felder unverdeckt.
+- [ ] 8.2 Arbeitseinsatz-Formular (neu und ändern) mit Umschalter „Stunden / Zeitraum“ (Radiobuttons, CSS-Ein-/Ausblenden), Server wertet nur die gewählte Umfangsform; Tests: Standard zeigt nur Stunden, Zeitraum zeigt Beginn/Ende, Fehler (Ende vor Beginn) behält „Zeitraum“ und Eingaben, erzwungener Aufruf mit beiden Formen wird abgelehnt, Playwright-Screenshot bei 375 px für beide Zustände.
+- [ ] 8.3 Alle Formulare (Mitglied, Amt, Boot, Reservierung, Arbeitseinsatz (Abschnitte), Termin, Aufgabe, Finanzen) auf Abschnitte umstellen, Texte beibehalten; Test: `cargo test --workspace` grün und Screenshot „Mitglied aufnehmen“ bei 375 px zeigt letzte Felder unverdeckt.
 
 ## 9. Abschluss
 

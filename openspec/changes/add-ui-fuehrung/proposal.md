@@ -16,6 +16,7 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 - **Auf den Normalfall optimiert**: Voreinstellungen und Standardansichten bedienen den häufigsten Fall (kommende Reservierungen und Termine, aktuelle Besetzung, laufende Saison); Ausnahmen sind einen Schritt entfernt.
 - **Filterleiste statt Filterzeile**: Suche und Filter des Mitgliederverzeichnisses (und weiterer Listen mit mehreren Filtern) stehen in einer Leiste neben der Liste, am Handy einklappbar.
 - **Namen sind Links**: Jeder Mitgliedsname führt zur Profilseite der Person (Gäste und Ausgeschiedene bleiben Text).
+- **Arbeitseinsatz-Formular mit Umschalter Stunden/Zeitraum**: nur die jeweils relevanten Felder sind sichtbar, ohne JavaScript.
 - **Alle Tabellen sortierbar** per Klick auf den Spaltenkopf (aufsteigend/absteigend, in der Adresse, ohne JavaScript; am Handy per Auswahl).
 - **Mitgliederliste mit Symbolen**: Segelscheine, Funkscheine und Mitgliedsart erscheinen als Symbole mit Tooltip statt als Text. Ebenso der Bootstyp (zwei Symbole: Jolle, Dickschiff; der genaue Typ mit Klasse im Tooltip).
 - **Tour ergibt sich aus der Buchungsdauer**: das Tour-Kennzeichen im Reservierungsformular entfällt; eine Reservierung gilt als Tour, sobald sie mindestens eine Übernachtung umfasst. **BREAKING** für Formular und gespeichertes Kennzeichen (wird ignoriert und aus dem Zeitraum berechnet).
@@ -36,7 +37,7 @@ Die Weboberfläche zeigt auf fast jeder Seite alles gleichzeitig: neun gleichran
 - `oberflaeche`: Navigation (Gruppen, Symbole, Tab-Leiste, Kontomenü, „Kalender“ statt „Reservierungen“, „Aufgaben“ oben), Startseite (Aufgabenhinweise, Fortschritt); neue Anforderungen für Symbolsatz, Typografie, Seitenaufbau mit einer Hauptaktion, eingeklappte Seltenaktionen, kompakte Listen, gegliederte Formulare, Normalfall-Optimierung, Kalenderbereich mit Liste/Kalender, Gruppierung nach Tagen, Unterscheidung der Eintragsarten, Farbthema und Archiv.
 - `bootsreservierung`: Tour-Kennzeichen wird aus der Dauer abgeleitet statt angegeben.
 - `reservierungsverwaltung`: Reservierungen erscheinen im Bereich Kalender (Kalender bisher nur in der Spec, nicht umgesetzt), Anlegen vom Boot aus ohne Tour-Angabe, Standardzeitraum „kommende“.
-- `arbeitsverwaltung`: Arbeitstermine erscheinen im Bereich Kalender, Standardansicht „kommende“.
+- `arbeitsverwaltung`: Arbeitseinsatz-Formular mit Umschalter Stunden/Zeitraum; Arbeitstermine erscheinen im Bereich Kalender, Standardansicht „kommende“.
 - `amtsverwaltung`: beendete Ämter nur noch im Archiv statt in einer eigenen Amtshistorie.
 - `mitgliederverzeichnis`: Scheine, Funklizenzen und Mitgliedsart als Symbole mit Tooltip.
 - `tourgebuehren`: „gekennzeichnet“ wird zu „gilt als Tour“.

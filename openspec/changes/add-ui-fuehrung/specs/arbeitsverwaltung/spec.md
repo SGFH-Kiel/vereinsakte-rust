@@ -18,3 +18,26 @@ Der Vorstand und der Oberbootswart SHALL Arbeitstermine mit Datum, Beschreibung 
 #### Scenario: Vergangene Termine
 - **WHEN** Anna den Kalender ohne weitere Angaben öffnet
 - **THEN** erscheinen nur Termine ab heute
+
+### Requirement: Arbeitseinsatz erfassen
+Ein Mitglied SHALL für sich einen Arbeitseinsatz mit Datum, Gegenstand (Boot oder Verein), Beschreibung und entweder Stunden oder Zeitraum erfassen können, optional mit Bezug zu einem Arbeitstermin oder einer Aufgabe. Das Formular SHALL einen Umschalter „Stunden / Zeitraum“ bieten, der nur die dafür relevanten Felder zeigt (Stunden bzw. Beginn und Ende); Standard SHALL „Stunden“ sein. Der Umschalter SHALL ohne JavaScript funktionieren, und nur die Angaben der gewählten Umfangsform SHALL gewertet werden. Unplausible Angaben (beide Umfangsformen bei erzwungenem Aufruf, fehlender Gegenstand, Boot ohne Bezug) SHALL nach der Spec `arbeitsstunden` abgelehnt werden.
+
+#### Scenario: Einsatz erfassen
+- **WHEN** Clara „Segel der Filou geflickt“, 3 Stunden, Gegenstand Filou erfasst
+- **THEN** erscheint der Einsatz unbestätigt in ihrer Stundenliste
+
+#### Scenario: Beide Umfangsformen
+- **WHEN** zugleich Stunden und Zeitraum angegeben werden
+- **THEN** zeigt das Formular die Fehlermeldung und speichert nichts
+
+#### Scenario: Umschalter Stunden
+- **WHEN** das Formular geöffnet wird
+- **THEN** ist „Stunden“ gewählt, das Feld „Stunden“ sichtbar und sind „Beginn“ und „Ende“ nicht sichtbar
+
+#### Scenario: Umschalter Zeitraum
+- **WHEN** „Zeitraum“ gewählt wird
+- **THEN** erscheinen „Beginn“ und „Ende“, das Feld „Stunden“ verschwindet, und beim Speichern zählen nur Beginn und Ende
+
+#### Scenario: Fehler behält die Wahl
+- **WHEN** der Zeitraum mit Ende vor Beginn abgeschickt wird
+- **THEN** zeigt das Formular den Fehler am Feld, „Zeitraum“ bleibt gewählt und die Eingaben bleiben erhalten
