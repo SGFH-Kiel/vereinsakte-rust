@@ -10,6 +10,7 @@ pub mod format;
 pub mod memory;
 pub mod my_data;
 pub mod ports;
+pub mod scope;
 pub mod service;
 
 pub use error::AppError;

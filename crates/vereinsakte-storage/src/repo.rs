@@ -721,3 +721,155 @@ mod tests {
         assert!(sessions.load(&expired.id).await.unwrap().is_none());
     }
 }
+
+#[async_trait]
+impl vereinsakte_app::scope::ScopeRepository for SqliteClubStore {
+    async fn scope(&self, scope: &vereinsakte_app::scope::Scope) -> Result<ClubRecord, AppError> {
+        use vereinsakte_app::scope::MemberScope;
+
+        let mut tx = self.db.pool().begin().await.map_err(StorageError::from)?;
+        let mut record = ClubRecord::default();
+
+        // Filter auf die gewünschten Mitglieder; `column` ist die Spalte mit der Mitgliedsnummer.
+        let by_member = |column: &str| -> Option<Filter> {
+            match &scope.members {
+                MemberScope::None => None,
+                MemberScope::All => Some(Filter::all()),
+                MemberScope::Some(ids) if ids.is_empty() => None,
+                MemberScope::Some(ids) => Some(Filter::new(
+                    &format!("WHERE {column} IN ({})", vec!["?"; ids.len()].join(", ")),
+                    ids.iter().map(|id| member(*id)).collect(),
+                )),
+            }
+        };
+        if let Some(filter) = by_member("id") {
+            record.members = load_members(&mut tx, &filter).await?;
+        }
+        if let Some(filter) = by_member("member_id") {
+            record.annual_records = load_annual_records(&mut tx, &filter).await?;
+            record.boat_checkouts = load_checkouts(&mut tx, &filter).await?;
+            record.revocations = load_revocations(&mut tx, &filter).await?;
+            record.work_entries = load_work_entries(&mut tx, &filter).await?;
+        }
+        if !matches!(scope.members, MemberScope::None) {
+            let filter = match &scope.members {
+                MemberScope::Some(ids) if !ids.is_empty() => {
+                    let marks = vec!["?"; ids.len()].join(", ");
+                    let binds = ids.iter().chain(ids.iter()).map(|id| member(*id)).collect();
+                    Some(Filter::new(
+                        &format!("WHERE from_member IN ({marks}) OR to_member IN ({marks})"),
+                        binds,
+                    ))
+                }
+                MemberScope::All => Some(Filter::all()),
+                _ => None,
+            };
+            if let Some(filter) = filter {
+                record.hour_transfers = load_hour_transfers(&mut tx, &filter).await?;
+            }
+        }
+        if let Some(ids) = &scope.boats {
+            record.boats = load_boats(&mut tx)
+                .await?
+                .into_iter()
+                .filter(|b| ids.contains(&b.id))
+                .collect();
+        }
+        if scope.seasons {
+            record.seasons = load_seasons(&mut tx, &Filter::all()).await?;
+        }
+        if let Some(window) = &scope.reservations {
+            record.reservations = load_reservations(&mut tx)
+                .await?
+                .into_iter()
+                .filter(|r| {
+                    window.boats.contains(&r.boat) && r.start < window.to && r.end > window.from
+                })
+                .collect();
+        }
+        tx.commit().await.map_err(StorageError::from)?;
+        Ok(record)
+    }
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use vereinsakte_app::memory::MemoryStore;
+    use vereinsakte_app::scope::{Scope, ScopeRepository};
+    use vereinsakte_core::example::{self, at};
+
+    use super::*;
+
+    async fn filled() -> SqliteClubStore {
+        let db = Database::in_memory().await.unwrap();
+        db.migrate().await.unwrap();
+        let store = SqliteClubStore::new(db);
+        store.import(&example::club(), false).await.unwrap();
+        store
+    }
+
+    #[tokio::test]
+    async fn reservation_check_on_scope_equals_check_on_whole_record() {
+        let store = filled().await;
+        let full = example::club();
+        assert!(!full.reservations.is_empty());
+        for reservation in &full.reservations {
+            let scope = store
+                .scope(&Scope::for_reservation(reservation))
+                .await
+                .unwrap();
+            assert_eq!(
+                scope.check_reservation(reservation),
+                full.check_reservation(reservation),
+                "Reservierung {}",
+                reservation.id
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn fee_claims_on_scope_equal_claims_on_whole_record() {
+        let store = filled().await;
+        let full = example::club();
+        let now = at(2026, 10, 9, 12, 0);
+        // Forderungen tragen frische Kennungen; verglichen wird alles übrige.
+        let plain = |claims: Vec<(MemberId, vereinsakte_core::account::Claim)>| {
+            claims
+                .into_iter()
+                .map(|(m, c)| (m, c.kind, c.amount, c.text, c.due_at))
+                .collect::<Vec<_>>()
+        };
+        let all = store.scope(&Scope::all_members()).await.unwrap();
+        assert_eq!(
+            plain(all.annual_fee_claims(2027, now)),
+            plain(full.annual_fee_claims(2027, now))
+        );
+        assert_eq!(
+            plain(all.admission_fee_claims(2026, now)),
+            plain(full.admission_fee_claims(2026, now))
+        );
+        for tour in full.reservations.iter().filter(|r| r.tour) {
+            let scope = store.scope(&Scope::for_reservation(tour)).await.unwrap();
+            assert_eq!(
+                plain(scope.tour_fee_claims(tour, now)),
+                plain(full.tour_fee_claims(tour, now))
+            );
+            assert_eq!(scope.tour_fee_overview(tour), full.tour_fee_overview(tour));
+        }
+    }
+
+    #[tokio::test]
+    async fn sqlite_and_memory_scopes_are_equal_and_small() {
+        let store = filled().await;
+        let memory = MemoryStore::new(example::club());
+        let full = example::club();
+        let reservation = full.reservations.first().unwrap();
+        let wanted = Scope::for_reservation(reservation);
+        let sqlite = store.scope(&wanted).await.unwrap();
+        let mem = memory.scope(&wanted).await.unwrap();
+        assert_eq!(sqlite, mem);
+        assert!(sqlite.members.len() < full.members.len(), "nur Beteiligte");
+        assert_eq!(sqlite.boats.len(), 1);
+        assert!(sqlite.offices.is_empty());
+    }
+}

@@ -17,6 +17,7 @@ use crate::audit::{AuditEntry, AuditFilter, AuditRecord, AuditRepository};
 use crate::changes::{Change, ChangeRepository, Record, RecordKind};
 use crate::error::AppError;
 use crate::ports::*;
+use crate::scope::{MemberScope, Scope, ScopeRepository};
 
 /// Datenbank-Ersatz im Speicher mit Versionsstand je Mitglied.
 #[derive(Debug, Default)]
@@ -539,5 +540,78 @@ mod commit_tests {
             )
             .await;
         assert!(matches!(result, Err(AppError::Invalid(_))));
+    }
+}
+
+#[async_trait]
+impl ScopeRepository for MemoryStore {
+    async fn scope(&self, scope: &Scope) -> Result<ClubRecord, AppError> {
+        self.with(|full| {
+            let wanted = |m: MemberId| match &scope.members {
+                MemberScope::None => false,
+                MemberScope::Some(ids) => ids.contains(&m),
+                MemberScope::All => true,
+            };
+            ClubRecord {
+                members: full
+                    .members
+                    .iter()
+                    .filter(|m| wanted(m.id))
+                    .cloned()
+                    .collect(),
+                annual_records: full
+                    .annual_records
+                    .iter()
+                    .filter(|a| wanted(a.member))
+                    .cloned()
+                    .collect(),
+                boat_checkouts: full
+                    .boat_checkouts
+                    .iter()
+                    .filter(|c| wanted(c.member))
+                    .cloned()
+                    .collect(),
+                revocations: full
+                    .revocations
+                    .iter()
+                    .filter(|r| wanted(r.member))
+                    .cloned()
+                    .collect(),
+                work_entries: full
+                    .work_entries
+                    .iter()
+                    .filter(|e| wanted(e.member))
+                    .cloned()
+                    .collect(),
+                hour_transfers: full
+                    .hour_transfers
+                    .iter()
+                    .filter(|t| wanted(t.from) || wanted(t.to))
+                    .cloned()
+                    .collect(),
+                boats: full
+                    .boats
+                    .iter()
+                    .filter(|b| scope.boats.as_ref().is_some_and(|ids| ids.contains(&b.id)))
+                    .cloned()
+                    .collect(),
+                seasons: if scope.seasons {
+                    full.seasons.clone()
+                } else {
+                    vec![]
+                },
+                reservations: full
+                    .reservations
+                    .iter()
+                    .filter(|r| {
+                        scope.reservations.as_ref().is_some_and(|w| {
+                            w.boats.contains(&r.boat) && r.start < w.to && r.end > w.from
+                        })
+                    })
+                    .cloned()
+                    .collect(),
+                ..ClubRecord::default()
+            }
+        })
     }
 }

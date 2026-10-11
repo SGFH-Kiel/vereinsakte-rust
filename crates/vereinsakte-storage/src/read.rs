@@ -635,7 +635,7 @@ pub(crate) async fn load_annual_records(
     .collect()
 }
 
-async fn load_reservations(conn: &mut SqliteConnection) -> Result<Vec<Reservation>> {
+pub(crate) async fn load_reservations(conn: &mut SqliteConnection) -> Result<Vec<Reservation>> {
     let mut crew = group(
         rows(
             conn,

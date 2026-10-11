@@ -159,6 +159,7 @@ pub trait ClubStore:
     + Health
     + crate::changes::ChangeRepository
     + crate::audit::AuditRepository
+    + crate::scope::ScopeRepository
 {
 }
 
@@ -171,6 +172,7 @@ impl<T> ClubStore for T where
         + Health
         + crate::changes::ChangeRepository
         + crate::audit::AuditRepository
+        + crate::scope::ScopeRepository
 {
 }
 
