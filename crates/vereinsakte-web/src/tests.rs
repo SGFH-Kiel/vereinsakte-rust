@@ -632,7 +632,11 @@ async fn directory_hides_contact_data_without_office() {
     assert!(page.body.contains("Petersen, Anna"));
     assert!(!page.body.contains("@example.org"));
     let partial = client.get_htmx("/mitglieder?q=").await;
-    assert!(partial.body.starts_with("<table"), "nur die Tabelle");
+    assert!(
+        partial.body.starts_with("<div id=\"mitglieder-tabelle\""),
+        "nur die Tabelle"
+    );
+    assert!(!partial.body.contains("<html"));
     assert!(!partial.body.contains("@example.org"));
 }
 
@@ -655,4 +659,113 @@ async fn directory_hides_former_members() {
     let page = client.get("/mitglieder").await;
     assert!(!page.body.contains("Dupont"));
     assert!(page.body.contains("Möller, Eva"));
+}
+
+// --- 3.2 bis 3.5 Designsystem, Layout, Formulare, Listen, Start -----------------
+
+#[tokio::test]
+async fn navigation_marks_current_area_and_has_menu_without_javascript() {
+    let h = dev();
+    let mut client = Client::new(&h);
+    client.dev_login(107).await;
+    let page = client.get("/mitglieder").await;
+    assert!(
+        page.body.contains("id=\"nav-toggle\""),
+        "Menü ohne JavaScript"
+    );
+    assert!(page.body.contains("for=\"nav-toggle\""));
+    assert!(
+        page.body
+            .contains("href=\"/mitglieder\" aria-current=\"page\"")
+    );
+    assert!(!page.body.contains("href=\"/meine-daten\" aria-current"));
+    assert!(page.body.contains("class=\"skip-link\""));
+    assert!(page.body.contains("name=\"viewport\""));
+}
+
+#[tokio::test]
+async fn pages_use_no_inline_scripts_or_styles() {
+    let h = dev();
+    let mut client = Client::new(&h);
+    client.dev_login(105).await;
+    for path in ["/", "/meine-daten", "/mitglieder", "/gibt-es-nicht"] {
+        let page = client.get(path).await;
+        let body = page.body.to_lowercase();
+        assert!(!body.contains("<style"), "{path}: Inline-Stil");
+        assert!(!body.contains(" style=\""), "{path}: style-Attribut");
+        assert!(!body.contains(" onclick="), "{path}: Inline-Ereignis");
+        assert!(!body.contains("<script>"), "{path}: Inline-Skript");
+        for resource in body
+            .split("src=\"")
+            .skip(1)
+            .chain(body.split("href=\"").skip(1))
+        {
+            let url = &resource[..resource.find('"').unwrap()];
+            assert!(
+                !url.starts_with("http") && !url.starts_with("//"),
+                "{path}: externe Ressource {url}"
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn directory_full_page_and_partial_show_same_rows() {
+    let h = dev();
+    let mut client = Client::new(&h);
+    client.dev_login(105).await;
+    let full = client.get("/mitglieder?q=peter").await;
+    let partial = client.get_htmx("/mitglieder?q=peter").await;
+    assert!(partial.status == StatusCode::OK && !partial.body.contains("<html"));
+    assert!(
+        full.body.contains(partial.body.trim()),
+        "die Vollseite enthält genau die Teilantwort"
+    );
+}
+
+#[tokio::test]
+async fn start_page_shows_next_steps() {
+    let h = dev();
+    let mut clara = Client::new(&h);
+    clara.dev_login(103).await;
+    let page = clara.get("/").await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert!(
+        page.body.contains("es fehlen 4,5 Arbeitsstunden"),
+        "{}",
+        page.body
+    );
+    assert!(page.body.contains("20,5"));
+    let mut anna = Client::new(&h);
+    anna.dev_login(101).await;
+    let page = anna.get("/").await;
+    assert!(page.body.contains("Guthaben: 10,00"));
+    assert!(page.body.contains("erteilt"));
+    assert!(!page.body.contains("es fehlen"));
+}
+
+#[tokio::test]
+async fn session_of_former_member_ends_and_asks_to_log_in() {
+    use tower_sessions::session::Record;
+    // Inès scheidet zum 30.11.2026 aus; im Dezember ist sie nicht mehr aktiv.
+    let h = harness(true, None, club_time(2026, 12, 1, 12, 0));
+    let mut record = Record {
+        id: Id::default(),
+        data: [("member".to_string(), serde_json::json!(109))].into(),
+        expiry_date: time::OffsetDateTime::now_utc() + time::Duration::hours(1),
+    };
+    h.sessions.create(&mut record).await.unwrap();
+    let mut client = Client::new(&h);
+    client.cookie = Some(format!("id={}", record.id));
+    let response = client.get("/meine-daten").await;
+    assert_eq!(response.status, StatusCode::SEE_OTHER);
+    assert!(
+        response.location().starts_with("/login"),
+        "{}",
+        response.location()
+    );
+    assert!(
+        h.sessions.load(&record.id).await.unwrap().is_none(),
+        "Sitzung beendet"
+    );
 }

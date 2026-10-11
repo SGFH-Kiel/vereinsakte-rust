@@ -1,16 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Mitglieder</h1>
+<div class="page-head">
+  <div><h1>Mitglieder</h1>
+  <p class="muted">Aktive Mitglieder der Segelgruppe</p></div>
+</div>
 <form method="get" action="/mitglieder" class="search">
-  <label>Name suchen
-    <input type="search" name="q" value="{{ v.query }}" autocomplete="off"
+  <div class="field">
+    <label for="f-q">Name suchen</label>
+    <input id="f-q" type="search" name="q" value="{{ v.query }}" autocomplete="off"
            hx-get="/mitglieder" hx-trigger="input changed delay:300ms, search"
            hx-target="#mitglieder-tabelle" hx-swap="outerHTML">
-  </label>
-  <button type="submit">Suchen</button>
+  </div>
+  <button type="submit" class="primary">Suchen</button>
 </form>
 {% if !v.show_contact %}
-<p class="muted">Kontaktdaten sind nur für Mitglieder mit einem Amt sichtbar.</p>
+<p class="notice">Kontaktdaten sind nur für Mitglieder mit einem Amt sichtbar.</p>
 {% endif %}
 {% include "directory_table.html" %}
 {% endblock %}

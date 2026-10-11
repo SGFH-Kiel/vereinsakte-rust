@@ -2,6 +2,8 @@
 //! Anmeldung über Microsoft Entra ID und Sitzungen.
 
 pub mod error;
+pub mod forms;
+pub mod list;
 mod login;
 pub mod oidc;
 mod pages;

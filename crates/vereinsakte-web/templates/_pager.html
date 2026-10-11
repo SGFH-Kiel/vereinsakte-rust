@@ -1,0 +1,12 @@
+{% if pager.visible() %}
+<nav class="pager" aria-label="Seiten">
+  <span class="muted">{{ pager.first }}–{{ pager.last }} von {{ pager.total }}</span>
+  <span class="pages">
+  {% if let Some(previous) = pager.previous %}<a href="{{ previous }}" rel="prev">‹ zurück</a>{% endif %}
+  {% for (number, link) in pager.links %}
+    {% if let Some(link) = link %}<a href="{{ link }}">{{ number }}</a>{% else %}<span class="current" aria-current="page">{{ number }}</span>{% endif %}
+  {% endfor %}
+  {% if let Some(next) = pager.next %}<a href="{{ next }}" rel="next">weiter ›</a>{% endif %}
+  </span>
+</nav>
+{% endif %}

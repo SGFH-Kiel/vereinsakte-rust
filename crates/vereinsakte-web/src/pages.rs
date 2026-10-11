@@ -4,16 +4,16 @@
 use askama::Template;
 use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
-use axum::response::{Html, IntoResponse, Redirect, Response};
+use axum::response::{Html, IntoResponse, Response};
 use serde::Deserialize;
 use tower_sessions::Session;
-use vereinsakte_app::CurrentUser;
 use vereinsakte_app::directory::DirectoryView;
 use vereinsakte_app::my_data::MyDataView;
 use vereinsakte_app::service::LoginChoiceGroup;
+use vereinsakte_app::{CurrentUser, Principal};
 
 use crate::error::WebError;
-use crate::session::{RequireUser, csrf_token};
+use crate::session::{FlashKind, RequireUser, csrf_token, take_flash};
 use crate::state::AppState;
 
 /// Gemeinsame Angaben des Basislayouts.
@@ -22,11 +22,25 @@ pub struct Layout {
     pub csrf: String,
     pub user: Option<UserBar>,
     pub dev_bar: Option<DevBar>,
+    pub flash: Option<FlashView>,
 }
 
 pub struct UserBar {
     pub name: String,
     pub offices: Vec<String>,
+    pub nav: Vec<NavItem>,
+}
+
+/// Eintrag der Hauptnavigation.
+pub struct NavItem {
+    pub href: &'static str,
+    pub label: &'static str,
+    pub current: bool,
+}
+
+pub struct FlashView {
+    pub class: &'static str,
+    pub text: String,
 }
 
 /// Leiste für den schnellen Benutzerwechsel im Entwicklungsmodus.
@@ -35,6 +49,30 @@ pub struct DevBar {
     pub current_name: String,
     pub next: String,
     pub groups: Vec<LoginChoiceGroup>,
+}
+
+/// Hauptnavigation nach Berechtigung; `path` bestimmt den aktuellen Bereich.
+fn navigation(_principal: &Principal, path: &str) -> Vec<NavItem> {
+    let path = path.split('?').next().unwrap_or(path);
+    let current = |href: &str| {
+        if href == "/" {
+            path == "/"
+        } else {
+            path == href || path.starts_with(&format!("{href}/"))
+        }
+    };
+    [
+        ("/", "Start"),
+        ("/meine-daten", "Meine Daten"),
+        ("/mitglieder", "Mitglieder"),
+    ]
+    .into_iter()
+    .map(|(href, label)| NavItem {
+        href,
+        label,
+        current: current(href),
+    })
+    .collect()
 }
 
 impl Layout {
@@ -48,32 +86,43 @@ impl Layout {
         let csrf = csrf_token(session).await;
         let (user_bar, dev_bar) = match user {
             Some(user) => {
-                let context = state.club.user_context(user).await?;
+                let principal = state.club.principal(user).await?;
                 let dev_bar = if state.settings.development {
                     Some(DevBar {
                         current: user.member.get(),
-                        current_name: context.name.clone(),
+                        current_name: principal.name.clone(),
                         next: next.to_string(),
                         groups: state.club.login_choices().await?,
                     })
                 } else {
                     None
                 };
+                let nav = navigation(&principal, next);
                 (
                     Some(UserBar {
-                        name: context.name,
-                        offices: context.offices,
+                        name: principal.name,
+                        offices: principal.offices,
+                        nav,
                     }),
                     dev_bar,
                 )
             }
             None => (None, None),
         };
+        let flash = take_flash(session).await.map(|f| FlashView {
+            class: match f.kind {
+                FlashKind::Ok => "ok",
+                FlashKind::Warn => "warn",
+                FlashKind::Error => "error",
+            },
+            text: f.text,
+        });
         Ok(Self {
             title: title.into(),
             csrf,
             user: user_bar,
             dev_bar,
+            flash,
         })
     }
 }
@@ -82,8 +131,22 @@ pub fn render(template: &impl Template) -> Result<Response, WebError> {
     Ok(Html(template.render()?).into_response())
 }
 
-pub async fn home() -> Redirect {
-    Redirect::to("/meine-daten")
+#[derive(Template)]
+#[template(path = "start.html")]
+struct StartPage {
+    layout: Layout,
+    v: MyDataView,
+}
+
+/// Startseite: die nächsten Schritte des angemeldeten Mitglieds.
+pub async fn home(
+    State(state): State<AppState>,
+    session: Session,
+    RequireUser(user): RequireUser,
+) -> Result<Response, WebError> {
+    let v = state.club.my_data(&user).await?;
+    let layout = Layout::build(&state, &session, Some(&user), "Start", "/").await?;
+    render(&StartPage { layout, v })
 }
 
 #[derive(Template)]

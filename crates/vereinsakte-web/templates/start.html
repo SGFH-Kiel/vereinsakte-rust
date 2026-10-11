@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Hallo {{ v.name }}</h1><p class="muted">Deine nächsten Schritte im Überblick</p></div>
+</div>
+<div class="grid cols-3">
+  <section class="card">
+    <h2>Segelerlaubnis {{ v.year }}</h2>
+    {% if v.sailing_permit.granted %}
+    <p><span class="badge ok">✓ erteilt</span></p>
+    <p class="muted">Du darfst in dieser Saison segeln.</p>
+    {% else %}
+    <p><span class="badge warn">fehlt</span></p>
+    <ul>{% for reason in v.sailing_permit.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+    {% endif %}
+    <p><a href="/meine-daten">Details in „Meine Daten“</a></p>
+  </section>
+  <section class="card">
+    <h2>Arbeitsstunden {{ v.year }}</h2>
+    <p class="stat">{{ v.credited_hours }} <span class="muted">von {{ v.required_hours }}</span></p>
+    <p class="muted">angerechnete Stunden</p>
+  </section>
+  <section class="card">
+    <h2>Konto</h2>
+    <p class="stat">{{ v.balance.label() }}</p>
+    <p><a href="/meine-daten">Forderungen und Einzahlungen</a></p>
+  </section>
+</div>
+{% endblock %}

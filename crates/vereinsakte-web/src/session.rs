@@ -12,11 +12,14 @@ use vereinsakte_app::CurrentUser;
 use vereinsakte_core::ids::MemberId;
 
 use crate::error::error_page;
+use crate::state::AppState;
 
 /// Mitgliedsnummer des angemeldeten Mitglieds.
 pub const MEMBER: &str = "member";
 /// CSRF-Token der Sitzung.
 pub const CSRF: &str = "csrf";
+/// Einmalige Rückmeldung für die nächste Seite.
+pub const FLASH: &str = "flash";
 /// Laufende Anmeldung beim Anbieter.
 pub const LOGIN: &str = "login";
 /// Name des Formularfelds bzw. Headers für das CSRF-Token.
@@ -76,12 +79,16 @@ pub fn encode(value: &str) -> String {
 }
 
 /// Extraktor für geschützte Seiten: ohne Anmeldung Weiterleitung zu `/login?next=…`.
+/// Ein nicht (mehr) aktives Mitglied verliert die Sitzung und muss sich neu anmelden.
 pub struct RequireUser(pub CurrentUser);
 
-impl<S: Send + Sync> FromRequestParts<S> for RequireUser {
+impl FromRequestParts<AppState> for RequireUser {
     type Rejection = Response;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let session = Session::from_request_parts(parts, state)
             .await
             .map_err(IntoResponse::into_response)?;
@@ -91,14 +98,55 @@ impl<S: Send + Sync> FromRequestParts<S> for RequireUser {
             .ok()
             .flatten()
             .and_then(MemberId::new);
-        match member {
-            Some(member) => Ok(Self(CurrentUser { member })),
-            None => {
-                let next = parts.uri.path_and_query().map_or("/", |pq| pq.as_str());
-                Err(Redirect::to(&format!("/login?next={}", encode(next))).into_response())
+        let login = |parts: &Parts| {
+            let next = parts.uri.path_and_query().map_or("/", |pq| pq.as_str());
+            Redirect::to(&format!("/login?next={}", encode(next))).into_response()
+        };
+        let Some(member) = member else {
+            return Err(login(parts));
+        };
+        match state.club.is_active(member).await {
+            Ok(true) => Ok(Self(CurrentUser { member })),
+            Ok(false) => {
+                let _ = session.flush().await;
+                Err(login(parts))
             }
+            Err(error) => Err(crate::error::WebError::from(error).into_response()),
         }
     }
+}
+
+/// Art einer einmaligen Rückmeldung nach einer Aktion.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FlashKind {
+    Ok,
+    Warn,
+    Error,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Flash {
+    pub kind: FlashKind,
+    pub text: String,
+}
+
+/// Merkt eine Meldung für die nächste Seite.
+pub async fn flash(session: &Session, kind: FlashKind, text: impl Into<String>) {
+    let _ = session
+        .insert(
+            FLASH,
+            Flash {
+                kind,
+                text: text.into(),
+            },
+        )
+        .await;
+}
+
+/// Holt die gemerkte Meldung und löscht sie.
+pub async fn take_flash(session: &Session) -> Option<Flash> {
+    session.remove::<Flash>(FLASH).await.ok().flatten()
 }
 
 /// Lehnt zustandsändernde Anfragen ohne gültiges CSRF-Token ab. Das Token kommt

@@ -1,4 +1,5 @@
-<table id="mitglieder-tabelle">
+<div id="mitglieder-tabelle" class="table-wrap">
+<table class="responsive">
   <thead>
     <tr>
       <th>Name</th><th>Ämter</th>
@@ -8,13 +9,13 @@
   <tbody>
   {% for entry in v.entries %}
     <tr>
-      <td>{{ entry.name }}</td>
-      <td>{{ entry.offices|join(", ") }}</td>
+      <td data-label="Name">{{ entry.name }}</td>
+      <td data-label="Ämter">{{ entry.offices|join(", ") }}</td>
       {% if let Some(contact) = entry.contact %}
-      <td class="num">{{ contact.member_number }}</td>
-      <td>{{ contact.membership_type }}</td>
-      <td>{% if let Some(email) = contact.email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}</td>
-      <td>{{ contact.phones|join(", ") }}</td>
+      <td data-label="Nr." class="num">{{ contact.member_number }}</td>
+      <td data-label="Mitgliedsart">{{ contact.membership_type }}</td>
+      <td data-label="E-Mail">{% if let Some(email) = contact.email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}</td>
+      <td data-label="Telefon">{{ contact.phones|join(", ") }}</td>
       {% endif %}
     </tr>
   {% else %}
@@ -22,3 +23,4 @@
   {% endfor %}
   </tbody>
 </table>
+</div>

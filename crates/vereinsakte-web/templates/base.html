@@ -10,8 +10,10 @@
   <script src="/static/htmx.min.js" defer></script>
 </head>
 <body hx-headers='{"X-CSRF-Token": "{{ layout.csrf }}"}'>
+  <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
 {% if let Some(dev) = layout.dev_bar %}
   <div class="devbar" role="region" aria-label="Entwicklungsmodus">
+    <div class="inner">
     <span><strong>Entwicklungsmodus</strong> – angemeldet als {{ dev.current_name }}</span>
     <form method="post" action="/dev/switch">
       <input type="hidden" name="csrf" value="{{ layout.csrf }}">
@@ -27,27 +29,38 @@
         {% endfor %}
         </select>
       </label>
-      <button type="submit">Wechseln</button>
+      <button type="submit" class="small">Wechseln</button>
     </form>
+    </div>
   </div>
 {% endif %}
-  <header class="top">
-    <a class="brand" href="/">Vereinsakte <span class="muted">Segelgruppe an der FH Kiel</span></a>
-  {% if let Some(user) = layout.user %}
-    <nav>
-      <a href="/meine-daten">Meine Daten</a>
-      <a href="/mitglieder">Mitglieder</a>
-    </nav>
-    <div class="account">
-      <span>{{ user.name }}{% if !user.offices.is_empty() %} <span class="muted">({{ user.offices|join(", ") }})</span>{% endif %}</span>
-      <form method="post" action="/logout">
-        <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-        <button type="submit" class="link">Abmelden</button>
-      </form>
+  <header class="app-header">
+    <div class="bar">
+      <a class="brand" href="/">Vereinsakte <small>Segelgruppe an der FH Kiel</small></a>
+    {% if let Some(user) = layout.user %}
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Menü öffnen oder schließen">
+      <label for="nav-toggle" class="nav-button" aria-hidden="true">☰ Menü</label>
+      <div class="menu">
+        <nav aria-label="Hauptnavigation">
+        {% for item in user.nav %}
+          <a class="nav-link" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>
+        {% endfor %}
+        </nav>
+        <div class="account">
+          <span class="who">{{ user.name }}{% if !user.offices.is_empty() %} <span class="muted">({{ user.offices|join(", ") }})</span>{% endif %}</span>
+          <form method="post" action="/logout">
+            <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+            <button type="submit" class="link">Abmelden</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
     </div>
-  {% endif %}
   </header>
-  <main>
+  <main id="inhalt">
+{% if let Some(flash) = layout.flash %}
+    <div class="flash {{ flash.class }}" role="status">{{ flash.text }}</div>
+{% endif %}
 {% block content %}{% endblock %}
   </main>
 </body>

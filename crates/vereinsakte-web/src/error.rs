@@ -19,6 +19,8 @@ pub fn error_page(status: StatusCode, message: &str) -> Response {
         StatusCode::NOT_FOUND => "Seite nicht gefunden",
         StatusCode::FORBIDDEN => "Kein Zugriff",
         StatusCode::BAD_REQUEST => "Ungültige Anfrage",
+        StatusCode::CONFLICT => "Zwischenzeitlich geändert",
+        StatusCode::UNPROCESSABLE_ENTITY => "Eingabe unvollständig",
         _ if status.is_server_error() => "Interner Fehler",
         _ => "Fehler",
     };
@@ -55,6 +57,10 @@ impl IntoResponse for WebError {
             Self::App(AppError::Forbidden) => {
                 error_page(StatusCode::FORBIDDEN, "Dafür fehlt dir die Berechtigung.")
             }
+            Self::App(AppError::Conflict) => error_page(
+                StatusCode::CONFLICT,
+                "Die Daten wurden zwischenzeitlich von jemand anderem geändert. Bitte lade die Seite neu und versuche es erneut.",
+            ),
             Self::Status(status, message) => error_page(status, &message),
             other => {
                 tracing::error!(error = %other, "Fehler bei der Bearbeitung");
@@ -69,4 +75,32 @@ impl IntoResponse for WebError {
 
 pub async fn not_found() -> Response {
     error_page(StatusCode::NOT_FOUND, "Diese Seite gibt es nicht.")
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::body::to_bytes;
+
+    use super::*;
+
+    async fn page(error: WebError) -> (StatusCode, String) {
+        let response = error.into_response();
+        let status = response.status();
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        (status, String::from_utf8_lossy(&body).into_owned())
+    }
+
+    #[tokio::test]
+    async fn forbidden_is_403_in_german() {
+        let (status, body) = page(AppError::Forbidden.into()).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert!(body.contains("Kein Zugriff") && body.contains("Berechtigung"));
+    }
+
+    #[tokio::test]
+    async fn conflict_is_409_and_asks_to_reload() {
+        let (status, body) = page(AppError::Conflict.into()).await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        assert!(body.contains("zwischenzeitlich") && body.contains("neu"));
+    }
 }

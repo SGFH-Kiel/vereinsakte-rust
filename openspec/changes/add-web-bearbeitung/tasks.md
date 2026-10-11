@@ -15,11 +15,11 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 3. Designsystem und Grundgerüst
 
-- [ ] 3.1 `app.css` mit Tokens (hell/dunkel), Basis, Komponenten (Karte, Datenliste, Tabelle mit Kartenansicht, Formularraster, Schaltflächen, Plakette, Meldung, Filterleiste, Seitenwechsel, Unternavigation) und Druckregeln; verifizieren: Bildschirmfotos bei 375 px und 1280 px (hell und dunkel) mit `tools/screenshots.mjs` (Playwright, vorinstalliertes Chromium) zeigen kein horizontales Scrollen und lesbare Kontraste
-- [ ] 3.2 Basislayout überarbeiten: Navigation nach Berechtigung mit aktuellem Bereich, Menü hinter `<details>` auf schmalen Bildschirmen, Flash-Meldungen aus der Sitzung, Breadcrumbs, `lang`, Skip-Link; Tests: Navigation für Greta ohne „Finanzen“ und „Protokoll“, für Eva mit beiden, Menü-Element ohne JavaScript vorhanden, keine Inline-Skripte oder -Stile im HTML (CSP)
-- [ ] 3.3 Formular-Infrastruktur in `vereinsakte-web`: Eingabetypen mit deutschen Zahl-, Betrags- und Datumsformaten, `FieldErrors`, Formularfragmente für Feld/Fehler/Hinweis, 422-Wiedergabe mit erhaltenen Eingaben, 403- und 409-Seiten, Post/Redirect/Get mit Flash; Tests: „12,50“ und „12.50“ ergeben 12,50 €, ungültiges Datum erzeugt Feldfehler, 409 erhält Eingaben
-- [ ] 3.4 Listen-Infrastruktur: Abfrageparameter-Typ (`q`, `status`, `jahr`, `seite`, `sort`), Seitenwechsel-Baustein, Teil-Template bei `HX-Request`; Test: gleiche Anfrage mit und ohne htmx liefert dieselben Zeilen, Seite 2 ab 26 Einträgen
-- [ ] 3.5 Startseite „Meine nächsten Schritte“ (offene Stunden, Konto, Termine, eigene Reservierungen, je nach Amt offene Bestätigungen und Aufgaben); Tests: Clara sieht „es fehlen 4,5 Arbeitsstunden“, Ben sieht offene Bestätigungen seines Bootes, Greta keine Amts-Hinweise
+- [x] 3.1 `app.css` mit Tokens (hell/dunkel), Basis, Komponenten (Karte, Datenliste, Tabelle mit Kartenansicht, Formularraster, Schaltflächen, Plakette, Meldung, Filterleiste, Seitenwechsel, Unternavigation) und Druckregeln; verifizieren: Bildschirmfotos bei 375 px und 1280 px (hell und dunkel) mit `tools/screenshots.mjs` (Playwright, vorinstalliertes Chromium) zeigen kein horizontales Scrollen und lesbare Kontraste
+- [x] 3.2 Basislayout überarbeiten: Navigation nach Berechtigung mit aktuellem Bereich, Menü hinter `<details>` auf schmalen Bildschirmen, Flash-Meldungen aus der Sitzung, Breadcrumbs, `lang`, Skip-Link; Tests: aktueller Bereich markiert, Menü-Element ohne JavaScript vorhanden, keine Inline-Skripte, -Stile oder externen Ressourcen im HTML (CSP), Sitzung eines ausgeschiedenen Mitglieds endet; die Sichtbarkeit von „Finanzen“ und „Protokoll“ nach Berechtigung wird in 9.1 und 10.1 geprüft, sobald diese Seiten bestehen
+- [x] 3.3 Formular-Infrastruktur in `vereinsakte-web`: Eingabetypen mit deutschen Zahl-, Betrags- und Datumsformaten, `FieldErrors`, Formularfragmente für Feld/Fehler/Hinweis, 422-Wiedergabe mit erhaltenen Eingaben, 403- und 409-Seiten, Post/Redirect/Get mit Flash; Tests: „12,50“ und „12.50“ ergeben 12,50 €, ungültiges Datum erzeugt Feldfehler, 409 erhält Eingaben
+- [x] 3.4 Listen-Infrastruktur: Abfrageparameter-Typ (`q`, `status`, `jahr`, `seite`, `sort`), Seitenwechsel-Baustein, Teil-Template bei `HX-Request`; Test: gleiche Anfrage mit und ohne htmx liefert dieselben Zeilen, Seite 2 ab 26 Einträgen
+- [x] 3.5 Startseite „Meine nächsten Schritte“ mit Segelerlaubnis, Arbeitsstunden und Konto; Tests: Clara sieht „es fehlen 4,5 Arbeitsstunden“, Anna sieht Guthaben und erteilte Segelerlaubnis ohne Mangelhinweis. Die Karten für anstehende Arbeitstermine, eigene Reservierungen sowie offene Bestätigungen und Aufgaben je Amt entstehen mit 7.3, 7.4, 7.2 und 8.1, sobald deren Daten lesbar sind
 
 ## 4. Mitglieder
 
@@ -43,14 +43,14 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 ## 7. Arbeit
 
 - [ ] 7.1 Arbeitseinsätze erfassen, eigene unbestätigte ändern/löschen, Stundenübersicht je Jahr; Tests: Clara erfasst 3 Stunden an der Filou, beide Umfangsformen → Feldfehler, Änderung eines bestätigten Einsatzes → 403, Änderung hebt Bestätigung auf
-- [ ] 7.2 Offene Einsätze gesammelt bestätigen nach Zuständigkeit; Tests: Ben bestätigt Claras Einsatz an der Harald Blauzahn, eigener Einsatz → abgelehnt, Greta sieht die Liste nicht
-- [ ] 7.3 Arbeitstermine mit Plätzen und Anmeldung/Abmeldung; Tests: Anna meldet sich an und ist in der Teilnehmerliste, ausgebucht → keine Anmeldung, Anmeldung schreibt keine Stunden gut
-- [ ] 7.4 Aufgaben anlegen, Zuständige zuweisen, Status ändern; Tests: Zuständiger setzt „erledigt“ mit Zeitpunkt, fremdes Mitglied ohne Amt → 403, Stunden der Aufgabe über Einsätze sichtbar
+- [ ] 7.2 Offene Einsätze gesammelt bestätigen nach Zuständigkeit (inkl. Karte „offene Bestätigungen“ auf der Startseite); Tests: Ben bestätigt Claras Einsatz an der Harald Blauzahn, eigener Einsatz → abgelehnt, Greta sieht die Liste nicht
+- [ ] 7.3 Arbeitstermine mit Plätzen und Anmeldung/Abmeldung (inkl. Karte „anstehende Termine“ auf der Startseite); Tests: Anna meldet sich an und ist in der Teilnehmerliste, ausgebucht → keine Anmeldung, Anmeldung schreibt keine Stunden gut
+- [ ] 7.4 Aufgaben anlegen, Zuständige zuweisen, Status ändern (inkl. Karte „meine Aufgaben“ auf der Startseite); Tests: Zuständiger setzt „erledigt“ mit Zeitpunkt, fremdes Mitglied ohne Amt → 403, Stunden der Aufgabe über Einsätze sichtbar
 - [ ] 7.5 Stundenüberträge und finanzielle Abgeltung (Vorstand) mit Forderung im Konto; Tests: 5 Stunden bei 15 € → Forderung 75,00 €, Übertrag an sich selbst → Feldfehler, Rückstandsliste zeigt Clara
 
 ## 8. Reservierungen
 
-- [ ] 8.1 Reservierungskalender (Woche/Monat) und Liste mit Filtern Boot, Zeitraum, „nur meine“; Tests: Filter „nur meine“ für Anna, Kalender ohne JavaScript als Liste nach Tagen
+- [ ] 8.1 Reservierungskalender (Woche/Monat) und Liste mit Filtern Boot, Zeitraum, „nur meine“ (inkl. Karte „meine Reservierungen“ auf der Startseite); Tests: Filter „nur meine“ für Anna, Kalender ohne JavaScript als Liste nach Tagen
 - [ ] 8.2 Reservierung anlegen mit Co-Skipper, Crew, Gästen, eigenem Zeitraum, Tour-Kennzeichen, Bemerkung und der Gesamtprüfung aus 2.3 mit verständlichen Fehlern; Tests: gültige Reservierung mit Crew und Gast, Skipper ohne Abnahme, Überschneidung nennt die kollidierende Reservierung, gesperrtes Boot, fehlende Segelerlaubnis eines Crewmitglieds
 - [ ] 8.3 Reservierung ändern und stornieren (Skipper künftig, Berechtigte jederzeit, begonnene nur Vorstand) mit erneuter Prüfung und Anzeige der erwarteten Tourgebühr; Tests: Anna storniert, Greta fremde Reservierung → 403, Änderung wird erneut geprüft, Tourgebühr je Person angezeigt
 

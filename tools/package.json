@@ -1,0 +1,7 @@
+{
+  "name": "vereinsakte-tools",
+  "private": true,
+  "type": "module",
+  "description": "Hilfsskripte für die Entwicklung (nicht Teil des Programms)",
+  "devDependencies": { "playwright": "1.56.1" }
+}

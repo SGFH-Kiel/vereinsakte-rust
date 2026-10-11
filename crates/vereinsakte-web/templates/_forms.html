@@ -1,0 +1,9 @@
+{# Formularbausteine: Feld mit Beschriftung, Hinweis und Fehlermeldung. #}
+{% macro field(name, label, value, error, kind, hint) %}
+<div class="field{% if !error.is_empty() %} has-error{% endif %}">
+  <label for="f-{{ name }}">{{ label }}</label>
+  <input id="f-{{ name }}" name="{{ name }}" type="{{ kind }}" value="{{ value }}"{% if !error.is_empty() %} aria-invalid="true" aria-describedby="e-{{ name }}"{% endif %}>
+  {% if !hint.is_empty() %}<span class="hint">{{ hint }}</span>{% endif %}
+  {% if !error.is_empty() %}<span class="error-text" id="e-{{ name }}">{{ error }}</span>{% endif %}
+</div>
+{% endmacro %}

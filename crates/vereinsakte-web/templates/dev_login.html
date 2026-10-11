@@ -7,17 +7,17 @@
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-  <div class="devbar"><strong>Entwicklungsmodus</strong> – Anmeldung ohne Microsoft Entra ID</div>
+  <div class="devbar"><div class="inner"><strong>Entwicklungsmodus</strong> – Anmeldung ohne Microsoft Entra ID</div></div>
   <main>
     <h1>Als Mitglied anmelden</h1>
     <p>Rollen ergeben sich aus den Ämtern: wähle ein Mitglied mit dem passenden Amt.</p>
     {% for group in groups %}
-    <section>
+    <section class="card">
       <h2>{{ group.label }}</h2>
-      <ul class="choices">
+      <ul class="plain choices">
       {% for choice in group.choices %}
         <li>
-          <form method="post" action="/dev/switch">
+          <form method="post" action="/dev/switch" class="inline">
             <input type="hidden" name="csrf" value="{{ csrf }}">
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="member" value="{{ choice.member }}">
