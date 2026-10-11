@@ -184,6 +184,9 @@ form.search, .filters { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-i
 .filters .field { min-width: 10rem; flex: 1; }
 form.inline { display: inline-flex; gap: .5rem; align-items: center; }
 
+h2.spaced { margin-top: 1.5rem; }
+form.spaced { margin-top: 1rem; }
+
 /* ---- Tabellen (auf schmalen Bildschirmen als Karten) -------------------- */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background: var(--surface); }

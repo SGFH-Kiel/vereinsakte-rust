@@ -478,7 +478,7 @@ fn get_year(r: &SqliteRow, column: &str) -> Result<i32> {
         .map_err(|e| StorageError::Corrupt(format!("{column}: {e}")))
 }
 
-async fn load_work_events(conn: &mut SqliteConnection) -> Result<Vec<WorkEvent>> {
+pub(crate) async fn load_work_events(conn: &mut SqliteConnection) -> Result<Vec<WorkEvent>> {
     let mut registrations = group(
         rows(
             conn,
@@ -509,7 +509,7 @@ async fn load_work_events(conn: &mut SqliteConnection) -> Result<Vec<WorkEvent>>
         .collect()
 }
 
-async fn load_tasks(conn: &mut SqliteConnection) -> Result<Vec<Task>> {
+pub(crate) async fn load_tasks(conn: &mut SqliteConnection) -> Result<Vec<Task>> {
     let mut assignees = group(
         rows(
             conn,

@@ -13,7 +13,7 @@ use tower_sessions::{Expiry, SessionManagerLayer, SessionStore};
 use crate::error::not_found;
 use crate::session::csrf_guard;
 use crate::state::AppState;
-use crate::{login, pages};
+use crate::{login, members, pages};
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
                    form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
@@ -35,7 +35,23 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/auth/callback", get(login::callback))
         .route("/logout", post(login::logout))
         .route("/meine-daten", get(pages::my_data))
-        .route("/mitglieder", get(pages::directory));
+        .route("/mitglieder", get(pages::directory))
+        .route(
+            "/mitglieder/neu",
+            get(members::new).post(members::new_submit),
+        )
+        .route("/mitglieder/{nr}", get(members::show))
+        .route(
+            "/mitglieder/{nr}/bearbeiten",
+            get(members::edit).post(members::edit_submit),
+        )
+        .route("/mitglieder/{nr}/austritt", post(members::end_membership))
+        .route("/mitglieder/{nr}/scheine", post(members::add_license))
+        .route(
+            "/mitglieder/{nr}/scheine/{kind}/{idx}/entfernen",
+            post(members::remove_license),
+        )
+        .route("/meine-daten/bearbeiten", get(members::edit_own));
     if settings.development {
         // Nur im Entwicklungsmodus registriert – sonst existieren die Routen nicht.
         app = app

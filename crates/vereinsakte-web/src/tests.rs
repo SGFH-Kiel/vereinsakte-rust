@@ -769,3 +769,329 @@ async fn session_of_former_member_ends_and_asks_to_log_in() {
         "Sitzung beendet"
     );
 }
+
+// --- Gruppe 4: Mitglieder -------------------------------------------------------
+
+fn field_value(html: &str, name: &str) -> String {
+    let marker = format!("name=\"{name}\" value=\"");
+    let start = html
+        .find(&marker)
+        .unwrap_or_else(|| panic!("Feld {name} fehlt"))
+        + marker.len();
+    html[start..start + html[start..].find('"').unwrap()].to_string()
+}
+
+async fn logged_in(h: &Harness, member: u32) -> Client {
+    let mut client = Client::new(h);
+    client.dev_login(member).await;
+    client
+}
+
+#[tokio::test]
+async fn member_page_hides_details_from_members_without_rights() {
+    let h = dev();
+    let page = logged_in(&h, 107).await.get("/mitglieder/103").await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert!(page.body.contains("Clara Jensen"));
+    assert!(!page.body.contains("clara.jensen@example.org"));
+    assert!(!page.body.contains("Kontostand"));
+    let page = logged_in(&h, 105).await.get("/mitglieder/103").await;
+    assert!(
+        page.body.contains("clara.jensen@example.org"),
+        "Vorstand sieht Kontakt"
+    );
+    assert!(page.body.contains("Arbeitsstunden"));
+    let own = logged_in(&h, 107).await.get("/mitglieder/107").await;
+    assert!(own.body.contains("Arbeitsstunden") && own.body.contains("/mitglieder/107/bearbeiten"));
+}
+
+#[tokio::test]
+async fn directory_filters_by_licence_and_links_to_member_pages() {
+    let h = dev();
+    let mut client = logged_in(&h, 105).await;
+    let page = client.get("/mitglieder?schein=SKS").await;
+    for name in [
+        "Petersen, Anna",
+        "Hansen, Ben",
+        "Jensen, Clara",
+        "Möller, Eva",
+        "Koch, Frank",
+    ] {
+        assert!(page.body.contains(name), "{name} hat SKS");
+    }
+    assert!(!page.body.contains("Lorenzen, Greta"));
+    assert!(page.body.contains("href=\"/mitglieder/101\""));
+    let students = client.get("/mitglieder?art=student").await;
+    assert!(students.body.contains("Jensen, Clara") && !students.body.contains("Möller, Eva"));
+    assert!(
+        page.body.contains("Mitglied aufnehmen"),
+        "Vorstand darf aufnehmen"
+    );
+    let greta = logged_in(&h, 107).await.get("/mitglieder").await;
+    assert!(!greta.body.contains("Mitglied aufnehmen"));
+}
+
+#[tokio::test]
+async fn member_edits_own_contact_data_but_not_membership_type() {
+    let h = dev();
+    let mut anna = logged_in(&h, 101).await;
+    let form = anna.get("/meine-daten/bearbeiten").await;
+    assert_eq!(form.status, StatusCode::SEE_OTHER);
+    let form = anna.get(form.location()).await;
+    assert_eq!(form.status, StatusCode::OK);
+    let (csrf_token, version) = (csrf(&form.body), field_value(&form.body, "version"));
+    let saved = anna
+        .post(
+            "/mitglieder/101/bearbeiten",
+            &[
+                ("csrf", &csrf_token),
+                ("version", &version),
+                ("first_name", "Anna"),
+                ("last_name", "Petersen"),
+                ("membership_type", "regular"),
+                ("street", "Neue Straße 5"),
+                ("postal_code", "24103"),
+                ("city", "Kiel"),
+            ],
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::SEE_OTHER, "{}", saved.body);
+    let page = anna.get("/meine-daten").await;
+    assert!(page.body.contains("Neue Straße 5"));
+    // Veralteter Stand → 409 mit Hinweis.
+    let stale = anna
+        .post(
+            "/mitglieder/101/bearbeiten",
+            &[
+                ("csrf", &csrf_token),
+                ("version", &version),
+                ("first_name", "Anna"),
+                ("last_name", "Petersen"),
+                ("membership_type", "regular"),
+                ("street", "Noch neuer 1"),
+                ("postal_code", "24103"),
+                ("city", "Kiel"),
+            ],
+        )
+        .await;
+    assert_eq!(stale.status, StatusCode::CONFLICT);
+    assert!(!anna.get("/meine-daten").await.body.contains("Noch neuer 1"));
+}
+
+#[tokio::test]
+async fn member_cannot_change_membership_type_by_manual_post() {
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let form = greta.get("/mitglieder/107/bearbeiten").await;
+    assert!(!form.body.contains("name=\"membership_type\""));
+    let saved = greta
+        .post(
+            "/mitglieder/107/bearbeiten",
+            &[
+                ("csrf", &csrf(&form.body)),
+                ("version", &field_value(&form.body, "version")),
+                ("street", "Hafenstraße 9"),
+                ("postal_code", "24103"),
+                ("city", "Kiel"),
+                ("membership_type", "honorary"),
+                ("first_name", "Hacker"),
+            ],
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::SEE_OTHER);
+    let page = greta.get("/mitglieder/107").await;
+    assert!(page.body.contains("außerordentliches Mitglied") && !page.body.contains("Hacker"));
+    assert!(page.body.contains("Hafenstraße 9"));
+    let foreign = greta.get("/mitglieder/103/bearbeiten").await;
+    assert_eq!(foreign.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn invalid_contact_input_is_shown_at_the_field_with_422() {
+    let h = dev();
+    let mut anna = logged_in(&h, 101).await;
+    let form = anna.get("/mitglieder/101/bearbeiten").await;
+    let response = anna
+        .post(
+            "/mitglieder/101/bearbeiten",
+            &[
+                ("csrf", &csrf(&form.body)),
+                ("version", &field_value(&form.body, "version")),
+                ("street", ""),
+                ("city", "Kiel"),
+                ("postal_code", "24103"),
+                ("email", "kaputt"),
+            ],
+        )
+        .await;
+    assert_eq!(response.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(response.body.contains("Bitte die Straße angeben"));
+    assert!(response.body.contains("gültige E-Mail-Adresse"));
+    assert!(
+        response.body.contains("value=\"kaputt\""),
+        "Eingabe bleibt erhalten"
+    );
+}
+
+#[tokio::test]
+async fn board_admits_member_and_rejects_duplicates() {
+    let h = dev();
+    let mut eva = logged_in(&h, 105).await;
+    let form = eva.get("/mitglieder/neu").await;
+    assert_eq!(form.status, StatusCode::OK);
+    let token = csrf(&form.body);
+    let base = |number: &'static str, login: &'static str| {
+        vec![
+            ("csrf", token.clone()),
+            ("number", number.into()),
+            ("first_name", "Nora".into()),
+            ("last_name", "Neu".into()),
+            ("street", "Hafenstraße 1".into()),
+            ("postal_code", "24103".into()),
+            ("city", "Kiel".into()),
+            ("membership_type", "regular".into()),
+            ("login_email", login.into()),
+        ]
+    };
+    let post = |fields: Vec<(&'static str, String)>| {
+        let owned: Vec<(String, String)> = fields
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect();
+        owned
+    };
+    let as_refs = |owned: &Vec<(String, String)>| -> Vec<(String, String)> { owned.clone() };
+    let _ = as_refs;
+    let send = |fields: Vec<(&'static str, String)>| {
+        let owned = post(fields);
+        async move { owned }
+    };
+    let duplicate = send(base("101", "")).await;
+    let refs: Vec<(&str, &str)> = duplicate
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    let response = eva.post("/mitglieder/neu", &refs).await;
+    assert_eq!(response.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(response.body.contains("bereits vergeben"));
+    let fresh = send(base("", "nora.neu@sgfh.example")).await;
+    let refs: Vec<(&str, &str)> = fresh
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    let created = eva.post("/mitglieder/neu", &refs).await;
+    assert_eq!(created.status, StatusCode::SEE_OTHER, "{}", created.body);
+    assert_eq!(created.location(), "/mitglieder/114");
+    let page = eva.get("/mitglieder/114").await;
+    assert!(
+        page.body.contains("Nora Neu") && page.body.contains("Das Mitglied wurde aufgenommen.")
+    );
+    let login_dup = send(base("", "NORA.NEU@SGFH.EXAMPLE")).await;
+    let refs: Vec<(&str, &str)> = login_dup
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    let response = eva.post("/mitglieder/neu", &refs).await;
+    assert_eq!(response.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(response.body.contains("Anmeldekonto gehört bereits"));
+    assert_eq!(
+        logged_in(&h, 107).await.get("/mitglieder/neu").await.status,
+        StatusCode::FORBIDDEN
+    );
+}
+
+#[tokio::test]
+async fn members_manage_their_licences_without_proof_field() {
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let form = greta.get("/mitglieder/107/bearbeiten").await;
+    assert!(!form.body.contains("type=\"file\""), "kein Upload");
+    assert!(form.body.contains("Nachweis wird nicht verlangt"));
+    let token = csrf(&form.body);
+    let added = greta
+        .post(
+            "/mitglieder/107/scheine",
+            &[("csrf", &token), ("kind", "sailing"), ("name", "SKS")],
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::SEE_OTHER, "{}", added.body);
+    let page = greta.get(added.location()).await;
+    assert!(
+        page.body.contains("Der Eintrag wurde hinzugefügt.")
+            && page.body.contains("<strong>SKS</strong>")
+    );
+    let again = greta
+        .post(
+            "/mitglieder/107/scheine",
+            &[("csrf", &token), ("kind", "sailing"), ("name", "SKS")],
+        )
+        .await;
+    assert_eq!(again.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(again.body.contains("gibt es bereits"));
+    let foreign = greta
+        .post(
+            "/mitglieder/103/scheine",
+            &[("csrf", &token), ("kind", "radio"), ("name", "SRC")],
+        )
+        .await;
+    assert_eq!(foreign.status, StatusCode::FORBIDDEN);
+    let removed = greta
+        .post(
+            "/mitglieder/107/scheine/sailing/0/entfernen",
+            &[("csrf", &token)],
+        )
+        .await;
+    assert_eq!(removed.status, StatusCode::SEE_OTHER);
+    assert!(
+        !greta
+            .get("/mitglieder/107/bearbeiten")
+            .await
+            .body
+            .contains("<strong>SKS</strong>")
+    );
+    // Der Vorstand darf für andere ergänzen.
+    let mut eva = logged_in(&h, 105).await;
+    let eva_form = eva.get("/mitglieder/103/bearbeiten").await;
+    let ok = eva
+        .post(
+            "/mitglieder/103/scheine",
+            &[
+                ("csrf", &csrf(&eva_form.body)),
+                ("kind", "radio"),
+                ("name", "SRC"),
+            ],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER);
+}
+
+#[tokio::test]
+async fn board_ends_membership_with_date() {
+    let h = dev();
+    let mut eva = logged_in(&h, 105).await;
+    let form = eva.get("/mitglieder/107/bearbeiten").await;
+    let bad = eva
+        .post(
+            "/mitglieder/107/austritt",
+            &[
+                ("csrf", &csrf(&form.body)),
+                ("version", &field_value(&form.body, "version")),
+                ("date", "gestern"),
+            ],
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let ok = eva
+        .post(
+            "/mitglieder/107/austritt",
+            &[
+                ("csrf", &csrf(&form.body)),
+                ("version", &field_value(&form.body, "version")),
+                ("date", "31.10.2026"),
+            ],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    let page = eva.get("/mitglieder/107").await;
+    assert!(page.body.contains("Ende der Mitgliedschaft") && page.body.contains("31.10.2026"));
+}

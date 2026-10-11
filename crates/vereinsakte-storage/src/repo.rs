@@ -4,6 +4,7 @@
 use async_trait::async_trait;
 use sqlx::{Row, SqliteConnection};
 use vereinsakte_app::AppError;
+use vereinsakte_app::changes::{RecordKind, Scoped};
 use vereinsakte_app::ports::*;
 use vereinsakte_core::boat::Boat;
 use vereinsakte_core::club_record::ClubRecord;
@@ -128,11 +129,30 @@ impl MemberRepository for SqliteClubStore {
             "SELECT id, first_name, last_name, membership_type, email, phone_landline, phone_business, phone_mobile
              FROM members WHERE {ACTIVE_MEMBER} ORDER BY last_name, first_name"
         );
+        let mut licenses: std::collections::HashMap<MemberId, Vec<String>> = Default::default();
+        for r in rows(
+            &mut conn,
+            "SELECT member_id, kind FROM member_sailing_licenses ORDER BY member_id, position",
+            &[],
+        )
+        .await?
+        {
+            licenses
+                .entry(get_member(&r, "member_id")?)
+                .or_default()
+                .push(
+                    vereinsakte_core::member::SailingLicenseType::from(
+                        get::<String>(&r, "kind")?.as_str(),
+                    )
+                    .to_string(),
+                );
+        }
         let result: Result<Vec<MemberSummary>, StorageError> = rows(&mut conn, &sql, &[ts(t)])
             .await?
             .iter()
             .map(|r| {
                 Ok(MemberSummary {
+                    sailing_licenses: licenses.remove(&get_member(r, "id")?).unwrap_or_default(),
                     id: get_member(r, "id")?,
                     first_name: get(r, "first_name")?,
                     last_name: get(r, "last_name")?,
@@ -147,6 +167,14 @@ impl MemberRepository for SqliteClubStore {
             })
             .collect();
         Ok(result?)
+    }
+
+    async fn next_member_number(&self) -> Result<u32, AppError> {
+        let row = sqlx::query("SELECT COALESCE(MAX(id), 0) + 1 AS next FROM members")
+            .fetch_one(self.db.pool())
+            .await
+            .map_err(StorageError::from)?;
+        Ok(u32::try_from(row.get::<i64, _>("next")).unwrap_or(u32::MAX))
     }
 
     async fn save_member(&self, changed: &Member, expected: Version) -> Result<Version, AppError> {
@@ -722,10 +750,25 @@ mod tests {
     }
 }
 
+/// Versionsstände aller Zeilen einer Tabelle (Schlüsseltext → Version).
+async fn versions_of(
+    conn: &mut SqliteConnection,
+    versions: &mut std::collections::HashMap<(RecordKind, String), Version>,
+    kind: RecordKind,
+    table: &str,
+    key_sql: &str,
+) -> Result<(), StorageError> {
+    let sql = format!("SELECT {key_sql} AS k, version FROM {table}");
+    for row in sqlx::query(&sql).fetch_all(conn).await? {
+        versions.insert((kind, row.get("k")), Version(row.get("version")));
+    }
+    Ok(())
+}
+
 #[async_trait]
 impl vereinsakte_app::scope::ScopeRepository for SqliteClubStore {
-    async fn scope(&self, scope: &vereinsakte_app::scope::Scope) -> Result<ClubRecord, AppError> {
-        use vereinsakte_app::scope::MemberScope;
+    async fn scope(&self, scope: &vereinsakte_app::scope::Scope) -> Result<Scoped, AppError> {
+        use vereinsakte_app::scope::{BoatScope, MemberScope};
 
         let mut tx = self.db.pool().begin().await.map_err(StorageError::from)?;
         let mut record = ClubRecord::default();
@@ -751,44 +794,100 @@ impl vereinsakte_app::scope::ScopeRepository for SqliteClubStore {
             record.revocations = load_revocations(&mut tx, &filter).await?;
             record.work_entries = load_work_entries(&mut tx, &filter).await?;
         }
-        if !matches!(scope.members, MemberScope::None) {
-            let filter = match &scope.members {
-                MemberScope::Some(ids) if !ids.is_empty() => {
-                    let marks = vec!["?"; ids.len()].join(", ");
-                    let binds = ids.iter().chain(ids.iter()).map(|id| member(*id)).collect();
-                    Some(Filter::new(
-                        &format!("WHERE from_member IN ({marks}) OR to_member IN ({marks})"),
-                        binds,
-                    ))
-                }
-                MemberScope::All => Some(Filter::all()),
-                _ => None,
-            };
-            if let Some(filter) = filter {
-                record.hour_transfers = load_hour_transfers(&mut tx, &filter).await?;
+        let transfers = match &scope.members {
+            MemberScope::Some(ids) if !ids.is_empty() => {
+                let marks = vec!["?"; ids.len()].join(", ");
+                let binds = ids.iter().chain(ids.iter()).map(|id| member(*id)).collect();
+                Some(Filter::new(
+                    &format!("WHERE from_member IN ({marks}) OR to_member IN ({marks})"),
+                    binds,
+                ))
             }
+            MemberScope::All => Some(Filter::all()),
+            _ => None,
+        };
+        if let Some(filter) = transfers {
+            record.hour_transfers = load_hour_transfers(&mut tx, &filter).await?;
         }
-        if let Some(ids) = &scope.boats {
-            record.boats = load_boats(&mut tx)
-                .await?
-                .into_iter()
-                .filter(|b| ids.contains(&b.id))
-                .collect();
+        match &scope.boats {
+            BoatScope::None => {}
+            BoatScope::All => record.boats = load_boats(&mut tx).await?,
+            BoatScope::Some(ids) => {
+                record.boats = load_boats(&mut tx)
+                    .await?
+                    .into_iter()
+                    .filter(|b| ids.contains(&b.id))
+                    .collect();
+            }
         }
         if scope.seasons {
             record.seasons = load_seasons(&mut tx, &Filter::all()).await?;
         }
-        if let Some(window) = &scope.reservations {
+        if scope.offices {
+            record.offices = load_offices(&mut tx, &Filter::all()).await?;
+        }
+        if scope.work_events {
+            record.work_events = load_work_events(&mut tx).await?;
+        }
+        if scope.tasks {
+            record.tasks = load_tasks(&mut tx).await?;
+        }
+        if scope.reservations.is_some() || scope.reservations_between.is_some() {
             record.reservations = load_reservations(&mut tx)
                 .await?
                 .into_iter()
                 .filter(|r| {
-                    window.boats.contains(&r.boat) && r.start < window.to && r.end > window.from
+                    scope.reservations.as_ref().is_some_and(|w| {
+                        w.boats.contains(&r.boat) && r.start < w.to && r.end > w.from
+                    }) || scope
+                        .reservations_between
+                        .is_some_and(|(from, to)| r.start < to && r.end > from)
                 })
                 .collect();
         }
+
+        let mut versions = std::collections::HashMap::new();
+        let v = &mut versions;
+        let c = &mut *tx;
+        if !record.members.is_empty() {
+            versions_of(c, v, RecordKind::Member, "members", "CAST(id AS TEXT)").await?;
+        }
+        if !record.boats.is_empty() {
+            versions_of(c, v, RecordKind::Boat, "boats", "id").await?;
+        }
+        if !record.offices.is_empty() {
+            versions_of(c, v, RecordKind::Office, "offices", "id").await?;
+        }
+        if !record.boat_checkouts.is_empty() {
+            versions_of(c, v, RecordKind::Checkout, "boat_checkouts", "id").await?;
+        }
+        if !record.revocations.is_empty() {
+            versions_of(c, v, RecordKind::Revocation, "revocations", "id").await?;
+        }
+        if !record.work_events.is_empty() {
+            versions_of(c, v, RecordKind::WorkEvent, "work_events", "id").await?;
+        }
+        if !record.tasks.is_empty() {
+            versions_of(c, v, RecordKind::Task, "tasks", "id").await?;
+        }
+        if !record.work_entries.is_empty() {
+            versions_of(c, v, RecordKind::WorkEntry, "work_entries", "id").await?;
+        }
+        if !record.hour_transfers.is_empty() {
+            versions_of(c, v, RecordKind::HourTransfer, "hour_transfers", "id").await?;
+        }
+        if !record.seasons.is_empty() {
+            versions_of(c, v, RecordKind::Season, "seasons", "CAST(year AS TEXT)").await?;
+        }
+        if !record.annual_records.is_empty() {
+            let key = "member_id || ':' || year";
+            versions_of(c, v, RecordKind::AnnualRecord, "annual_records", key).await?;
+        }
+        if !record.reservations.is_empty() {
+            versions_of(c, v, RecordKind::Reservation, "reservations", "id").await?;
+        }
         tx.commit().await.map_err(StorageError::from)?;
-        Ok(record)
+        Ok(Scoped { record, versions })
     }
 }
 
@@ -817,7 +916,8 @@ mod scope_tests {
             let scope = store
                 .scope(&Scope::for_reservation(reservation))
                 .await
-                .unwrap();
+                .unwrap()
+                .record;
             assert_eq!(
                 scope.check_reservation(reservation),
                 full.check_reservation(reservation),
@@ -839,7 +939,7 @@ mod scope_tests {
                 .map(|(m, c)| (m, c.kind, c.amount, c.text, c.due_at))
                 .collect::<Vec<_>>()
         };
-        let all = store.scope(&Scope::all_members()).await.unwrap();
+        let all = store.scope(&Scope::all_members()).await.unwrap().record;
         assert_eq!(
             plain(all.annual_fee_claims(2027, now)),
             plain(full.annual_fee_claims(2027, now))
@@ -849,7 +949,11 @@ mod scope_tests {
             plain(full.admission_fee_claims(2026, now))
         );
         for tour in full.reservations.iter().filter(|r| r.tour) {
-            let scope = store.scope(&Scope::for_reservation(tour)).await.unwrap();
+            let scope = store
+                .scope(&Scope::for_reservation(tour))
+                .await
+                .unwrap()
+                .record;
             assert_eq!(
                 plain(scope.tour_fee_claims(tour, now)),
                 plain(full.tour_fee_claims(tour, now))
@@ -865,8 +969,8 @@ mod scope_tests {
         let full = example::club();
         let reservation = full.reservations.first().unwrap();
         let wanted = Scope::for_reservation(reservation);
-        let sqlite = store.scope(&wanted).await.unwrap();
-        let mem = memory.scope(&wanted).await.unwrap();
+        let sqlite = store.scope(&wanted).await.unwrap().record;
+        let mem = memory.scope(&wanted).await.unwrap().record;
         assert_eq!(sqlite, mem);
         assert!(sqlite.members.len() < full.members.len(), "nur Beteiligte");
         assert_eq!(sqlite.boats.len(), 1);

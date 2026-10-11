@@ -2,9 +2,12 @@
 //! mit Versionsprüfung und zusammen mit ihren Protokolleinträgen in einer
 //! Transaktion.
 
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use vereinsakte_core::boat::Boat;
 use vereinsakte_core::boat_permit::{BoatCheckout, Revocation};
+use vereinsakte_core::club_record::ClubRecord;
 use vereinsakte_core::fees::Season;
 use vereinsakte_core::member::Member;
 use vereinsakte_core::office::Office;
@@ -128,4 +131,70 @@ pub trait ChangeRepository: Send + Sync {
     /// schon), schlägt alles mit [`AppError::Conflict`] fehl und nichts wird
     /// verändert.
     async fn commit(&self, changes: Vec<Change>, audit: Vec<AuditEntry>) -> Result<(), AppError>;
+}
+
+/// Geladene Teildaten samt Versionsstand jedes Objekts (aus derselben Lesetransaktion).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Scoped {
+    pub record: ClubRecord,
+    pub versions: HashMap<(RecordKind, String), Version>,
+}
+
+impl Scoped {
+    pub fn version(&self, kind: RecordKind, key: &str) -> Version {
+        self.versions
+            .get(&(kind, key.to_string()))
+            .copied()
+            .unwrap_or(Version(1))
+    }
+
+    /// Alle Änderungen, die aus `self.record` den Zustand `new` machen:
+    /// geänderte Objekte mit ihrer geladenen Version, neue und entfernte.
+    pub fn diff(&self, new: &ClubRecord) -> Vec<Change> {
+        let old = &self.record;
+        let mut changes = vec![];
+        macro_rules! kind {
+            ($field:ident, $variant:ident) => {{
+                let key_of = |item: &_| Record::$variant(Clone::clone(item)).key();
+                let before: HashMap<String, _> =
+                    old.$field.iter().map(|i| (key_of(i), i)).collect();
+                let mut seen = std::collections::HashSet::new();
+                for item in &new.$field {
+                    let key = key_of(item);
+                    seen.insert(key.clone());
+                    match before.get(&key) {
+                        None => changes.push(Change::create(Record::$variant(item.clone()))),
+                        Some(prev) if *prev != item => changes.push(Change::update(
+                            Record::$variant(item.clone()),
+                            self.version(RecordKind::$variant, &key),
+                        )),
+                        Some(_) => {}
+                    }
+                }
+                for item in &old.$field {
+                    let key = key_of(item);
+                    if !seen.contains(&key) {
+                        changes.push(Change::Delete {
+                            kind: RecordKind::$variant,
+                            expected: self.version(RecordKind::$variant, &key),
+                            key,
+                        });
+                    }
+                }
+            }};
+        }
+        kind!(members, Member);
+        kind!(boats, Boat);
+        kind!(offices, Office);
+        kind!(boat_checkouts, Checkout);
+        kind!(revocations, Revocation);
+        kind!(work_events, WorkEvent);
+        kind!(tasks, Task);
+        kind!(work_entries, WorkEntry);
+        kind!(hour_transfers, HourTransfer);
+        kind!(seasons, Season);
+        kind!(annual_records, AnnualRecord);
+        kind!(reservations, Reservation);
+        changes
+    }
 }

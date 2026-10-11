@@ -14,10 +14,10 @@ use vereinsakte_core::office::Office;
 use vereinsakte_core::time::Timestamp;
 
 use crate::audit::{AuditEntry, AuditFilter, AuditRecord, AuditRepository};
-use crate::changes::{Change, ChangeRepository, Record, RecordKind};
+use crate::changes::{Change, ChangeRepository, Record, RecordKind, Scoped};
 use crate::error::AppError;
 use crate::ports::*;
-use crate::scope::{MemberScope, Scope, ScopeRepository};
+use crate::scope::{BoatScope, MemberScope, Scope, ScopeRepository};
 
 /// Datenbank-Ersatz im Speicher mit Versionsstand je Mitglied.
 #[derive(Debug, Default)]
@@ -110,6 +110,10 @@ impl MemberRepository for MemoryStore {
                 .sort_by(|a, b| (&a.last_name, &a.first_name).cmp(&(&b.last_name, &b.first_name)));
             members
         })
+    }
+
+    async fn next_member_number(&self) -> Result<u32, AppError> {
+        self.with(|r| r.members.iter().map(|m| m.id.get()).max().unwrap_or(0) + 1)
     }
 
     async fn save_member(&self, member: &Member, expected: Version) -> Result<Version, AppError> {
@@ -545,12 +549,18 @@ mod commit_tests {
 
 #[async_trait]
 impl ScopeRepository for MemoryStore {
-    async fn scope(&self, scope: &Scope) -> Result<ClubRecord, AppError> {
-        self.with(|full| {
+    async fn scope(&self, scope: &Scope) -> Result<Scoped, AppError> {
+        let versions = self.versions.lock().expect("Lock").clone();
+        let record = self.with(|full| {
             let wanted = |m: MemberId| match &scope.members {
                 MemberScope::None => false,
                 MemberScope::Some(ids) => ids.contains(&m),
                 MemberScope::All => true,
+            };
+            let boat_wanted = |b: &Boat| match &scope.boats {
+                BoatScope::None => false,
+                BoatScope::Some(ids) => ids.contains(&b.id),
+                BoatScope::All => true,
             };
             ClubRecord {
                 members: full
@@ -592,11 +602,26 @@ impl ScopeRepository for MemoryStore {
                 boats: full
                     .boats
                     .iter()
-                    .filter(|b| scope.boats.as_ref().is_some_and(|ids| ids.contains(&b.id)))
+                    .filter(|b| boat_wanted(b))
                     .cloned()
                     .collect(),
                 seasons: if scope.seasons {
                     full.seasons.clone()
+                } else {
+                    vec![]
+                },
+                offices: if scope.offices {
+                    full.offices.clone()
+                } else {
+                    vec![]
+                },
+                work_events: if scope.work_events {
+                    full.work_events.clone()
+                } else {
+                    vec![]
+                },
+                tasks: if scope.tasks {
+                    full.tasks.clone()
                 } else {
                     vec![]
                 },
@@ -606,12 +631,14 @@ impl ScopeRepository for MemoryStore {
                     .filter(|r| {
                         scope.reservations.as_ref().is_some_and(|w| {
                             w.boats.contains(&r.boat) && r.start < w.to && r.end > w.from
-                        })
+                        }) || scope
+                            .reservations_between
+                            .is_some_and(|(from, to)| r.start < to && r.end > from)
                     })
                     .cloned()
                     .collect(),
-                ..ClubRecord::default()
             }
-        })
+        })?;
+        Ok(Scoped { record, versions })
     }
 }

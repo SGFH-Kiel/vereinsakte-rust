@@ -23,10 +23,10 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 4. Mitglieder
 
-- [ ] 4.1 Mitgliedsseite `/mitglieder/{nr}` mit Sichtbarkeit nach Rolle (Name/Ämter für alle; Kontakt, Segelerlaubnis, Stunden, Konto nur eigen oder berechtigt) und erweitertes Verzeichnis (Filter Mitgliedsart, Schein „SKS“); Tests: Greta sieht bei Clara keine Kontaktdaten, Eva alles, Filter „SKS“ liefert Anna, Ben, Clara, Eva, Frank
-- [ ] 4.2 Eigene Kontaktdaten bearbeiten (`/meine-daten/bearbeiten`) mit Meldeadress-Prüfung und Versionsfeld; Tests: Anna ändert Straße, Greta ändert Mitgliedsart per manuellem POST bleibt unverändert, Konflikt → 409 mit erhaltenen Eingaben
-- [ ] 4.3 Mitglied aufnehmen und Stammdaten/Mitgliedsart/Verlauf ändern (Vorstand): Nummernvorschlag, Doppelprüfung Nummer und Anmeldekonto, Vorstandszustimmung außerordentlicher Mitglieder, Austritt/Ausschluss mit Datum; Tests: neue Nummer, doppelte Nummer/Anmeldekonto (Schreibweise egal) am Feld, Inès im Dezember nicht mehr im Verzeichnis und ohne Anmeldung, Greta → 403
-- [ ] 4.4 Eigene Scheine und Funklizenzen auf „Meine Daten“ erfassen, ändern, entfernen (ohne Nachweis, ohne Freigabe; Vorstand darf für alle) mit sofort neu berechneter Segelerlaubnis und Protokolleintrag; Tests: Frank ergänzt SKS und Segelerlaubnis und Filter „SKS“ aktualisieren sich, Formular enthält kein Upload- oder Nachweisfeld, Greta ändert Claras Schein → 403, Eva ergänzt Claras Funklizenz, Entfernen erzeugt Protokolleintrag „Segelschein entfernt“
+- [x] 4.1 Mitgliedsseite `/mitglieder/{nr}` mit Sichtbarkeit nach Rolle (Name/Ämter für alle; Kontakt, Segelerlaubnis, Stunden, Konto nur eigen oder berechtigt) und erweitertes Verzeichnis (Filter Mitgliedsart, Schein „SKS“); Tests: Greta sieht bei Clara keine Kontaktdaten, Eva alles, Filter „SKS“ liefert Anna, Ben, Clara, Eva, Frank
+- [x] 4.2 Eigene Kontaktdaten bearbeiten (`/meine-daten/bearbeiten`) mit Meldeadress-Prüfung und Versionsfeld; Tests: Anna ändert Straße, Greta ändert Mitgliedsart per manuellem POST bleibt unverändert, Konflikt → 409 mit erhaltenen Eingaben
+- [x] 4.3 Mitglied aufnehmen und Stammdaten/Mitgliedsart/Verlauf ändern (Vorstand): Nummernvorschlag, Doppelprüfung Nummer und Anmeldekonto, Vorstandszustimmung außerordentlicher Mitglieder, Austritt/Ausschluss mit Datum; Tests: neue Nummer, doppelte Nummer/Anmeldekonto (Schreibweise egal) am Feld, Inès im Dezember nicht mehr im Verzeichnis und ohne Anmeldung, Greta → 403
+- [x] 4.4 Eigene Scheine und Funklizenzen auf „Meine Daten“ erfassen, ändern, entfernen (ohne Nachweis, ohne Freigabe; Vorstand darf für alle) mit sofort neu berechneter Segelerlaubnis und Protokolleintrag; Tests: Frank ergänzt SKS und Segelerlaubnis und Filter „SKS“ aktualisieren sich, Formular enthält kein Upload- oder Nachweisfeld, Greta ändert Claras Schein → 403, Eva ergänzt Claras Funklizenz, Entfernen erzeugt Protokolleintrag „Segelschein entfernt“
 
 ## 5. Ämter
 

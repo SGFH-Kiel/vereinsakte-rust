@@ -43,6 +43,8 @@ pub struct MemberSummary {
     pub membership_type: MembershipType,
     pub email: Option<String>,
     pub phone: PhoneNumbers,
+    /// Segelscheine als Text, z. B. „SKS“.
+    pub sailing_licenses: Vec<String>,
 }
 
 impl MemberSummary {
@@ -60,6 +62,11 @@ impl From<&Member> for MemberSummary {
             membership_type: m.membership_type,
             email: m.email.clone(),
             phone: m.phone.clone(),
+            sailing_licenses: m
+                .sailing_licenses
+                .iter()
+                .map(|l| l.kind.to_string())
+                .collect(),
         }
     }
 }
@@ -78,6 +85,9 @@ pub trait MemberRepository: Send + Sync {
     /// Speichert ein Mitglied samt Scheinen und Konto, wenn sein gespeicherter
     /// Stand `expected` ist; sonst [`AppError::Conflict`].
     async fn save_member(&self, member: &Member, expected: Version) -> Result<Version, AppError>;
+
+    /// Nächste freie Mitgliedsnummer (größte vergebene plus eins).
+    async fn next_member_number(&self) -> Result<u32, AppError>;
 }
 
 #[async_trait]

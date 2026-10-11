@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="breadcrumbs"><a href="/mitglieder">Mitglieder</a> › {% if is_new %}Neues Mitglied{% else %}<a href="/mitglieder/{{ values.number }}">{{ values.name }}</a> › Bearbeiten{% endif %}</div>
+<div class="page-head"><h1>{% if is_new %}Mitglied aufnehmen{% else %}{{ values.name }} bearbeiten{% endif %}</h1></div>
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+
+<form method="post" action="{{ action }}" class="card">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <input type="hidden" name="version" value="{{ values.version }}">
+  <h2>Kontaktdaten</h2>
+  <div class="form-grid cols-2">
+    {% if full %}
+    {{ f::field("first_name", "Vorname", values.first_name, errors.get("first_name"), "text", "") }}
+    {{ f::field("last_name", "Nachname", values.last_name, errors.get("last_name"), "text", "") }}
+    {% endif %}
+    {{ f::field("street", "Straße und Hausnummer", values.street, errors.get("street"), "text", "") }}
+    {{ f::field("postal_code", "Postleitzahl", values.postal_code, errors.get("postal_code"), "text", "") }}
+    {{ f::field("city", "Ort", values.city, errors.get("city"), "text", "") }}
+    {{ f::field("email", "Kontakt-E-Mail", values.email, errors.get("email"), "email", "") }}
+    {{ f::field("landline", "Telefon (Festnetz)", values.landline, "", "tel", "") }}
+    {{ f::field("business", "Telefon (geschäftlich)", values.business, "", "tel", "") }}
+    {{ f::field("mobile", "Telefon (mobil)", values.mobile, "", "tel", "") }}
+  </div>
+  {% if full %}
+  <h2 class="spaced">Mitgliedschaft</h2>
+  <div class="form-grid cols-2">
+    {% if is_new %}
+    {{ f::field("number", "Mitgliedsnummer", values.number_input, errors.get("number"), "number", "leer lassen für die nächste freie Nummer") }}
+    {{ f::field("joined", "Eintrittsdatum", values.joined, errors.get("joined"), "date", "leer lassen für heute") }}
+    {% endif %}
+    <div class="field">
+      <label for="f-membership_type">Mitgliedsart</label>
+      <select id="f-membership_type" name="membership_type">
+        {% for (key, label) in types %}<option value="{{ key }}"{% if *key == values.membership_type %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    {{ f::field("login_email", "Anmeldekonto (Microsoft)", values.login_email, errors.get("login_email"), "email", "Adresse des Vereinskontos, nicht die Kontakt-E-Mail") }}
+    {{ f::field("child_of", "Elternmitglied (Nr.)", values.child_of, errors.get("child_of"), "number", "nur bei „Kind eines Mitglieds“") }}
+    <label class="check"><input type="checkbox" name="board_consent" value="1"{% if values.board_consent %} checked{% endif %}> Vorstandszustimmung liegt vor</label>
+    <label class="check"><input type="checkbox" name="address_valid" value="1"{% if values.address_valid %} checked{% endif %}> Meldeadresse ist gültig</label>
+  </div>
+  {% endif %}
+  <div class="form-actions">
+    <button type="submit" class="primary">Speichern</button>
+    <a class="btn" href="{% if is_new %}/mitglieder{% else %}/mitglieder/{{ values.number }}{% endif %}">Abbrechen</a>
+  </div>
+</form>
+
+{% if !is_new %}
+<section class="card">
+  <h2>Segelscheine und Funklizenzen</h2>
+  <p class="muted">Angaben beruhen auf Vertrauen; ein Nachweis wird nicht verlangt.</p>
+  {% if licenses.is_empty() %}<p>Noch nichts erfasst.</p>{% else %}
+  <ul class="plain">
+  {% for l in licenses %}
+    <li>
+      <form method="post" action="/mitglieder/{{ values.number }}/scheine/{{ l.kind_key }}/{{ l.index }}/entfernen" class="inline">
+        <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+        <strong>{{ l.name }}</strong> <span class="muted">{{ l.type_label }}{% if let Some(date) = l.acquired %}, erworben {{ date }}{% endif %}</span>
+        <button type="submit" class="small danger">Entfernen</button>
+      </form>
+    </li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="/mitglieder/{{ values.number }}/scheine" class="form-grid cols-2 spaced">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <div class="field">
+      <label for="f-kind">Art</label>
+      <select id="f-kind" name="kind"><option value="sailing">Segelschein</option><option value="radio">Funklizenz</option></select>
+    </div>
+    {{ f::field("name", "Bezeichnung", license_name, license_error, "text", "z. B. SKS, SBF See, SRC") }}
+    {{ f::field("acquired", "Erworben am (optional)", "", "", "date", "") }}
+    <div class="form-actions wide"><button type="submit" class="primary">Hinzufügen</button></div>
+  </form>
+</section>
+
+{% if full %}
+<section class="card">
+  <h2>Mitgliedschaft beenden</h2>
+  <form method="post" action="/mitglieder/{{ values.number }}/austritt" class="form-grid cols-2">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <input type="hidden" name="version" value="{{ values.version }}">
+    {{ f::field("date", "Zum Datum", "", errors.get("date"), "date", "ab diesem Tag ist das Mitglied nicht mehr aktiv") }}
+    <label class="check"><input type="checkbox" name="expelled" value="1"> Ausschluss (statt Austritt)</label>
+    <div class="form-actions wide"><button type="submit" class="danger">Mitgliedschaft beenden</button></div>
+  </form>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

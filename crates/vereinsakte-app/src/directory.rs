@@ -1,7 +1,9 @@
 //! Sichtmodell Mitgliederverzeichnis: Kontaktdaten nur für Mitglieder mit Amt.
 
-use crate::error::AppError;
+use vereinsakte_core::member::MembershipType;
 use vereinsakte_core::office::Offices;
+
+use crate::error::AppError;
 
 use crate::service::{ClubService, CurrentUser, office_labels};
 
@@ -9,12 +11,27 @@ use crate::service::{ClubService, CurrentUser, office_labels};
 pub struct DirectoryView {
     /// Sieht das angemeldete Mitglied Kontaktdaten?
     pub show_contact: bool,
+    /// Darf das Mitglied neue Mitglieder aufnehmen?
+    pub can_manage: bool,
     pub query: String,
+    pub membership_type: String,
+    pub license: String,
     pub entries: Vec<DirectoryEntry>,
+}
+
+/// Filter der Mitgliederliste.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct DirectoryFilter {
+    pub query: String,
+    pub membership_type: Option<MembershipType>,
+    /// Segelschein, z. B. „SKS“ (ohne Beachtung der Schreibweise).
+    pub license: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectoryEntry {
+    pub id: u32,
+    pub licenses: Vec<String>,
     pub name: String,
     pub offices: Vec<String>,
     /// Nur gesetzt, wenn das angemeldete Mitglied ein Amt hat.
@@ -37,6 +54,23 @@ impl ClubService {
         user: &CurrentUser,
         query: &str,
     ) -> Result<DirectoryView, AppError> {
+        self.directory_filtered(
+            user,
+            &DirectoryFilter {
+                query: query.to_string(),
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    pub async fn directory_filtered(
+        &self,
+        user: &CurrentUser,
+        filter: &DirectoryFilter,
+    ) -> Result<DirectoryView, AppError> {
+        let query = filter.query.as_str();
+        let license = filter.license.trim().to_lowercase();
         let now = self.now();
         let active = self.store.active_offices(now).await?;
         let offices = Offices::new(&active);
@@ -50,11 +84,20 @@ impl ClubService {
             .await?
             .into_iter()
             .filter(|m| {
-                needle.is_empty()
+                (needle.is_empty()
                     || m.first_name.to_lowercase().contains(&needle)
-                    || m.last_name.to_lowercase().contains(&needle)
+                    || m.last_name.to_lowercase().contains(&needle))
+                    && filter
+                        .membership_type
+                        .is_none_or(|t| m.membership_type == t)
+                    && (license.is_empty()
+                        || m.sailing_licenses
+                            .iter()
+                            .any(|l| l.to_lowercase() == license))
             })
             .map(|m| DirectoryEntry {
+                id: m.id.get(),
+                licenses: m.sailing_licenses.clone(),
                 name: format!("{}, {}", m.last_name, m.first_name),
                 offices: office_labels(&offices, &boats, m.id, now),
                 contact: show_contact.then(|| Contact {
@@ -69,8 +112,18 @@ impl ClubService {
                 }),
             })
             .collect();
+        let can_manage = self
+            .principal(user)
+            .await?
+            .can(&vereinsakte_core::rights::Capability::ManageMembers);
         Ok(DirectoryView {
             show_contact,
+            can_manage,
+            membership_type: filter
+                .membership_type
+                .map(|t| crate::members::membership_type_key(t).to_string())
+                .unwrap_or_default(),
+            license: filter.license.trim().to_string(),
             query: query.trim().to_string(),
             entries,
         })

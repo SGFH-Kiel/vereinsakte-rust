@@ -3,6 +3,7 @@
 
 use chrono::Datelike;
 use vereinsakte_core::account::ClaimStatus;
+use vereinsakte_core::ids::MemberId;
 use vereinsakte_core::money::Money;
 use vereinsakte_core::work_hours::WorkSubject;
 
@@ -109,13 +110,19 @@ impl ClubService {
     /// Daten des angemeldeten Mitglieds für das laufende Jahr – geladen werden
     /// nur seine eigenen Daten, die Saison und die Boote.
     pub async fn my_data(&self, user: &CurrentUser) -> Result<MyDataView, AppError> {
+        self.member_data(user.member).await
+    }
+
+    /// Alle Daten eines Mitglieds für das laufende Jahr. Die Berechtigung
+    /// prüft der Aufrufer (siehe `Capability::ReadMember`).
+    pub(crate) async fn member_data(&self, id: MemberId) -> Result<MyDataView, AppError> {
         let now = self.now();
         let year = now.year();
         let member = self
             .store
-            .member(user.member)
+            .member(id)
             .await?
-            .ok_or_else(|| AppError::NotFound(format!("Mitglied {}", user.member)))?
+            .ok_or_else(|| AppError::NotFound(format!("Mitglied {id}")))?
             .value;
         let year_data = self.store.member_year(member.id, year).await?;
         let permit_data = self.store.permit_history(member.id).await?;

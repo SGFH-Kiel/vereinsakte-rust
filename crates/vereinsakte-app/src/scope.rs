@@ -4,11 +4,11 @@
 //! Fachregeln des Core laufen unverändert darauf.
 
 use async_trait::async_trait;
-use vereinsakte_core::club_record::ClubRecord;
 use vereinsakte_core::ids::{BoatId, MemberId};
 use vereinsakte_core::reservation::Reservation;
 use vereinsakte_core::time::Timestamp;
 
+use crate::changes::Scoped;
 use crate::error::AppError;
 
 /// Welche Mitglieder (mit Konto, Jahresnachweisen, Stunden, Abnahmen und
@@ -18,6 +18,15 @@ pub enum MemberScope {
     #[default]
     None,
     Some(Vec<MemberId>),
+    All,
+}
+
+/// Welche Boote enthalten sein sollen.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum BoatScope {
+    #[default]
+    None,
+    Some(Vec<BoatId>),
     All,
 }
 
@@ -32,11 +41,16 @@ pub struct ReservationWindow {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Scope {
     pub members: MemberScope,
-    /// Boote, die enthalten sein sollen (`None`: keines).
-    pub boats: Option<Vec<BoatId>>,
+    pub boats: BoatScope,
     pub reservations: Option<ReservationWindow>,
+    /// Reservierungen aller Boote, die den Zeitraum berühren.
+    pub reservations_between: Option<(Timestamp, Timestamp)>,
     /// Alle Saisons (Gebührensätze, Soll-Stunden).
     pub seasons: bool,
+    /// Alle Ämter samt Historie.
+    pub offices: bool,
+    pub work_events: bool,
+    pub tasks: bool,
 }
 
 impl Scope {
@@ -45,13 +59,14 @@ impl Scope {
     pub fn for_reservation(r: &Reservation) -> Self {
         Self {
             members: MemberScope::Some(r.members_on_board()),
-            boats: Some(vec![r.boat]),
+            boats: BoatScope::Some(vec![r.boat]),
             reservations: Some(ReservationWindow {
                 boats: vec![r.boat],
                 from: r.start,
                 to: r.end,
             }),
             seasons: true,
+            ..Self::default()
         }
     }
 
@@ -67,5 +82,6 @@ impl Scope {
 
 #[async_trait]
 pub trait ScopeRepository: Send + Sync {
-    async fn scope(&self, scope: &Scope) -> Result<ClubRecord, AppError>;
+    /// Lädt die Teildaten samt Versionen in einer Lesetransaktion.
+    async fn scope(&self, scope: &Scope) -> Result<Scoped, AppError>;
 }

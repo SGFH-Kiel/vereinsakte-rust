@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="breadcrumbs"><a href="/mitglieder">Mitglieder</a> › {{ p.name }}</div>
+<div class="page-head">
+  <div>
+    <h1>{{ p.name }}</h1>
+    <p class="muted">Mitglied {{ p.id }} · {{ p.membership_type }}{% if !p.active %} · <span class="badge warn">nicht mehr aktiv</span>{% endif %}</p>
+  </div>
+  {% if p.can_edit_profile || p.can_manage %}
+  <div class="actions"><a class="btn primary" href="/mitglieder/{{ p.id }}/bearbeiten">Bearbeiten</a></div>
+  {% endif %}
+</div>
+<section class="card">
+  <h2>Überblick</h2>
+  <dl>
+    <dt>Eintritt</dt><dd>{{ p.joined }}</dd>
+    {% if let Some(left) = p.left %}<dt>Ende der Mitgliedschaft</dt><dd>{{ left }}</dd>{% endif %}
+    <dt>Ämter</dt><dd>{% if p.offices.is_empty() %}keine{% else %}{{ p.offices|join(", ") }}{% endif %}</dd>
+  </dl>
+  {% if p.details.is_none() %}<p class="muted">Kontaktdaten, Segelerlaubnis, Stunden und Konto sind nur für das Mitglied selbst, den Vorstand und die Revisoren sichtbar.</p>{% endif %}
+</section>
+{% if let Some(v) = p.details %}
+{% include "_member_details.html" %}
+{% endif %}
+{% endblock %}

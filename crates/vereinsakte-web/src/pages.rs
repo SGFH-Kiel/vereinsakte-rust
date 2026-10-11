@@ -7,7 +7,8 @@ use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
 use serde::Deserialize;
 use tower_sessions::Session;
-use vereinsakte_app::directory::DirectoryView;
+use vereinsakte_app::directory::{DirectoryFilter, DirectoryView};
+use vereinsakte_app::members::{membership_types, parse_membership_type};
 use vereinsakte_app::my_data::MyDataView;
 use vereinsakte_app::service::LoginChoiceGroup;
 use vereinsakte_app::{CurrentUser, Principal};
@@ -172,6 +173,10 @@ pub async fn my_data(
 pub struct DirectoryQuery {
     #[serde(default)]
     q: String,
+    #[serde(default)]
+    art: String,
+    #[serde(default)]
+    schein: String,
 }
 
 #[derive(Template)]
@@ -179,6 +184,7 @@ pub struct DirectoryQuery {
 struct DirectoryPage {
     layout: Layout,
     v: DirectoryView,
+    types: Vec<(&'static str, String)>,
 }
 
 #[derive(Template)]
@@ -194,17 +200,36 @@ pub async fn directory(
     Query(query): Query<DirectoryQuery>,
     headers: HeaderMap,
 ) -> Result<Response, WebError> {
-    let v = state.club.directory(&user, &query.q).await?;
+    let filter = DirectoryFilter {
+        query: query.q,
+        membership_type: parse_membership_type(&query.art),
+        license: query.schein,
+    };
+    let v = state.club.directory_filtered(&user, &filter).await?;
     if headers.contains_key("hx-request") {
         return render(&DirectoryTable { v });
     }
-    let next = if v.query.is_empty() {
+    let mut params = vec![];
+    if !v.query.is_empty() {
+        params.push(format!("q={}", crate::session::encode(&v.query)));
+    }
+    if !v.membership_type.is_empty() {
+        params.push(format!("art={}", v.membership_type));
+    }
+    if !v.license.is_empty() {
+        params.push(format!("schein={}", crate::session::encode(&v.license)));
+    }
+    let next = if params.is_empty() {
         "/mitglieder".to_string()
     } else {
-        format!("/mitglieder?q={}", crate::session::encode(&v.query))
+        format!("/mitglieder?{}", params.join("&"))
     };
     let layout = Layout::build(&state, &session, Some(&user), "Mitglieder", &next).await?;
-    render(&DirectoryPage { layout, v })
+    render(&DirectoryPage {
+        layout,
+        v,
+        types: membership_types(),
+    })
 }
 
 pub async fn health(State(state): State<AppState>) -> Response {
