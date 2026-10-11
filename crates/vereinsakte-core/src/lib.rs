@@ -15,6 +15,7 @@ pub mod money;
 pub mod office;
 pub mod requirement;
 pub mod reservation;
+pub mod rights;
 pub mod sailing_permit;
 pub mod task;
 pub mod time;

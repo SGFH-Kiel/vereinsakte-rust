@@ -10,8 +10,9 @@ use super::boat_permit::{BoatCheckout, CheckoutResult, Revocation};
 use super::club_record::ClubRecord;
 use super::ids::{BoatId, CheckoutId, MemberId, OfficeId, RevocationId, WorkEntryId};
 use super::issues::RecordIssue;
+use super::rights::{Authorizer, Capability};
 use super::time::Timestamp;
-use super::work_hours::{Confirmation, WorkSubject};
+use super::work_hours::Confirmation;
 
 /// Rolle eines Amtes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -351,42 +352,21 @@ impl ClubRecord {
         action: &Action,
         t: Timestamp,
     ) -> Result<(), NotAuthorized> {
-        let board = self.is_board_member(actor, t);
-        let allowed = match *action {
-            Action::BlockBoat(boat) | Action::LiftBlock(boat) | Action::ReleaseBoat(boat) => {
-                board
-                    || self.holds(actor, t, |r| {
-                        r == Role::HeadBoatwarden || r == Role::Boatwarden(boat)
-                    })
-            }
+        let capability = match *action {
+            Action::BlockBoat(boat) => Capability::BlockBoat(boat),
+            Action::LiftBlock(boat) => Capability::LiftBlock(boat),
+            Action::ReleaseBoat(boat) => Capability::ReleaseBoat(boat),
+            Action::RecordCheckout(boat) => Capability::RecordCheckout(boat),
+            Action::Revoke(boat) => Capability::Revoke(boat),
             Action::ConfirmWork(id) => {
                 let entry = self.work_entry(id).ok_or(NotAuthorized::UnknownWorkEntry)?;
-                if entry.member == actor {
-                    return Err(NotAuthorized::OwnWorkEntry);
-                }
-                match entry.subject {
-                    WorkSubject::Boat(boat) => {
-                        board
-                            || self.holds(actor, t, |r| {
-                                r == Role::HeadBoatwarden || r == Role::Boatwarden(boat)
-                            })
-                    }
-                    WorkSubject::Club => self.holds(actor, t, |_| true),
+                Capability::ConfirmWork {
+                    owner: entry.member,
+                    subject: entry.subject,
                 }
             }
-            Action::RecordCheckout(boat) => {
-                board
-                    || self.holds(actor, t, |r| {
-                        r == Role::Examiner(boat) || r == Role::Boatwarden(boat)
-                    })
-            }
-            Action::Revoke(_) => board,
         };
-        if allowed {
-            Ok(())
-        } else {
-            Err(NotAuthorized::MissingOffice)
-        }
+        Authorizer::new(self.office_queries(), actor, t).allows(&capability)
     }
 
     fn require_boat(&self, boat: BoatId) -> Result<(), ActionError> {
@@ -572,6 +552,7 @@ mod tests {
 
     use super::*;
     use crate::example::{self, at, *};
+    use crate::work_hours::WorkSubject;
 
     #[test]
     fn role_json_shape() {

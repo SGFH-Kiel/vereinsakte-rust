@@ -28,7 +28,7 @@ Das Protokoll SHALL keine Anmeldedaten, Sitzungskennungen oder Client-Geheimniss
 Das Protokoll SHALL der Vorstand und der Revisor einsehen, filterbar nach Zeitraum, handelndem Mitglied und Aktionsart und neueste zuerst. Jedes Mitglied SHALL die Einträge sehen, die seine eigenen Daten betreffen. Protokolleinträge SHALL nicht änderbar und nicht löschbar sein.
 
 #### Scenario: Eigene Einträge
-- **WHEN** Clara ihre Protokollansicht öffnet
+- **WHEN** Greta ohne Amt ihre Protokollansicht öffnet
 - **THEN** sieht sie nur Einträge, bei denen sie handelnd oder betroffen ist
 
 #### Scenario: Revisor filtert

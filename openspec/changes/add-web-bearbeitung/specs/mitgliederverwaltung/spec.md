@@ -25,7 +25,7 @@ Ein Mitglied SHALL seine Anschrift, Telefonnummern und Kontakt-E-Mail ändern k�
 - **THEN** zeigt „Meine Daten“ die neue Straße
 
 #### Scenario: Unzulässiges Feld
-- **WHEN** Anna per manuell gesendetem POST ihre Mitgliedsart ändert
+- **WHEN** Greta per manuell gesendetem POST ihre Mitgliedsart ändert
 - **THEN** bleibt die Mitgliedsart unverändert
 
 ### Requirement: Mitglied aufnehmen
@@ -62,7 +62,7 @@ Ein Mitglied SHALL seine eigenen Segelscheine mit Art, Datum und freier Bezeichn
 - **THEN** enthält das Formular kein Feld für einen Nachweis oder Dateiupload
 
 #### Scenario: Fremder Schein
-- **WHEN** Anna den Schein von Clara ändern will
+- **WHEN** Greta den Schein von Clara ändern will
 - **THEN** wird dies mit 403 abgelehnt
 
 #### Scenario: Vorstand pflegt mit

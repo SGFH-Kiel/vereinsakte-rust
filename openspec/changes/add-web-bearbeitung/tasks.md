@@ -4,8 +4,8 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 1. Rechte im Core
 
-- [ ] 1.1 `Capability` und `Authorizer` im Core einführen (Basis: `Offices` plus Aktor und Zusatzdaten), die Logik aus `ClubRecord::authorize` dorthin verschieben und `ClubRecord::authorize` delegieren lassen; verifizieren: alle bestehenden Core-Tests unverändert grün
-- [ ] 1.2 Rechtematrix aus design.md als `Capability`-Regeln umsetzen (eigene Kontaktdaten/Scheine/Lizenzen, Mitgliederverwaltung, Ämter, Boote, Arbeit, Reservierungen, Finanzen, Protokoll); Tests: Tabelle Mitglied der Beispielakte (Anna, Ben, Clara, Eva, Frank, Greta, Hannes) × Capability, darunter Frank darf eigene, aber nicht Claras Scheine ändern, Ben darf Filou nicht sperren, Greta nichts Schreibendes, Revisor nur lesend, Amtswechsel wirkt sofort
+- [x] 1.1 `Capability` und `Authorizer` im Core einführen (Basis: `Offices` plus Aktor und Zusatzdaten), die Logik aus `ClubRecord::authorize` dorthin verschieben und `ClubRecord::authorize` delegieren lassen; verifizieren: alle bestehenden Core-Tests unverändert grün
+- [x] 1.2 Rechtematrix aus design.md als `Capability`-Regeln umsetzen (eigene Kontaktdaten/Scheine/Lizenzen, Mitgliederverwaltung, Ämter, Boote, Arbeit, Reservierungen, Finanzen, Protokoll); Tests: Tabelle Mitglied der Beispielakte (Anna, Ben, Clara, Eva, Frank, Greta, Hannes) × Capability, darunter Greta darf eigene, aber nicht Claras Scheine ändern, Ben darf Filou nicht sperren, Greta nichts Schreibendes, Revisor nur lesend, Amtswechsel wirkt sofort
 
 ## 2. Schreib-Ports, Protokoll und Teildaten-Regeln
 
@@ -24,9 +24,9 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 ## 4. Mitglieder
 
 - [ ] 4.1 Mitgliedsseite `/mitglieder/{nr}` mit Sichtbarkeit nach Rolle (Name/Ämter für alle; Kontakt, Segelerlaubnis, Stunden, Konto nur eigen oder berechtigt) und erweitertes Verzeichnis (Filter Mitgliedsart, Schein „SKS“); Tests: Greta sieht bei Clara keine Kontaktdaten, Eva alles, Filter „SKS“ liefert Anna, Ben, Clara, Eva, Frank
-- [ ] 4.2 Eigene Kontaktdaten bearbeiten (`/meine-daten/bearbeiten`) mit Meldeadress-Prüfung und Versionsfeld; Tests: Anna ändert Straße, Mitgliedsart per manuellem POST bleibt unverändert, Konflikt → 409 mit erhaltenen Eingaben
+- [ ] 4.2 Eigene Kontaktdaten bearbeiten (`/meine-daten/bearbeiten`) mit Meldeadress-Prüfung und Versionsfeld; Tests: Anna ändert Straße, Greta ändert Mitgliedsart per manuellem POST bleibt unverändert, Konflikt → 409 mit erhaltenen Eingaben
 - [ ] 4.3 Mitglied aufnehmen und Stammdaten/Mitgliedsart/Verlauf ändern (Vorstand): Nummernvorschlag, Doppelprüfung Nummer und Anmeldekonto, Vorstandszustimmung außerordentlicher Mitglieder, Austritt/Ausschluss mit Datum; Tests: neue Nummer, doppelte Nummer/Anmeldekonto (Schreibweise egal) am Feld, Inès im Dezember nicht mehr im Verzeichnis und ohne Anmeldung, Greta → 403
-- [ ] 4.4 Eigene Scheine und Funklizenzen auf „Meine Daten“ erfassen, ändern, entfernen (ohne Nachweis, ohne Freigabe; Vorstand darf für alle) mit sofort neu berechneter Segelerlaubnis und Protokolleintrag; Tests: Frank ergänzt SKS und Segelerlaubnis und Filter „SKS“ aktualisieren sich, Formular enthält kein Upload- oder Nachweisfeld, Anna ändert Claras Schein → 403, Eva ergänzt Claras Funklizenz, Entfernen erzeugt Protokolleintrag „Segelschein entfernt“
+- [ ] 4.4 Eigene Scheine und Funklizenzen auf „Meine Daten“ erfassen, ändern, entfernen (ohne Nachweis, ohne Freigabe; Vorstand darf für alle) mit sofort neu berechneter Segelerlaubnis und Protokolleintrag; Tests: Frank ergänzt SKS und Segelerlaubnis und Filter „SKS“ aktualisieren sich, Formular enthält kein Upload- oder Nachweisfeld, Greta ändert Claras Schein → 403, Eva ergänzt Claras Funklizenz, Entfernen erzeugt Protokolleintrag „Segelschein entfernt“
 
 ## 5. Ämter
 
@@ -65,7 +65,7 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 10. Protokoll
 
-- [ ] 10.1 Protokollseite `/protokoll` mit Filtern Zeitraum, Akteur, Art, neueste zuerst; Mitglieder sehen nur Einträge, in denen sie handelnd oder betroffen sind; Tests: Revisor filtert „Einzahlung“, Clara sieht nur eigene Einträge, Greta kann `/protokoll` nur eingeschränkt öffnen, kein Eintrag enthält Feldwerte oder Sitzungsdaten
+- [ ] 10.1 Protokollseite `/protokoll` mit Filtern Zeitraum, Akteur, Art, neueste zuerst; Mitglieder sehen nur Einträge, in denen sie handelnd oder betroffen sind; Tests: Revisor filtert „Einzahlung“, Greta sieht nur eigene Einträge, kein Eintrag enthält Feldwerte oder Sitzungsdaten
 - [ ] 10.2 Sicherstellen, dass jeder schreibende Anwendungsfall aus den Gruppen 4–9 einen Eintrag schreibt (Sammeltest über eine Liste aller Befehle) und bei Fehler keinen; Test: für jeden Befehl Erfolg → genau ein Eintrag, 403/409/422 → keiner
 
 ## 11. Integration und Dokumentation

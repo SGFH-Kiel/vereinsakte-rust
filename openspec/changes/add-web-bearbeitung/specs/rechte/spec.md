@@ -36,7 +36,7 @@ Jedes aktive Mitglied SHALL seine eigenen Stammdaten, Segelerlaubnis, Arbeitsstu
 - **THEN** wird er ohne Nachweis und ohne Freigabe gespeichert
 
 #### Scenario: Fremde Kontaktdaten
-- **WHEN** Anna die Kontaktdaten von Clara ändern will
+- **WHEN** Greta die Kontaktdaten von Clara ändern will
 - **THEN** wird die Aktion mit 403 abgelehnt und nichts gespeichert
 
 ### Requirement: Vorstand und Schriftwart
