@@ -73,7 +73,7 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 - [x] 11.1 Ende-zu-Ende-Test im Binary-Crate über SQLite und Entwicklungs-Login: Greta erfasst einen Einsatz, Ben bestätigt ihn, Eva nimmt ein Mitglied auf, der Kassenwart bucht eine Einzahlung, der Revisor liest alles und scheitert beim Schreiben, Protokoll enthält alle Aktionen; verifizieren mit `cargo test --workspace`
 - [x] 11.2 Erscheinungsbild prüfen: `tools/screenshots.mjs` erzeugt Bildschirmfotos aller Hauptseiten bei 375 px und 1280 px (hell/dunkel) aus der Beispielakte; verifizieren: keine Seite scrollt seitwärts, Menü und Karten-Tabellen sind bedienbar, Befunde sind behoben
 - [x] 11.3 `README.md` um Rechte-Übersicht (Matrix), Bedienung je Rolle, Entwicklungsmodus mit Rollenwechsel zum Testen und Sicherung inkl. Protokoll ergänzen; verifizieren: die beschriebenen Schritte laufen auf einer leeren Kopie durch
-- [ ] 11.4 Abschlussprüfung: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check` ohne Befunde; `cargo build --release -p vereinsakte` enthält keine Testdaten (Suche nach „Petersen“ im Binary ergibt nichts)
+- [x] 11.4 Abschlussprüfung: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check` ohne Befunde; `cargo build --release -p vereinsakte` enthält keine Testdaten (Suche nach „Petersen“ im Binary ergibt nichts)
 
 ## Workflow follow-up
 
