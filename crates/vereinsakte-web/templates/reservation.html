@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="breadcrumbs"><a href="/reservierungen">Reservierungen</a> › {{ p.row.boat }}</div>
+<div class="page-head">
+  <div><h1>{{ p.row.boat }}</h1><p class="muted">{{ p.row.when }}</p></div>
+  {% if p.row.can_change %}
+  <div class="actions">
+    <a class="btn" href="/reservierungen/{{ p.row.id }}/bearbeiten">Ändern</a>
+    <form method="post" action="/reservierungen/{{ p.row.id }}/stornieren">
+      <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+      <button type="submit" class="danger">Stornieren</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+<section class="card">
+  <dl>
+    <dt>Skipper</dt><dd>{{ p.row.skipper }}</dd>
+    {% if !p.row.co_skipper.is_empty() %}<dt>Co-Skipper</dt><dd>{{ p.row.co_skipper }}</dd>{% endif %}
+    <dt>Crew</dt><dd>{% if p.row.crew.is_empty() %}keine{% else %}{{ p.row.crew|join(", ") }}{% endif %}</dd>
+    <dt>Gäste</dt><dd>{% if p.row.guests.is_empty() %}keine{% else %}{{ p.row.guests|join(", ") }}{% endif %}</dd>
+    <dt>Fahrtgebiet</dt><dd>{{ p.row.area }}</dd>
+    <dt>Art</dt><dd>{% if p.row.tour %}Tour (mit Übernachtung in einem fremden Hafen){% else %}Ausfahrt{% endif %}</dd>
+    {% if !p.row.remark.is_empty() %}<dt>Bemerkung</dt><dd>{{ p.row.remark }}</dd>{% endif %}
+  </dl>
+</section>
+{% if let Some(total) = p.fee_total %}
+<section class="card">
+  <h2>Tourgebühr</h2>
+  {% if p.fees.is_empty() %}<p>Für diese Tour fällt keine Gebühr an.</p>{% else %}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Konto</th><th>Gebühr</th><th class="num">Betrag</th><th>Stand</th></tr></thead>
+    <tbody>{% for f in p.fees %}
+      <tr><td data-label="Konto">{{ f.who }}</td><td data-label="Gebühr">{{ f.text }}</td><td data-label="Betrag" class="num">{{ f.amount }}</td><td data-label="Stand">{{ f.status }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  </div>
+  <p>Summe: <strong>{{ total }}</strong></p>
+  {% endif %}
+  <p class="muted">Die Forderungen legt der Kassenwart nach der Fahrt an.</p>
+</section>
+{% endif %}
+{% endblock %}

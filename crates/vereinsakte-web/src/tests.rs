@@ -1784,3 +1784,190 @@ async fn board_sees_deficits_transfers_and_compensates() {
         StatusCode::FORBIDDEN
     );
 }
+
+// --- Gruppe 8: Reservierungen -------------------------------------------------------
+
+fn reservation_fields<'a>(boat: &'a str, token: &'a str, day: &'a str) -> Vec<(&'a str, &'a str)> {
+    vec![
+        ("csrf", token),
+        ("boat", boat),
+        ("area", "home"),
+        ("from_date", day),
+        ("from_time", "10:00"),
+        ("to_date", day),
+        ("to_time", "16:00"),
+    ]
+}
+
+#[tokio::test]
+async fn reservation_calendar_filters_and_links() {
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let page = greta
+        .get("/reservierungen?von=2026-06-01&bis=2026-06-30")
+        .await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert!(page.body.contains("Filou") && page.body.contains("Harald Blauzahn"));
+    assert!(page.body.contains("David Schulz") && page.body.contains("Karin Voß"));
+    let mine = logged_in(&h, 104)
+        .await
+        .get("/reservierungen?von=2026-06-01&bis=2026-06-30&meine=1")
+        .await;
+    let main_of = |html: &str| html[html.find("<main").unwrap()..].to_string();
+    assert!(
+        main_of(&mine.body).contains("David Schulz") && !main_of(&mine.body).contains("Karin Voß")
+    );
+    let boat = vereinsakte_core::example::HARALD_BLAUZAHN;
+    let by_boat = greta
+        .get(&format!(
+            "/reservierungen?von=2026-06-01&bis=2026-06-30&boot={boat}"
+        ))
+        .await;
+    assert!(
+        main_of(&by_boat.body).contains("Karin Voß")
+            && !main_of(&by_boat.body).contains("David Schulz")
+    );
+    assert!(page.body.contains("Vorherige Woche") && page.body.contains("Nächste Woche"));
+}
+
+#[tokio::test]
+async fn eligible_member_reserves_and_sees_it_on_the_start_page() {
+    use vereinsakte_core::example::FILOU;
+    let h = dev();
+    let mut david = logged_in(&h, 104).await;
+    let form = david.get("/reservierungen/neu").await;
+    assert_eq!(form.status, StatusCode::OK);
+    let token = csrf(&form.body);
+    let boat = FILOU.to_string();
+    let created = david
+        .post(
+            "/reservierungen/neu",
+            &reservation_fields(&boat, &token, "2026-10-17"),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::SEE_OTHER, "{}", created.body);
+    let page = david.get(created.location()).await;
+    assert!(
+        page.body.contains("Die Reservierung wurde angelegt.")
+            && page.body.contains("David Schulz")
+    );
+    assert!(david.get("/").await.body.contains("Meine Reservierungen"));
+    let overlap = david
+        .post(
+            "/reservierungen/neu",
+            &reservation_fields(&boat, &token, "2026-10-17"),
+        )
+        .await;
+    assert_eq!(overlap.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(
+        overlap.body.contains("bereits reserviert")
+            && overlap.body.contains("value=\"2026-10-17\"")
+    );
+}
+
+#[tokio::test]
+async fn ineligible_skipper_gets_clear_reasons_and_nothing_is_saved() {
+    use vereinsakte_core::example::FILOU;
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let token = csrf(&greta.get("/reservierungen/neu").await.body);
+    let boat = FILOU.to_string();
+    let response = greta
+        .post(
+            "/reservierungen/neu",
+            &reservation_fields(&boat, &token, "2026-10-17"),
+        )
+        .await;
+    assert_eq!(response.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(
+        response
+            .body
+            .contains("Die Reservierung ist so nicht möglich")
+            && response.body.contains("Skipper nicht geeignet")
+    );
+    let list = greta
+        .get("/reservierungen?von=2026-10-17&bis=2026-10-17")
+        .await;
+    assert!(list.body.contains("keine Reservierungen"));
+    let mut foreign = reservation_fields(&boat, &token, "2026-10-17");
+    foreign.push(("skipper", "104"));
+    let denied = greta.post("/reservierungen/neu", &foreign).await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn reservations_can_be_changed_and_cancelled_by_their_skipper_only() {
+    use vereinsakte_core::example::FILOU;
+    let h = dev();
+    let mut david = logged_in(&h, 104).await;
+    let token = csrf(&david.get("/reservierungen/neu").await.body);
+    let boat = FILOU.to_string();
+    let created = david
+        .post(
+            "/reservierungen/neu",
+            &reservation_fields(&boat, &token, "2026-10-17"),
+        )
+        .await;
+    let id = created
+        .location()
+        .trim_start_matches("/reservierungen/")
+        .to_string();
+    let mut greta = logged_in(&h, 107).await;
+    let page = greta.get(&format!("/reservierungen/{id}")).await;
+    assert!(!page.body.contains("/stornieren") && !page.body.contains("/bearbeiten"));
+    let denied = greta
+        .post(
+            &format!("/reservierungen/{id}/stornieren"),
+            &[("csrf", &csrf(&page.body))],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    let edit = david.get(&format!("/reservierungen/{id}/bearbeiten")).await;
+    assert_eq!(edit.status, StatusCode::OK);
+    let version = field_value(&edit.body, "version");
+    let mut fields = reservation_fields(&boat, &token, "2026-10-17");
+    fields[6] = ("to_time", "18:00");
+    fields.push(("version", &version));
+    let saved = david
+        .post(&format!("/reservierungen/{id}/bearbeiten"), &fields)
+        .await;
+    assert_eq!(saved.status, StatusCode::SEE_OTHER, "{}", saved.body);
+    let stale = david
+        .post(&format!("/reservierungen/{id}/bearbeiten"), &fields)
+        .await;
+    assert_eq!(stale.status, StatusCode::CONFLICT);
+    let cancelled = david
+        .post(
+            &format!("/reservierungen/{id}/stornieren"),
+            &[("csrf", &token)],
+        )
+        .await;
+    assert_eq!(cancelled.status, StatusCode::SEE_OTHER);
+    assert!(
+        david
+            .get("/reservierungen?von=2026-10-17&bis=2026-10-17")
+            .await
+            .body
+            .contains("keine Reservierungen")
+    );
+}
+
+#[tokio::test]
+async fn tour_page_shows_the_expected_fee() {
+    let h = dev();
+    let id = vereinsakte_core::example::DEHLER_TOUR;
+    let page = logged_in(&h, 107)
+        .await
+        .get(&format!("/reservierungen/{id}"))
+        .await;
+    assert_eq!(page.status, StatusCode::OK);
+    assert!(
+        page.body.contains("Tourgebühr")
+            && page.body.contains("Max Gast")
+            && page.body.contains("Summe:")
+    );
+    assert!(
+        page.body
+            .contains("Die Forderungen legt der Kassenwart nach der Fahrt an.")
+    );
+}

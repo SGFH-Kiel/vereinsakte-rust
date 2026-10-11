@@ -67,6 +67,7 @@ fn navigation(_principal: &Principal, path: &str) -> Vec<NavItem> {
         ("/meine-daten", "Meine Daten"),
         ("/mitglieder", "Mitglieder"),
         ("/boote", "Boote"),
+        ("/reservierungen", "Reservierungen"),
         ("/arbeit", "Arbeit"),
         ("/aemter", "Ämter"),
     ]
@@ -143,6 +144,7 @@ struct StartPage {
     confirmations: usize,
     events: Vec<vereinsakte_app::work::EventLine>,
     tasks: Vec<vereinsakte_app::work::TaskLine>,
+    reservations: Vec<vereinsakte_app::reservations::ReservationRow>,
 }
 
 /// Startseite: die nächsten Schritte des angemeldeten Mitglieds.
@@ -176,6 +178,20 @@ pub async fn home(
         .filter(|t| t.status_key != "done" && t.can_update && !t.assignees.is_empty())
         .filter(|t| t.assignees.contains(&principal.name))
         .collect();
+    let today = principal.now.date_naive();
+    let reservations = state
+        .club
+        .reservation_list(
+            &user,
+            &vereinsakte_app::reservations::ReservationFilter {
+                from: Some(today),
+                to: Some(today + chrono::Duration::days(60)),
+                mine: true,
+                ..Default::default()
+            },
+        )
+        .await?
+        .rows;
     let layout = Layout::build(&state, &session, Some(&user), "Start", "/").await?;
     render(&StartPage {
         layout,
@@ -183,6 +199,7 @@ pub async fn home(
         confirmations,
         events,
         tasks,
+        reservations,
     })
 }
 

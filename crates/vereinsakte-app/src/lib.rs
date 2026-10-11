@@ -16,6 +16,7 @@ pub mod my_data;
 pub mod offices;
 pub mod ports;
 pub mod principal;
+pub mod reservations;
 pub mod scope;
 pub mod service;
 pub mod work;

@@ -50,9 +50,9 @@ Konvention: Code englisch, Doku/Texte deutsch. Tests bauen auf der Beispielakte 
 
 ## 8. Reservierungen
 
-- [ ] 8.1 Reservierungskalender (Woche/Monat) und Liste mit Filtern Boot, Zeitraum, „nur meine“ (inkl. Karte „meine Reservierungen“ auf der Startseite); Tests: Filter „nur meine“ für Anna, Kalender ohne JavaScript als Liste nach Tagen
-- [ ] 8.2 Reservierung anlegen mit Co-Skipper, Crew, Gästen, eigenem Zeitraum, Tour-Kennzeichen, Bemerkung und der Gesamtprüfung aus 2.3 mit verständlichen Fehlern; Tests: gültige Reservierung mit Crew und Gast, Skipper ohne Abnahme, Überschneidung nennt die kollidierende Reservierung, gesperrtes Boot, fehlende Segelerlaubnis eines Crewmitglieds
-- [ ] 8.3 Reservierung ändern und stornieren (Skipper künftig, Berechtigte jederzeit, begonnene nur Vorstand) mit erneuter Prüfung und Anzeige der erwarteten Tourgebühr; Tests: Anna storniert, Greta fremde Reservierung → 403, Änderung wird erneut geprüft, Tourgebühr je Person angezeigt
+- [x] 8.1 Reservierungskalender (Woche/Monat) und Liste mit Filtern Boot, Zeitraum, „nur meine“ (inkl. Karte „meine Reservierungen“ auf der Startseite); Tests: Filter „nur meine“ für Anna, Kalender ohne JavaScript als Liste nach Tagen
+- [x] 8.2 Reservierung anlegen mit Co-Skipper, Crew, Gästen, eigenem Zeitraum, Tour-Kennzeichen, Bemerkung und der Gesamtprüfung aus 2.3 mit verständlichen Fehlern; Tests: gültige Reservierung mit Crew und Gast, Skipper ohne Abnahme, Überschneidung nennt die kollidierende Reservierung, gesperrtes Boot, fehlende Segelerlaubnis eines Crewmitglieds
+- [x] 8.3 Reservierung ändern und stornieren (Skipper künftig, Berechtigte jederzeit, begonnene nur Vorstand) mit erneuter Prüfung und Anzeige der erwarteten Tourgebühr; Tests: Anna storniert, Greta fremde Reservierung → 403, Änderung wird erneut geprüft, Tourgebühr je Person angezeigt
 
 ## 9. Finanzen
 

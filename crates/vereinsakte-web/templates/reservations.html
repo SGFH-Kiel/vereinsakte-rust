@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Reservierungen</h1><p class="muted">{{ from }} bis {{ to }}</p></div>
+  <div class="actions"><a class="btn primary" href="/reservierungen/neu">Boot reservieren</a></div>
+</div>
+<form method="get" action="/reservierungen" class="filters">
+  <div class="field"><label for="f-boat">Boot</label>
+    <select id="f-boat" name="boot"><option value="">alle Boote</option>
+      {% for (key, name) in v.boats %}<option value="{{ key }}"{% if *key == boat %} selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label for="f-von">Von</label><input id="f-von" type="date" name="von" value="{{ from_iso }}"></div>
+  <div class="field"><label for="f-bis">Bis</label><input id="f-bis" type="date" name="bis" value="{{ to_iso }}"></div>
+  <label class="check"><input type="checkbox" name="meine" value="1"{% if mine %} checked{% endif %}> nur meine</label>
+  <button type="submit" class="primary">Anzeigen</button>
+</form>
+<p class="actions"><a class="btn small" href="{{ previous }}">‹ Vorherige Woche</a> <a class="btn small" href="{{ next }}">Nächste Woche ›</a></p>
+{% if v.rows.is_empty() %}
+<section class="card"><p>Im gewählten Zeitraum gibt es keine Reservierungen.</p></section>
+{% else %}
+<section class="card">
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr><th>Wann</th><th>Boot</th><th>Skipper</th><th>Fahrtgebiet</th><th></th></tr></thead>
+    <tbody>
+    {% for r in v.rows %}
+      <tr>
+        <td data-label="Wann"><a href="/reservierungen/{{ r.id }}">{{ r.when }}</a></td>
+        <td data-label="Boot">{{ r.boat }}{% if r.tour %} <span class="badge info">Tour</span>{% endif %}</td>
+        <td data-label="Skipper">{{ r.skipper }}{% if r.mine %} <span class="badge ok">dabei</span>{% endif %}</td>
+        <td data-label="Fahrtgebiet">{{ r.area }}</td>
+        <td data-label="">{% if r.past %}<span class="badge">vorbei</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

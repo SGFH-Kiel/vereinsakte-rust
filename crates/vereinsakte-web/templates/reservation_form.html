@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "_forms.html" as f %}
+{% block content %}
+<div class="breadcrumbs"><a href="/reservierungen">Reservierungen</a> › {% if is_new %}Neue Reservierung{% else %}Ändern{% endif %}</div>
+<div class="page-head"><h1>{% if is_new %}Boot reservieren{% else %}Reservierung ändern{% endif %}</h1></div>
+{% if !errors.general().is_empty() %}
+<div class="notice error" role="alert"><strong>Die Reservierung ist so nicht möglich:</strong>
+  <ul>{% for message in errors.general() %}<li>{{ message }}</li>{% endfor %}</ul></div>
+{% endif %}
+<form method="post" action="{{ action }}" class="card">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  <div class="form-grid cols-2">
+    <div class="field{% if !errors.get("boat").is_empty() %} has-error{% endif %}"><label for="f-boat">Boot</label>
+      <select id="f-boat" name="boat">{% for (key, name) in data.boats %}<option value="{{ key }}"{% if *key == form.boat %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+      {% if !errors.get("boat").is_empty() %}<span class="error-text">{{ errors.get("boat") }}</span>{% endif %}</div>
+    <div class="field"><label for="f-area">Fahrtgebiet</label>
+      <select id="f-area" name="area"><option value="home"{% if form.area != "outside" %} selected{% endif %}>Heimrevier</option><option value="outside"{% if form.area == "outside" %} selected{% endif %}>außerhalb des Heimreviers</option></select></div>
+    {{ f::field("from_date", "Beginn (Datum)", form.from_date, errors.get("from_date"), "date", "") }}
+    {{ f::field("from_time", "Beginn (Uhrzeit)", form.from_time, "", "time", "") }}
+    {{ f::field("to_date", "Ende (Datum)", form.to_date, errors.get("to_date"), "date", "") }}
+    {{ f::field("to_time", "Ende (Uhrzeit)", form.to_time, "", "time", "") }}
+    <div class="field"><label for="f-skipper">Skipper</label>
+      <select id="f-skipper" name="skipper">
+        <option value="">ich selbst</option>
+        {% for (number, name) in data.members %}<option value="{{ number }}"{% if number.to_string() == form.skipper %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+      <span class="hint">Für andere Skipper reservieren darf nur Bootswart, Oberbootswart oder Vorstand.</span></div>
+    <div class="field{% if !errors.get("co_skipper").is_empty() %} has-error{% endif %}"><label for="f-co">Co-Skipper (optional)</label>
+      <select id="f-co" name="co_skipper"><option value="">keiner</option>
+        {% for (number, name) in data.members %}<option value="{{ number }}"{% if number.to_string() == form.co_skipper %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+      {% if !errors.get("co_skipper").is_empty() %}<span class="error-text">{{ errors.get("co_skipper") }}</span>{% endif %}</div>
+    <div class="field wide{% if !errors.get("crew").is_empty() %} has-error{% endif %}"><label for="f-crew">Crew (optional)</label>
+      <textarea id="f-crew" name="crew">{{ form.crew }}</textarea>
+      <span class="hint">Je Zeile ein Mitglied: Nummer oder Name. Eigener Zeitraum an Bord optional: „107; 07.07.2026 10:00; 14.07.2026 18:00“.</span>
+      {% if !errors.get("crew").is_empty() %}<span class="error-text">{{ errors.get("crew") }}</span>{% endif %}</div>
+    <div class="field wide"><label for="f-guests">Gäste (optional)</label>
+      <textarea id="f-guests" name="guests">{{ form.guests }}</textarea>
+      <span class="hint">Je Zeile ein Gast: „Name; Telefon; von; bis“ (alles nach dem Namen optional).</span></div>
+    <label class="check wide"><input type="checkbox" name="tour" value="1"{% if form.tour %} checked{% endif %}> Tour (mindestens eine Übernachtung in einem fremden Hafen)</label>
+    {{ f::field("remark", "Bemerkung", form.remark, "", "text", "") }}
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="primary">Speichern</button>
+    <a class="btn" href="/reservierungen">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}

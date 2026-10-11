@@ -10,6 +10,7 @@ mod members;
 mod offices;
 pub mod oidc;
 mod pages;
+mod reservations;
 mod router;
 pub mod session;
 pub mod state;

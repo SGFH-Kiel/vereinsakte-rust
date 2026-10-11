@@ -41,6 +41,13 @@
   <p><a href="/arbeit/termine">Alle Termine</a> · <a href="/arbeit">Einsatz erfassen</a></p>
 </section>
 {% endif %}
+{% if !reservations.is_empty() %}
+<section class="card">
+  <h2>Meine Reservierungen</h2>
+  <ul class="plain">{% for r in reservations %}<li><a href="/reservierungen/{{ r.id }}">{{ r.boat }}</a> – {{ r.when }}{% if r.tour %} <span class="badge info">Tour</span>{% endif %}</li>{% endfor %}</ul>
+  <p><a href="/reservierungen/neu">Boot reservieren</a></p>
+</section>
+{% endif %}
 {% if !tasks.is_empty() %}
 <section class="card">
   <h2>Meine Aufgaben</h2>

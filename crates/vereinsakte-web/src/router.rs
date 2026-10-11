@@ -13,7 +13,7 @@ use tower_sessions::{Expiry, SessionManagerLayer, SessionStore};
 use crate::error::not_found;
 use crate::session::csrf_guard;
 use crate::state::AppState;
-use crate::{boats, login, members, offices, pages, work};
+use crate::{boats, login, members, offices, pages, reservations, work};
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
                    form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
@@ -64,6 +64,20 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/boote/{id}/freigabe", post(boats::release))
         .route("/boote/{id}/abnahme", post(boats::checkout))
         .route("/boote/{id}/widerruf", post(boats::revoke))
+        .route("/reservierungen", get(reservations::list))
+        .route(
+            "/reservierungen/neu",
+            get(reservations::new).post(reservations::new_submit),
+        )
+        .route("/reservierungen/{id}", get(reservations::show))
+        .route(
+            "/reservierungen/{id}/bearbeiten",
+            get(reservations::edit).post(reservations::edit_submit),
+        )
+        .route(
+            "/reservierungen/{id}/stornieren",
+            post(reservations::cancel),
+        )
         .route("/arbeit", get(work::hours))
         .route("/arbeit/einsaetze", post(work::add_entry))
         .route(
