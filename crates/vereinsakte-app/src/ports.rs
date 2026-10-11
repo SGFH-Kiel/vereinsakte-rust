@@ -47,6 +47,8 @@ pub struct MemberSummary {
     pub contact_blocked: bool,
     /// Segelscheine als Text, z. B. „SKS“.
     pub sailing_licenses: Vec<String>,
+    /// Funklizenzen als Text, z. B. „SRC“.
+    pub radio_licenses: Vec<String>,
 }
 
 impl MemberSummary {
@@ -67,6 +69,11 @@ impl From<&Member> for MemberSummary {
             contact_blocked: m.contact_blocked,
             sailing_licenses: m
                 .sailing_licenses
+                .iter()
+                .map(|l| l.kind.to_string())
+                .collect(),
+            radio_licenses: m
+                .radio_licenses
                 .iter()
                 .map(|l| l.kind.to_string())
                 .collect(),

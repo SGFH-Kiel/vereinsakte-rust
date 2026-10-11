@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}<a href="/kalender?art=termine">Kalender</a>{% endblock %}
+{% block page_title %}{{ e.title }}{% endblock %}
+{% block page_sub %}{{ ui::badge("warn", "wrench", "Arbeitstermin") }} {{ e.when }}{% if e.past %} {{ ui::badge("neutral", "clock", "vorbei") }}{% endif %}{% endblock %}
+{% block page_actions %}
+{% if !e.past %}
+  {% if e.mine %}
+  <form method="post" action="/arbeit/termine/{{ e.id }}/abmelden"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit">{{ ui::icon("x-circle") }}Abmelden</button></form>
+  {% else if !e.full %}
+  <form method="post" action="/arbeit/termine/{{ e.id }}/anmelden"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary">{{ ui::icon("check") }}Anmelden</button></form>
+  {% endif %}
+{% endif %}
+{% if can_manage %}
+<details class="more-actions">
+  <summary class="btn">{{ ui::icon("more") }}Weitere Aktionen</summary>
+  <div class="menu-panel"><a class="menu-item" href="/arbeit/termine/{{ e.id }}/bearbeiten">{{ ui::icon("pencil") }}Termin bearbeiten</a></div>
+</details>
+{% endif %}
+{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head"><h2>{{ ui::icon("wrench") }}Termin</h2></div>
+  <dl>
+    <dt>Wann</dt><dd>{{ e.when }}</dd>
+    {% if !e.location.is_empty() %}<dt>Ort</dt><dd>{{ e.location }}</dd>{% endif %}
+    {% if !e.boat.is_empty() %}<dt>Boot</dt><dd>{{ e.boat }}</dd>{% endif %}
+    <dt>Plätze</dt><dd>{% if e.full %}{{ ui::badge("warn", "alert", "ausgebucht") }}{% else %}{{ ui::badge("info", "check", "frei") }}{% endif %} {{ e.registered }}{% if let Some(max) = e.max %} von {{ max }}{% endif %} angemeldet</dd>
+    {% if !e.description.is_empty() %}<dt>Beschreibung</dt><dd class="preline">{{ e.description }}</dd>{% endif %}
+  </dl>
+</section>
+<section class="card">
+  <div class="card-head"><h2>{{ ui::icon("users") }}Teilnehmer</h2></div>
+  {% if e.participants.is_empty() %}{{ ui::empty("users", "Noch niemand angemeldet.") }}{% else %}
+  <ul class="plain">{% for p in e.participants %}<li>{% if let Some(id) = p.id %}<a class="person" href="/mitglieder/{{ id }}">{{ p.name }}</a>{% else %}{{ p.name }}{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  <p class="muted">Die Anmeldung schreibt keine Stunden gut; bitte nach dem Termin einen Einsatz erfassen.</p>
+</section>
+{% endblock %}

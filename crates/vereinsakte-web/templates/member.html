@@ -1,28 +1,33 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="breadcrumbs"><a href="/mitglieder">Mitglieder</a> › {{ p.name }}</div>
-<div class="page-head">
-  <div>
-    <h1>{{ p.name }}</h1>
-    <p class="muted">Mitglied {{ p.id }} · {{ p.membership_type }}{% if !p.active %} · <span class="badge warn">nicht mehr aktiv</span>{% endif %}</p>
+{% import "_ui.html" as ui %}
+{% block eyebrow %}<a href="/mitglieder">Mitglieder</a>{% endblock %}
+{% block page_title %}{{ p.name }}{% endblock %}
+{% block page_sub %}Mitglied {{ p.member_number }} · {{ p.membership_type }}{% if !p.active %} · {{ ui::badge("warn", "alert", "nicht mehr aktiv") }}{% endif %}{% endblock %}
+{% block page_actions %}
+{% if p.can_edit_profile || p.can_manage %}<a class="btn primary" href="/mitglieder/{{ p.id }}/bearbeiten">{{ ui::icon("pencil") }}Bearbeiten</a>{% endif %}
+{% if p.details.is_some() %}
+<details class="more-actions">
+  <summary class="btn">{{ ui::icon("more") }}Weitere Aktionen</summary>
+  <div class="menu-panel">
+    <a class="menu-item" href="/finanzen/nachweis/{{ p.id }}">{{ ui::icon("file") }}Jahresnachweis</a>
+    <a class="menu-item" href="/finanzen/konten/{{ p.id }}">{{ ui::icon("euro") }}Konto</a>
   </div>
-  {% if p.can_edit_profile || p.can_manage %}
-  <div class="actions"><a class="btn primary" href="/mitglieder/{{ p.id }}/bearbeiten">Bearbeiten</a></div>
-  {% endif %}
-</div>
+</details>
+{% endif %}
+{% endblock %}
+{% block content %}
 <section class="card">
-  <h2>Überblick</h2>
+  <div class="card-head"><h2>{{ ui::icon("user") }}Überblick</h2></div>
   <dl>
     <dt>Eintritt</dt><dd>{{ p.joined }}</dd>
     {% if let Some(left) = p.left %}<dt>Ende der Mitgliedschaft</dt><dd>{{ left }}</dd>{% endif %}
-    <dt>Ämter</dt><dd>{% if p.offices.is_empty() %}keine{% else %}{{ p.offices|join(", ") }}{% endif %}</dd>
-    <dt>E-Mail</dt><dd>{% if p.contact.is_blocked() %}<span class="badge">Kontaktdaten gesperrt</span>{% else if let Some(email) = p.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% else %}<span class="muted">nicht angegeben</span>{% endif %}</dd>
+    <dt>Ämter</dt><dd>{% if p.offices.is_empty() %}<span class="muted">keine</span>{% else %}{{ p.offices|join(", ") }}{% endif %}</dd>
+    <dt>E-Mail</dt><dd>{% if p.contact.is_blocked() %}{{ ui::badge("neutral", "lock", "Kontaktdaten gesperrt") }}{% else if let Some(email) = p.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% else %}<span class="muted">nicht angegeben</span>{% endif %}</dd>
     {% if !p.contact.is_blocked() %}<dt>Telefon</dt><dd>{% if p.contact.phones().is_empty() %}<span class="muted">nicht angegeben</span>{% else %}{{ p.contact.phones()|join(", ") }}{% endif %}</dd>{% endif %}
   </dl>
   {% if p.details.is_none() %}<p class="muted">Anschrift, Segelerlaubnis, Stunden und Konto sind nur für das Mitglied selbst, den Vorstand und die Revisoren sichtbar.</p>{% endif %}
 </section>
-{% if let Some(v) = p.details %}
-<p class="actions"><a class="btn" href="/finanzen/nachweis/{{ p.id }}">Jahresnachweis</a> <a class="btn" href="/finanzen/konten/{{ p.id }}">Konto</a></p>
+{% if let Some(v) = p.details %}{% if let Some(sorts) = sorts %}
 {% include "_member_details.html" %}
-{% endif %}
+{% endif %}{% endif %}
 {% endblock %}

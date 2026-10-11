@@ -87,6 +87,7 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/finanzen/touren", get(finance::tours))
         .route("/finanzen/touren/{id}/abrechnen", post(finance::bill_tour))
         .route("/finanzen/nachweis/{nr}", get(finance::proof))
+        .route("/kalender", get(crate::calendar::show))
         .route("/reservierungen", get(reservations::list))
         .route(
             "/reservierungen/neu",
@@ -114,6 +115,8 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
             "/arbeit/termine",
             get(work::events).post(work::create_event),
         )
+        .route("/arbeit/termine/neu", get(work::new_event))
+        .route("/arbeit/termine/{id}", get(work::event_show))
         .route(
             "/arbeit/termine/{id}/bearbeiten",
             get(work::edit_event).post(work::edit_event_submit),
@@ -143,6 +146,7 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/health", get(pages::health))
         .route("/static/htmx.min.js", get(pages::htmx))
         .route("/static/app.css", get(pages::css))
+        .route("/static/{*path}", get(crate::assets::asset))
         .layer(SetResponseHeaderLayer::if_not_present(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static(CSP)))
         .layer(SetResponseHeaderLayer::if_not_present(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY")))
         .layer(SetResponseHeaderLayer::if_not_present(

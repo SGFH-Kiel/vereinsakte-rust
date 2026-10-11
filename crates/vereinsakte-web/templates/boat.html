@@ -1,28 +1,36 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% import "_forms.html" as f %}
+{% block eyebrow %}<a href="/boote">Boote</a>{% endblock %}
+{% block page_title %}{{ p.name }}{% endblock %}
+{% block page_sub %}<span class="symbol kind" title="{{ p.type_tip }}">{{ ui::icon(p.type_icon) }}<span class="symbol-text">{{ p.type_tip }}</span></span> {{ p.type_tip }}{% endblock %}
+{% block page_actions %}
+<a class="btn primary" href="/reservierungen/neu?boot={{ p.id }}">{{ ui::icon("calendar") }}Reservieren</a>
+{% if p.can_edit %}
+<details class="more-actions">
+  <summary class="btn">{{ ui::icon("more") }}Weitere Aktionen</summary>
+  <div class="menu-panel"><a class="menu-item" href="/boote/{{ p.id }}/bearbeiten">{{ ui::icon("pencil") }}Boot bearbeiten</a></div>
+</details>
+{% endif %}
+{% endblock %}
 {% block content %}
-<div class="breadcrumbs"><a href="/boote">Boote</a> › {{ p.name }}</div>
-<div class="page-head">
-  <div><h1>{{ p.name }}</h1><p class="muted">{{ p.boat_type }}</p></div>
-  {% if p.can_edit %}<div class="actions"><a class="btn" href="/boote/{{ p.id }}/bearbeiten">Bearbeiten</a></div>{% endif %}
-</div>
-
 <div class="grid cols-2">
 <section class="card">
-  <h2>Deine Eignung</h2>
+  <div class="card-head"><h2>{{ ui::icon("anchor") }}Deine Eignung</h2></div>
   {% if p.eligibility.skipper %}
-  <p><span class="badge ok">✓ erlaubt</span> Du darfst dieses Boot als Skipper führen.</p>
+  <p>{{ ui::badge("ok", "check", "erlaubt") }} Du darfst dieses Boot als Skipper führen.</p>
   {% else %}
-  <p><span class="badge warn">nicht möglich</span> Du darfst dieses Boot derzeit nicht als Skipper führen:</p>
+  <p>{{ ui::badge("warn", "alert", "nicht möglich") }} Du darfst dieses Boot derzeit nicht als Skipper führen:</p>
   <ul>{% for reason in p.eligibility.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
   {% endif %}
 </section>
 <section class="card">
-  <h2>Zustand {{ p.season }}</h2>
-  <p>{% if p.released %}<span class="badge ok">✓ freigegeben</span>{% else %}<span class="badge warn">nicht freigegeben</span>{% endif %}</p>
+  <div class="card-head"><h2>{{ ui::icon("check-circle") }}Zustand {{ p.season }}</h2></div>
+  <p>{% if p.released %}{{ ui::badge("ok", "check", "freigegeben") }}{% else %}{{ ui::badge("warn", "alert", "nicht freigegeben") }}{% endif %}</p>
   {% for b in p.blocks %}
-    <p>{% if b.open %}<span class="badge danger">gesperrt</span>{% else %}<span class="badge">Sperre</span>{% endif %} {{ b.period }}: {{ b.reason }} <span class="muted">({{ b.by }})</span></p>
+    <p>{% if b.open %}{{ ui::badge("danger", "lock", "gesperrt") }}{% else %}{{ ui::badge("neutral", "clock", "Sperre") }}{% endif %} {{ b.period }}: {{ b.reason }} <span class="muted">({{ b.by }})</span></p>
   {% endfor %}
+  <div class="actions">
   {% if p.can_release %}
   <form method="post" action="/boote/{{ p.id }}/freigabe" class="inline">
     <input type="hidden" name="csrf" value="{{ layout.csrf }}">
@@ -35,20 +43,21 @@
     <button type="submit" class="small">Sperre aufheben</button>
   </form>
   {% endif %}
+  </div>
 </section>
 </div>
 
 <section class="card">
-  <h2>Stammdaten</h2>
+  <div class="card-head"><h2>{{ ui::icon("boat") }}Stammdaten</h2></div>
   <dl>
     {% for (label, value) in p.facts %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}
-    <dt>Bootswarte</dt><dd>{% if p.wardens.is_empty() %}keine{% else %}{{ p.wardens|join(", ") }}{% endif %}</dd>
-    <dt>Abnehmer</dt><dd>{% if p.examiners.is_empty() %}keine{% else %}{{ p.examiners|join(", ") }}{% endif %}</dd>
+    <dt>Bootswarte</dt><dd>{% if p.wardens.is_empty() %}<span class="muted">keine</span>{% else %}{{ p.wardens|join(", ") }}{% endif %}</dd>
+    <dt>Abnehmer</dt><dd>{% if p.examiners.is_empty() %}<span class="muted">keine</span>{% else %}{{ p.examiners|join(", ") }}{% endif %}</dd>
   </dl>
 </section>
 
 <section class="card">
-  <h2>Anforderungen und Besatzung</h2>
+  <div class="card-head"><h2>{{ ui::icon("users") }}Anforderungen und Besatzung</h2></div>
   <h3>Skipper</h3>
   {% if p.requirement.is_empty() %}<p>Keine zusätzlichen Anforderungen zur Bootserlaubnis.</p>{% else %}<p>Zusätzlich zur Bootserlaubnis (je Zeile eine Gruppe, mindestens eine Alternative nötig):</p><pre>{{ p.requirement }}</pre>{% endif %}
   <h3>Besatzungsregeln</h3>
@@ -58,21 +67,21 @@
 </section>
 
 {% if p.can_block %}
-<section class="card">
-  <h2>Boot sperren</h2>
+<details class="panel"{% if open == "sperren" %} open{% endif %} id="sperren">
+  <summary>{{ ui::icon("lock") }}Boot sperren<span class="chev">{{ ui::icon("chevron-down") }}</span></summary>
   <form method="post" action="/boote/{{ p.id }}/sperren" class="form-grid cols-2">
     <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-    {{ f::field("reason", "Grund", "", "", "text", "") }}
+    {{ f::req_field("reason", "Grund", "", "", "text", "") }}
     {{ f::field("start", "Ab (optional)", "", "", "date", "leer lassen für jetzt") }}
     {{ f::field("end", "Bis (optional)", "", "", "date", "leer lassen für unbefristet") }}
     <div class="form-actions wide"><button type="submit" class="danger">Sperren</button></div>
   </form>
-</section>
+</details>
 {% endif %}
 
 {% if p.can_checkout %}
-<section class="card">
-  <h2>Bootsabnahme erfassen</h2>
+<details class="panel"{% if open == "abnahme" %} open{% endif %} id="abnahme">
+  <summary>{{ ui::icon("check-square") }}Bootsabnahme erfassen<span class="chev">{{ ui::icon("chevron-down") }}</span></summary>
   <form method="post" action="/boote/{{ p.id }}/abnahme" class="form-grid cols-2">
     <input type="hidden" name="csrf" value="{{ layout.csrf }}">
     <div class="field"><label for="f-member">Mitglied</label>
@@ -82,19 +91,19 @@
     {{ f::field("remark", "Bemerkung (optional)", "", "", "text", "") }}
     <div class="form-actions wide"><button type="submit" class="primary">Abnahme speichern</button></div>
   </form>
-</section>
+</details>
 {% endif %}
 
 {% if p.can_revoke %}
-<section class="card">
-  <h2>Bootserlaubnis widerrufen</h2>
+<details class="panel"{% if open == "widerruf" %} open{% endif %} id="widerruf">
+  <summary>{{ ui::icon("x-circle") }}Bootserlaubnis widerrufen<span class="chev">{{ ui::icon("chevron-down") }}</span></summary>
   <form method="post" action="/boote/{{ p.id }}/widerruf" class="form-grid cols-2">
     <input type="hidden" name="csrf" value="{{ layout.csrf }}">
     <div class="field"><label for="f-rmember">Mitglied</label>
       <select id="f-rmember" name="member">{% for (number, name) in p.members %}<option value="{{ number }}">{{ name }}</option>{% endfor %}</select></div>
-    {{ f::field("reason", "Begründung", "", "", "text", "") }}
+    {{ f::req_field("reason", "Begründung", "", "", "text", "") }}
     <div class="form-actions wide"><button type="submit" class="danger">Widerrufen</button></div>
   </form>
-</section>
+</details>
 {% endif %}
 {% endblock %}

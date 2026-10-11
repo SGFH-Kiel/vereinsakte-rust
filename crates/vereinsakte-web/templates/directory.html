@@ -1,29 +1,39 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Verein{% endblock %}
+{% block page_title %}Mitglieder{% endblock %}
+{% block page_sub %}Aktive Mitglieder der Segelgruppe{% endblock %}
+{% block page_actions %}{% if v.can_manage %}<a class="btn primary" href="/mitglieder/neu">{{ ui::icon("plus") }}Mitglied aufnehmen</a>{% endif %}{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><h1>Mitglieder</h1>
-  <p class="muted">Aktive Mitglieder der Segelgruppe</p></div>
-  {% if v.can_manage %}<div class="actions"><a class="btn primary" href="/mitglieder/neu">Mitglied aufnehmen</a></div>{% endif %}
+<div class="list-layout">
+  <section class="filter-panel" aria-label="Suche und Filter">
+    <input type="checkbox" id="filter-toggle" class="filter-toggle" aria-label="Filter ein- oder ausblenden"{% if active_filters > 0 %} checked{% endif %}>
+    <label class="filter-summary" for="filter-toggle">{{ ui::icon("filter") }}<span>Filter{% if active_filters > 0 %} ({{ active_filters }}){% endif %}</span><span class="chev">{{ ui::icon("chevron-down") }}</span></label>
+    <form method="get" action="/mitglieder" class="filter-body">
+      <div class="field">
+        <label for="f-q">Name suchen</label>
+        <input id="f-q" type="search" name="q" value="{{ v.query }}" autocomplete="off"
+               hx-get="/mitglieder" hx-trigger="input changed delay:300ms, search" hx-include="[name='art'],[name='schein'],[name='sort_verz'],[name='dir_verz']"
+               hx-target="#mitglieder-tabelle" hx-swap="outerHTML">
+      </div>
+      <div class="field">
+        <label for="f-art">Mitgliedsart</label>
+        <select id="f-art" name="art">
+          <option value="">alle</option>
+          {% for (key, label) in types %}<option value="{{ key }}"{% if *key == v.membership_type.as_str() %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-schein">Segelschein</label>
+        <input id="f-schein" type="text" name="schein" value="{{ v.license }}" placeholder="z. B. SKS">
+      </div>
+      {% if !sort.selected().is_empty() %}<input type="hidden" name="sort_verz" value="{{ sort.selected() }}">{% if sort.is_desc() %}<input type="hidden" name="dir_verz" value="desc">{% endif %}{% endif %}
+      <div class="actions"><button type="submit" class="primary">{{ ui::icon("search") }}Filtern</button>{% if active_filters > 0 %}<a class="btn ghost" href="/mitglieder">Zurücksetzen</a>{% endif %}</div>
+    </form>
+  </section>
+  <div>
+    {{ ui::sort_form(sort) }}
+    {% include "directory_table.html" %}
+  </div>
 </div>
-<form method="get" action="/mitglieder" class="filters">
-  <div class="field">
-    <label for="f-q">Name suchen</label>
-    <input id="f-q" type="search" name="q" value="{{ v.query }}" autocomplete="off"
-           hx-get="/mitglieder" hx-trigger="input changed delay:300ms, search" hx-include="[name='art'],[name='schein']"
-           hx-target="#mitglieder-tabelle" hx-swap="outerHTML">
-  </div>
-  <div class="field">
-    <label for="f-art">Mitgliedsart</label>
-    <select id="f-art" name="art">
-      <option value="">alle</option>
-      {% for (key, label) in types %}<option value="{{ key }}"{% if *key == v.membership_type.as_str() %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </div>
-  <div class="field">
-    <label for="f-schein">Segelschein</label>
-    <input id="f-schein" type="text" name="schein" value="{{ v.license }}" placeholder="z. B. SKS">
-  </div>
-  <button type="submit" class="primary">Filtern</button>
-</form>
-{% include "directory_table.html" %}
 {% endblock %}

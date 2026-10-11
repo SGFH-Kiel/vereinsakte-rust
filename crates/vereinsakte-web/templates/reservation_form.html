@@ -1,49 +1,96 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% import "_forms.html" as f %}
+{% block eyebrow %}<a href="/kalender">Kalender</a>{% endblock %}
+{% block page_title %}{% if is_new %}Boot reservieren{% else %}Reservierung ändern{% endif %}{% endblock %}
+{% block page_sub %}Der Zeitraum entscheidet, ob die Fahrt eine Tour ist: ab einer Übernachtung gilt sie als Tour mit Tourgebühr.{% endblock %}
 {% block content %}
-<div class="breadcrumbs"><a href="/reservierungen">Reservierungen</a> › {% if is_new %}Neue Reservierung{% else %}Ändern{% endif %}</div>
-<div class="page-head"><h1>{% if is_new %}Boot reservieren{% else %}Reservierung ändern{% endif %}</h1></div>
 {% if !errors.general().is_empty() %}
-<div class="notice error" role="alert"><strong>Die Reservierung ist so nicht möglich:</strong>
-  <ul>{% for message in errors.general() %}<li>{{ message }}</li>{% endfor %}</ul></div>
+<div class="notice error" role="alert">{{ ui::icon("alert-circle") }}<div><strong>Die Reservierung ist so nicht möglich:</strong>
+  <ul>{% for message in errors.general() %}<li>{{ message }}</li>{% endfor %}</ul></div></div>
 {% endif %}
-<form method="post" action="{{ action }}" class="card">
+<form method="post" action="{{ action }}" class="stack">
+  <button type="submit" name="action" value="speichern" class="visually-hidden" tabindex="-1" aria-hidden="true">Speichern</button>
   <input type="hidden" name="csrf" value="{{ layout.csrf }}">
   <input type="hidden" name="version" value="{{ version }}">
-  <div class="form-grid cols-2">
-    <div class="field{% if !errors.get("boat").is_empty() %} has-error{% endif %}"><label for="f-boat">Boot</label>
-      <select id="f-boat" name="boat">{% for (key, name) in data.boats %}<option value="{{ key }}"{% if *key == form.boat %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-      {% if !errors.get("boat").is_empty() %}<span class="error-text">{{ errors.get("boat") }}</span>{% endif %}</div>
-    <div class="field"><label for="f-area">Fahrtgebiet</label>
-      <select id="f-area" name="area"><option value="home"{% if form.area != "outside" %} selected{% endif %}>Heimrevier</option><option value="outside"{% if form.area == "outside" %} selected{% endif %}>außerhalb des Heimreviers</option></select></div>
-    {{ f::field("from_date", "Beginn (Datum)", form.from_date, errors.get("from_date"), "date", "") }}
-    {{ f::field("from_time", "Beginn (Uhrzeit)", form.from_time, "", "time", "") }}
-    {{ f::field("to_date", "Ende (Datum)", form.to_date, errors.get("to_date"), "date", "") }}
-    {{ f::field("to_time", "Ende (Uhrzeit)", form.to_time, "", "time", "") }}
-    <div class="field"><label for="f-skipper">Skipper</label>
-      <select id="f-skipper" name="skipper">
-        <option value="">ich selbst</option>
-        {% for (number, name) in data.members %}<option value="{{ number }}"{% if number.to_string() == form.skipper %} selected{% endif %}>{{ name }}</option>{% endfor %}
-      </select>
-      <span class="hint">Für andere Skipper reservieren darf nur Bootswart, Oberbootswart oder Vorstand.</span></div>
-    <div class="field{% if !errors.get("co_skipper").is_empty() %} has-error{% endif %}"><label for="f-co">Co-Skipper (optional)</label>
-      <select id="f-co" name="co_skipper"><option value="">keiner</option>
-        {% for (number, name) in data.members %}<option value="{{ number }}"{% if number.to_string() == form.co_skipper %} selected{% endif %}>{{ name }}</option>{% endfor %}
-      </select>
-      {% if !errors.get("co_skipper").is_empty() %}<span class="error-text">{{ errors.get("co_skipper") }}</span>{% endif %}</div>
-    <div class="field wide{% if !errors.get("crew").is_empty() %} has-error{% endif %}"><label for="f-crew">Crew (optional)</label>
-      <textarea id="f-crew" name="crew">{{ form.crew }}</textarea>
-      <span class="hint">Je Zeile ein Mitglied: Nummer oder Name. Eigener Zeitraum an Bord optional: „107; 07.07.2026 10:00; 14.07.2026 18:00“.</span>
-      {% if !errors.get("crew").is_empty() %}<span class="error-text">{{ errors.get("crew") }}</span>{% endif %}</div>
-    <div class="field wide"><label for="f-guests">Gäste (optional)</label>
-      <textarea id="f-guests" name="guests">{{ form.guests }}</textarea>
-      <span class="hint">Je Zeile ein Gast: „Name; Telefon; von; bis“ (alles nach dem Namen optional).</span></div>
-    <label class="check wide"><input type="checkbox" name="tour" value="1"{% if form.tour %} checked{% endif %}> Tour (mindestens eine Übernachtung in einem fremden Hafen)</label>
-    {{ f::field("remark", "Bemerkung", form.remark, "", "text", "") }}
-  </div>
-  <div class="form-actions">
-    <button type="submit" class="primary">Speichern</button>
-    <a class="btn" href="/reservierungen">Abbrechen</a>
+  <p class="form-legend"><span class="req">*</span> Pflichtfeld</p>
+  <section class="form-section">
+    <h2>Fahrt</h2>
+    <p class="section-intro">Welches Boot, wann und wo?</p>
+    <div class="form-grid cols-2">
+      <div class="field{% if !errors.get("boat").is_empty() %} has-error{% endif %}"><label for="f-boat">Boot<span class="req" aria-hidden="true">*</span></label>
+        <select id="f-boat" name="boat" required>{% for (key, name) in data.boats %}<option value="{{ key }}"{% if *key == form.boat %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+        {% if !errors.get("boat").is_empty() %}<span class="error-text">{{ ui::icon("alert-circle") }}{{ errors.get("boat") }}</span>{% endif %}</div>
+      <div class="field"><label for="f-area">Fahrtgebiet</label>
+        <select id="f-area" name="area"><option value="home"{% if form.area != "outside" %} selected{% endif %}>Heimrevier</option><option value="outside"{% if form.area == "outside" %} selected{% endif %}>außerhalb des Heimreviers</option></select></div>
+      {{ f::req_field("from_date", "Beginn (Datum)", form.from_date, errors.get("from_date"), "date", "") }}
+      {{ f::field("from_time", "Beginn (Uhrzeit)", form.from_time, "", "time", "") }}
+      {{ f::req_field("to_date", "Ende (Datum)", form.to_date, errors.get("to_date"), "date", "") }}
+      {{ f::field("to_time", "Ende (Uhrzeit)", form.to_time, "", "time", "") }}
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Besatzung</h2>
+    <p class="section-intro">Skipper, Co-Skipper und die Crew. Die Mitfahrer erscheinen als Liste.</p>
+    <div class="form-grid cols-2">
+      <div class="field"><label for="f-skipper">Skipper</label>
+        <select id="f-skipper" name="skipper">
+          <option value="">ich selbst</option>
+          {% for (number, name) in data.members %}<option value="{{ number }}"{% if number.to_string() == form.skipper %} selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+        <span class="hint">Für andere Skipper reservieren darf nur Bootswart, Oberbootswart oder Vorstand.</span></div>
+      <div class="field{% if !errors.get("co_skipper").is_empty() %} has-error{% endif %}"><label for="f-co">Co-Skipper (optional)</label>
+        <select id="f-co" name="co_skipper"><option value="">keiner</option>
+          {% for (number, name) in data.members %}<option value="{{ number }}"{% if number.to_string() == form.co_skipper %} selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+        {% if !errors.get("co_skipper").is_empty() %}<span class="error-text">{{ ui::icon("alert-circle") }}{{ errors.get("co_skipper") }}</span>{% endif %}</div>
+    </div>
+    <div id="crew-list" class="crew-box{% if !errors.get("crew").is_empty() %} has-error{% endif %}">
+      <h3>Crew</h3>
+      {% if crew.is_empty() %}
+      <p class="muted">Noch keine Crew eingetragen.</p>
+      {% else %}
+      <ul class="plain crew-rows">
+      {% for row in crew %}
+        <li>
+          <input type="hidden" name="crew_member" value="{{ row.number }}">
+          <input type="hidden" name="crew_from" value="{{ row.from }}">
+          <input type="hidden" name="crew_to" value="{{ row.to }}">
+          {{ ui::avatar(row.initials, "av-5") }}
+          <a class="person" href="/mitglieder/{{ row.number }}">{{ row.name }}</a>{% if !row.period.is_empty() %}<span class="muted">{{ row.period }}</span>{% endif %}
+          <button type="submit" name="action" value="crew_remove:{{ loop.index0 }}" class="small danger crew-delete" hx-post="{{ action }}" hx-include="closest form" hx-target="#crew-list" hx-select="#crew-list" hx-swap="outerHTML">{{ ui::icon_label("trash", "Mitfahrer entfernen") }}</button>
+        </li>
+      {% endfor %}
+      </ul>
+      {% endif %}
+      <div class="crew-add">
+        <div class="field"><label for="f-add-member">Mitfahrer hinzufügen</label>
+          <select id="f-add-member" name="add_member"><option value="">Mitglied wählen …</option>
+            {% for (number, name) in data.members %}<option value="{{ number }}"{% if number.to_string() == add_member %} selected{% endif %}>{{ name }}</option>{% endfor %}
+          </select></div>
+        <details class="inline-details"><summary>Abweichender Zeitraum an Bord (optional)</summary>
+          <div class="form-grid cols-2">
+            {{ f::field("add_from", "Von", add_from, "", "datetime-local", "") }}
+            {{ f::field("add_to", "Bis", add_to, "", "datetime-local", "") }}
+          </div>
+        </details>
+        <button type="submit" name="action" value="crew_add" hx-post="{{ action }}" hx-include="closest form" hx-target="#crew-list" hx-select="#crew-list" hx-swap="outerHTML">{{ ui::icon("plus") }}Hinzufügen</button>
+      </div>
+      {% if !errors.get("crew").is_empty() %}<span class="error-text">{{ ui::icon("alert-circle") }}{{ errors.get("crew") }}</span>{% endif %}
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Bemerkung</h2>
+    <p class="section-intro">Hinweise zur Fahrt, Route und Gäste (Name, Telefon). Gäste werden nicht gesondert erfasst; ihre Gebühr rechnet der Skipper auf der Fahrt ab.</p>
+    <div class="form-grid">
+      {{ f::area("remark", "Bemerkung (optional)", form.remark, errors.get("remark"), "Bis zu 5.000 Zeichen.", "large") }}
+    </div>
+  </section>
+  <div class="form-actions sticky">
+    <button type="submit" name="action" value="speichern" class="primary">{{ ui::icon("check") }}Speichern</button>
+    <a class="btn" href="{% if is_new %}/kalender{% else %}/kalender{% endif %}">Abbrechen</a>
   </div>
 </form>
 {% endblock %}

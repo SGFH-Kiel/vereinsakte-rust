@@ -147,12 +147,28 @@ impl MemberRepository for SqliteClubStore {
                     .to_string(),
                 );
         }
+        let mut radio: std::collections::HashMap<MemberId, Vec<String>> = Default::default();
+        for r in rows(
+            &mut conn,
+            "SELECT member_id, kind FROM member_radio_licenses ORDER BY member_id, position",
+            &[],
+        )
+        .await?
+        {
+            radio.entry(get_member(&r, "member_id")?).or_default().push(
+                vereinsakte_core::member::RadioLicenseType::from(
+                    get::<String>(&r, "kind")?.as_str(),
+                )
+                .to_string(),
+            );
+        }
         let result: Result<Vec<MemberSummary>, StorageError> = rows(&mut conn, &sql, &[ts(t)])
             .await?
             .iter()
             .map(|r| {
                 Ok(MemberSummary {
                     sailing_licenses: licenses.remove(&get_member(r, "id")?).unwrap_or_default(),
+                    radio_licenses: radio.remove(&get_member(r, "id")?).unwrap_or_default(),
                     id: get_member(r, "id")?,
                     first_name: get(r, "first_name")?,
                     last_name: get(r, "last_name")?,
@@ -413,6 +429,55 @@ mod tests {
                 .iter()
                 .filter(|m| m.id != GRETA)
                 .all(|m| !m.contact_blocked)
+        );
+    }
+
+    #[tokio::test]
+    async fn legacy_guest_rows_are_read_into_the_remark_and_dropped_on_save() {
+        use vereinsakte_core::example::JOLLE_SAMSTAG;
+        let store = filled().await;
+        sqlx::query(
+            "INSERT INTO reservation_guests (reservation_id, position, name, phone)
+             VALUES (?, 0, 'Max Gast', '0160 1'), (?, 1, 'Paula Gast', NULL)",
+        )
+        .bind(JOLLE_SAMSTAG.to_string())
+        .bind(JOLLE_SAMSTAG.to_string())
+        .execute(store.db.pool())
+        .await
+        .unwrap();
+        let record = store.export().await.unwrap();
+        let reservation = record.reservation(JOLLE_SAMSTAG).unwrap().clone();
+        assert!(
+            reservation
+                .remark
+                .as_deref()
+                .unwrap()
+                .ends_with("Gäste: Max Gast (0160 1), Paula Gast")
+        );
+        // Beim Speichern geht die Angabe in die Bemerkung über, die alten Zeilen entfallen.
+        let mut changed = record.clone();
+        changed.reservations.iter_mut().for_each(|r| {
+            if r.id == JOLLE_SAMSTAG {
+                r.remark = Some(format!("{} ", r.remark.clone().unwrap()));
+            }
+        });
+        store.import(&changed, true).await.unwrap();
+        let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM reservation_guests")
+            .fetch_one(store.db.pool())
+            .await
+            .unwrap();
+        assert_eq!(rows, 0);
+        assert!(
+            store
+                .export()
+                .await
+                .unwrap()
+                .reservation(JOLLE_SAMSTAG)
+                .unwrap()
+                .remark
+                .as_deref()
+                .unwrap()
+                .contains("Max Gast")
         );
     }
 
@@ -976,7 +1041,7 @@ mod scope_tests {
             plain(all.admission_fee_claims(2026, now)),
             plain(full.admission_fee_claims(2026, now))
         );
-        for tour in full.reservations.iter().filter(|r| r.tour) {
+        for tour in full.reservations.iter().filter(|r| r.is_tour()) {
             let scope = store
                 .scope(&Scope::for_reservation(tour))
                 .await

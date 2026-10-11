@@ -1,9 +1,28 @@
-{# Formularbausteine: Feld mit Beschriftung, Hinweis und Fehlermeldung. #}
+{# Formularbausteine: Feld mit Beschriftung, Hinweis und Fehlermeldung; Pflichtfelder mit Stern. #}
 {% macro field(name, label, value, error, kind, hint) %}
 <div class="field{% if !error.is_empty() %} has-error{% endif %}">
   <label for="f-{{ name }}">{{ label }}</label>
   <input id="f-{{ name }}" name="{{ name }}" type="{{ kind }}" value="{{ value }}"{% if !error.is_empty() %} aria-invalid="true" aria-describedby="e-{{ name }}"{% endif %}>
   {% if !hint.is_empty() %}<span class="hint">{{ hint }}</span>{% endif %}
-  {% if !error.is_empty() %}<span class="error-text" id="e-{{ name }}">{{ error }}</span>{% endif %}
+  {% if !error.is_empty() %}<span class="error-text" id="e-{{ name }}"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-alert-circle"/></svg>{{ error }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro req_field(name, label, value, error, kind, hint) %}
+<div class="field{% if !error.is_empty() %} has-error{% endif %}">
+  <label for="f-{{ name }}">{{ label }}<span class="req" aria-hidden="true">*</span></label>
+  <input id="f-{{ name }}" name="{{ name }}" type="{{ kind }}" value="{{ value }}" required aria-required="true"{% if !error.is_empty() %} aria-invalid="true" aria-describedby="e-{{ name }}"{% endif %}>
+  {% if !hint.is_empty() %}<span class="hint">{{ hint }}</span>{% endif %}
+  {% if !error.is_empty() %}<span class="error-text" id="e-{{ name }}"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-alert-circle"/></svg>{{ error }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{# Mehrzeiliges Feld; cls: "" oder "large" #}
+{% macro area(name, label, value, error, hint, cls) %}
+<div class="field wide{% if !error.is_empty() %} has-error{% endif %}">
+  <label for="f-{{ name }}">{{ label }}</label>
+  <textarea id="f-{{ name }}" name="{{ name }}" class="{{ cls }}"{% if !error.is_empty() %} aria-invalid="true" aria-describedby="e-{{ name }}"{% endif %}>{{ value }}</textarea>
+  {% if !hint.is_empty() %}<span class="hint">{{ hint }}</span>{% endif %}
+  {% if !error.is_empty() %}<span class="error-text" id="e-{{ name }}"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-alert-circle"/></svg>{{ error }}</span>{% endif %}
 </div>
 {% endmacro %}

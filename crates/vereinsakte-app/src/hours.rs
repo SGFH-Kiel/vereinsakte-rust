@@ -398,7 +398,15 @@ mod tests {
         assert!(matches!(again, Err(AppError::Rejected(_))));
         let view = service.events_view(&user(ANNA)).await.unwrap();
         let line = view.events.iter().find(|e| e.id == id.to_string()).unwrap();
-        assert!(line.mine && line.full && line.participants == ["Anna Petersen"]);
+        assert!(
+            line.mine
+                && line.full
+                && line
+                    .participants
+                    .iter()
+                    .map(|p| p.name.as_str())
+                    .eq(["Anna Petersen"])
+        );
         let credited_before = service
             .work_view(&user(ANNA), None, None)
             .await

@@ -576,7 +576,6 @@ mod sweep {
             from_time: "10:00".into(),
             to_date: "2026-10-19".into(),
             to_time: "16:00".into(),
-            tour: true,
             ..Default::default()
         };
         let res = logged!(

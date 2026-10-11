@@ -1,16 +1,16 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Persönlich{% endblock %}
+{% block page_title %}{{ v.name }}{% endblock %}
+{% block page_sub %}Meine Daten · Mitglied {{ v.member_number }}{% endblock %}
+{% block page_actions %}<a class="btn primary" href="/meine-daten/bearbeiten">{{ ui::icon("pencil") }}Bearbeiten</a>{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><h1>{{ v.name }}</h1><p class="muted">Meine Daten</p></div>
-</div>
 {% if v.address_invalid %}
-<div class="notice warn warning">Deine Meldeadresse ist als ungültig markiert. Bis sie korrigiert ist, ruhen deine Bootserlaubnisse – bitte melde dich beim Vorstand.</div>
+<div class="notice warn warning">{{ ui::icon("alert") }}<div>Deine Meldeadresse ist als ungültig markiert. Bis sie korrigiert ist, ruhen deine Bootserlaubnisse – bitte melde dich beim Vorstand.</div></div>
 {% endif %}
-
 {% include "_member_details.html" %}
-<p class="actions"><a class="btn primary" href="/meine-daten/bearbeiten">Kontaktdaten, Scheine und Lizenzen bearbeiten</a></p>
 <section class="card">
-  <h2>Sichtbarkeit meiner Kontaktdaten</h2>
+  <div class="card-head"><h2>{{ ui::icon("lock") }}Sichtbarkeit meiner Kontaktdaten</h2></div>
   <p>Deine E-Mail-Adresse und Telefonnummern sind für alle Vereinsmitglieder sichtbar. Mit einem Sperrvermerk sehen sie nur du selbst und der Vorstand; alle anderen sehen „Kontaktdaten gesperrt“.</p>
   <form method="post" action="/meine-daten/sperrvermerk">
     <input type="hidden" name="csrf" value="{{ layout.csrf }}">

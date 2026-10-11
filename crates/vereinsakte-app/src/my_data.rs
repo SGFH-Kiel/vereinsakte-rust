@@ -38,6 +38,11 @@ pub struct MyDataView {
     pub work: Vec<WorkLine>,
     pub required_hours: String,
     pub credited_hours: String,
+    /// Werte für die Fortschrittsanzeige in Hundertstel Stunden.
+    pub required_centi: u32,
+    pub credited_centi: u32,
+    /// Fehlende Stunden, z. B. „4,5“ (leer, wenn nichts fehlt).
+    pub missing_hours: String,
     pub claims: Vec<ClaimLine>,
     pub payments: Vec<PaymentLine>,
     pub balance: Balance,
@@ -249,6 +254,16 @@ impl ClubService {
             work,
             required_hours: format::hours(member_year.required_hours()),
             credited_hours: format::hours(member_year.credited_hours()),
+            required_centi: (member_year.required_hours() * 100.0).round().max(0.0) as u32,
+            credited_centi: (member_year.credited_hours() * 100.0).round().max(0.0) as u32,
+            missing_hours: {
+                let missing = member_year.required_hours() - member_year.credited_hours();
+                if missing > 0.0 {
+                    format::hours(missing)
+                } else {
+                    String::new()
+                }
+            },
             claims,
             payments,
             balance,

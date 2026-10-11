@@ -14,6 +14,7 @@ use vereinsakte_app::service::LoginChoiceGroup;
 use vereinsakte_app::{CurrentUser, Principal};
 
 use crate::error::WebError;
+use crate::list::{Sort, SortCtx, SortKey, date_key, num_key, sort_rows, text_key};
 use crate::session::{FlashKind, RequireUser, csrf_token, take_flash};
 use crate::state::AppState;
 
@@ -24,23 +25,39 @@ pub struct Layout {
     pub user: Option<UserBar>,
     pub dev_bar: Option<DevBar>,
     pub flash: Option<FlashView>,
+    /// Formularseite: blendet am Handy die untere Leiste aus.
+    pub has_form: bool,
 }
 
 pub struct UserBar {
     pub name: String,
+    pub member: u32,
+    pub initials: String,
+    pub avatar: String,
     pub offices: Vec<String>,
-    pub nav: Vec<NavItem>,
+    pub groups: Vec<NavGroup>,
+    /// Schnellzugriff der unteren Leiste (ohne „Mehr“).
+    pub tabs: Vec<NavItem>,
+}
+
+/// Gruppe der Hauptnavigation.
+pub struct NavGroup {
+    pub title: &'static str,
+    pub items: Vec<NavItem>,
 }
 
 /// Eintrag der Hauptnavigation.
+#[derive(Clone)]
 pub struct NavItem {
     pub href: &'static str,
     pub label: &'static str,
+    pub icon: &'static str,
     pub current: bool,
 }
 
 pub struct FlashView {
     pub class: &'static str,
+    pub icon: &'static str,
     pub text: String,
 }
 
@@ -52,38 +69,93 @@ pub struct DevBar {
     pub groups: Vec<LoginChoiceGroup>,
 }
 
-/// Hauptnavigation nach Berechtigung; `path` bestimmt den aktuellen Bereich.
-fn navigation(principal: &Principal, path: &str) -> Vec<NavItem> {
+/// Initialen (Vor- und Nachname) für den Namenskreis.
+pub fn initials(name: &str) -> String {
+    let mut parts = name.split_whitespace();
+    let first = parts.next().and_then(|p| p.chars().next());
+    let last = parts.next_back().and_then(|p| p.chars().next());
+    first
+        .into_iter()
+        .chain(last)
+        .flat_map(char::to_uppercase)
+        .collect()
+}
+
+/// Farbklasse des Namenskreises, stabil je Mitglied.
+pub fn avatar_class(member: u32) -> String {
+    format!("av-{}", member % 6)
+}
+
+/// Hauptnavigation nach Berechtigung in Gruppen; `path` bestimmt den aktuellen
+/// Bereich (der Eintrag mit dem längsten passenden Adressanfang).
+fn navigation(principal: &Principal, path: &str) -> (Vec<NavGroup>, Vec<NavItem>) {
     let path = path.split('?').next().unwrap_or(path);
-    let current = |href: &str| {
+    let mut groups: Vec<(
+        &'static str,
+        Vec<(&'static str, &'static str, &'static str)>,
+    )> = vec![
+        (
+            "Persönlich",
+            vec![
+                ("/", "Start", "home"),
+                ("/meine-daten", "Meine Daten", "user"),
+            ],
+        ),
+        (
+            "Verein",
+            vec![
+                ("/mitglieder", "Mitglieder", "users"),
+                ("/aemter", "Ämter", "award"),
+                ("/boote", "Boote", "boat"),
+                ("/kalender", "Kalender", "calendar"),
+                ("/arbeit/aufgaben", "Aufgaben", "check-square"),
+                ("/arbeit", "Arbeit", "wrench"),
+            ],
+        ),
+        ("Verwaltung", vec![("/protokoll", "Protokoll", "clipboard")]),
+    ];
+    if principal.can(&vereinsakte_core::rights::Capability::ReadAllAccounts) {
+        groups[2].1.insert(0, ("/finanzen", "Finanzen", "euro"));
+    }
+    let matches = |href: &str| {
         if href == "/" {
             path == "/"
         } else {
             path == href || path.starts_with(&format!("{href}/"))
         }
     };
-    let mut items = vec![
-        ("/", "Start"),
-        ("/meine-daten", "Meine Daten"),
-        ("/mitglieder", "Mitglieder"),
-        ("/boote", "Boote"),
-        ("/reservierungen", "Reservierungen"),
-        ("/arbeit", "Arbeit"),
-        ("/aemter", "Ämter"),
-        ("/konto", "Konto"),
-        ("/protokoll", "Protokoll"),
-    ];
-    if principal.can(&vereinsakte_core::rights::Capability::ReadAllAccounts) {
-        items.push(("/finanzen", "Finanzen"));
-    }
-    items
+    let best = groups
+        .iter()
+        .flat_map(|(_, items)| items.iter())
+        .filter(|(href, _, _)| matches(href))
+        .map(|(href, _, _)| *href)
+        .max_by_key(|href| href.len());
+    let groups: Vec<NavGroup> = groups
         .into_iter()
-        .map(|(href, label)| NavItem {
-            href,
-            label,
-            current: current(href),
+        .map(|(title, items)| NavGroup {
+            title,
+            items: items
+                .into_iter()
+                .map(|(href, label, icon)| NavItem {
+                    href,
+                    label,
+                    icon,
+                    current: Some(href) == best,
+                })
+                .collect(),
         })
-        .collect()
+        .collect();
+    let tabs = ["/", "/boote", "/kalender", "/arbeit"]
+        .into_iter()
+        .filter_map(|href| {
+            groups
+                .iter()
+                .flat_map(|g| g.items.iter())
+                .find(|i| i.href == href)
+                .cloned()
+        })
+        .collect();
+    (groups, tabs)
 }
 
 impl Layout {
@@ -108,25 +180,33 @@ impl Layout {
                 } else {
                     None
                 };
-                let nav = navigation(&principal, next);
+                let (groups, tabs) = navigation(&principal, next);
                 (
                     Some(UserBar {
+                        initials: initials(&principal.name),
+                        avatar: avatar_class(user.member.get()),
+                        member: user.member.get(),
                         name: principal.name,
                         offices: principal.offices,
-                        nav,
+                        groups,
+                        tabs,
                     }),
                     dev_bar,
                 )
             }
             None => (None, None),
         };
-        let flash = take_flash(session).await.map(|f| FlashView {
-            class: match f.kind {
-                FlashKind::Ok => "ok",
-                FlashKind::Warn => "warn",
-                FlashKind::Error => "error",
-            },
-            text: f.text,
+        let flash = take_flash(session).await.map(|f| {
+            let (class, icon) = match f.kind {
+                FlashKind::Ok => ("ok", "check-circle"),
+                FlashKind::Warn => ("warn", "alert"),
+                FlashKind::Error => ("error", "alert-circle"),
+            };
+            FlashView {
+                class,
+                icon,
+                text: f.text,
+            }
         });
         Ok(Self {
             title: title.into(),
@@ -134,7 +214,14 @@ impl Layout {
             user: user_bar,
             dev_bar,
             flash,
+            has_form: false,
         })
+    }
+
+    /// Markiert die Seite als Formularseite.
+    pub fn form(mut self) -> Self {
+        self.has_form = true;
+        self
     }
 }
 
@@ -142,12 +229,177 @@ pub fn render(template: &impl Template) -> Result<Response, WebError> {
     Ok(Html(template.render()?).into_response())
 }
 
+/// Sortierung der drei Tabellen einer Mitgliedsansicht (Stunden, Forderungen, Einzahlungen).
+pub struct DetailSorts {
+    pub work: SortCtx,
+    pub claims: SortCtx,
+    pub payments: SortCtx,
+}
+
+/// Sortiert die Tabellen von `v` nach den Parametern der Adresse und liefert die Köpfe.
+pub fn sort_details(
+    v: &mut MyDataView,
+    params: &std::collections::HashMap<String, String>,
+    base: &str,
+) -> DetailSorts {
+    use vereinsakte_app::my_data::{ClaimLine, PaymentLine, WorkLine};
+    let work = Sort::from_params(params, "std");
+    let claims = Sort::from_params(params, "ford");
+    let payments = Sort::from_params(params, "einz");
+    sort_rows::<WorkLine>(
+        &mut v.work,
+        &work,
+        &[
+            ("datum", |l| date_key(&l.date)),
+            ("stunden", |l| num_key(&l.hours)),
+            ("gegenstand", |l| text_key(&l.subject)),
+            ("status", |l| SortKey::Num(i64::from(l.confirmed))),
+        ],
+    );
+    sort_rows::<ClaimLine>(
+        &mut v.claims,
+        &claims,
+        &[
+            ("forderung", |l| text_key(&l.text)),
+            ("betrag", |l| num_key(&l.amount)),
+            ("faellig", |l| date_key(l.due.as_deref().unwrap_or(""))),
+            ("status", |l| text_key(&l.state.label())),
+        ],
+    );
+    sort_rows::<PaymentLine>(
+        &mut v.payments,
+        &payments,
+        &[
+            ("datum", |l| date_key(&l.date)),
+            ("betrag", |l| num_key(&l.amount)),
+            ("zweck", |l| text_key(&l.text)),
+        ],
+    );
+    let others = |own: &str| -> Vec<(String, String)> {
+        let mut out = vec![];
+        for (id, sort) in [("std", &work), ("ford", &claims), ("einz", &payments)] {
+            if id != own && !sort.key.is_empty() {
+                out.push((format!("sort_{id}"), sort.key.clone()));
+                if sort.desc {
+                    out.push((format!("dir_{id}"), "desc".to_string()));
+                }
+            }
+        }
+        out
+    };
+    DetailSorts {
+        work: SortCtx::new(
+            "std",
+            base,
+            others("std"),
+            &work,
+            &[
+                ("datum", "Datum"),
+                ("stunden", "Stunden"),
+                ("gegenstand", "Gegenstand"),
+                ("status", "Status"),
+            ],
+        ),
+        claims: SortCtx::new(
+            "ford",
+            base,
+            others("ford"),
+            &claims,
+            &[
+                ("forderung", "Forderung"),
+                ("betrag", "Betrag"),
+                ("faellig", "Fälligkeit"),
+                ("status", "Stand"),
+            ],
+        ),
+        payments: SortCtx::new(
+            "einz",
+            base,
+            others("einz"),
+            &payments,
+            &[
+                ("datum", "Datum"),
+                ("betrag", "Betrag"),
+                ("zweck", "Verwendungszweck"),
+            ],
+        ),
+    }
+}
+
+/// Handlungshinweis der Startseite („Was ist zu tun?“).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TodoItem {
+    pub icon: &'static str,
+    pub text: String,
+    pub href: &'static str,
+    pub label: &'static str,
+}
+
+/// Dringende Hinweise nach fester Reihenfolge: Segelerlaubnis, Bestätigungen,
+/// Arbeitsstunden, Konto, Aufgaben. Leer, wenn nichts zu tun ist.
+pub fn todo_items(v: &MyDataView, confirmations: usize, open_tasks: usize) -> Vec<TodoItem> {
+    let mut items = vec![];
+    if !v.sailing_permit.granted {
+        items.push(TodoItem {
+            icon: "alert",
+            text: format!(
+                "Dir fehlt die Segelerlaubnis {}: {}",
+                v.year,
+                v.sailing_permit.reasons.join("; ")
+            ),
+            href: "/meine-daten",
+            label: "Details",
+        });
+    }
+    if confirmations > 0 {
+        items.push(TodoItem {
+            icon: "check-square",
+            text: if confirmations == 1 {
+                "1 Arbeitseinsatz wartet auf deine Bestätigung".into()
+            } else {
+                format!("{confirmations} Arbeitseinsätze warten auf deine Bestätigung")
+            },
+            href: "/arbeit/bestaetigungen",
+            label: "Jetzt prüfen",
+        });
+    }
+    if !v.missing_hours.is_empty() {
+        items.push(TodoItem {
+            icon: "clock",
+            text: format!("Es fehlen {} Arbeitsstunden", v.missing_hours),
+            href: "/arbeit",
+            label: "Einsatz erfassen",
+        });
+    }
+    if let vereinsakte_app::my_data::Balance::Due(amount) = &v.balance {
+        items.push(TodoItem {
+            icon: "euro",
+            text: format!("Auf deinem Konto sind {amount} offen"),
+            href: "/konto",
+            label: "Zum Konto",
+        });
+    }
+    if open_tasks > 0 {
+        items.push(TodoItem {
+            icon: "check-square",
+            text: if open_tasks == 1 {
+                "1 offene Aufgabe wartet auf dich".into()
+            } else {
+                format!("{open_tasks} offene Aufgaben warten auf dich")
+            },
+            href: "/arbeit/aufgaben",
+            label: "Zu den Aufgaben",
+        });
+    }
+    items
+}
+
 #[derive(Template)]
 #[template(path = "start.html")]
 struct StartPage {
     layout: Layout,
     v: MyDataView,
-    confirmations: usize,
+    todo: Vec<TodoItem>,
     events: Vec<vereinsakte_app::work::EventLine>,
     tasks: Vec<vereinsakte_app::work::TaskLine>,
     reservations: Vec<vereinsakte_app::reservations::ReservationRow>,
@@ -199,10 +451,11 @@ pub async fn home(
         .await?
         .rows;
     let layout = Layout::build(&state, &session, Some(&user), "Start", "/").await?;
+    let todo = todo_items(&v, confirmations, tasks.len());
     render(&StartPage {
         layout,
         v,
-        confirmations,
+        todo,
         events,
         tasks,
         reservations,
@@ -214,18 +467,21 @@ pub async fn home(
 struct MyDataPage {
     layout: Layout,
     v: MyDataView,
+    sorts: DetailSorts,
 }
 
 pub async fn my_data(
     State(state): State<AppState>,
     session: Session,
     RequireUser(user): RequireUser,
+    Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Response, WebError> {
-    // Bewusst ohne Parameter: es gibt nur die Daten des angemeldeten Mitglieds.
-    let v = state.club.my_data(&user).await?;
+    // Bewusst ohne Mitgliedsangabe: es gibt nur die Daten des angemeldeten Mitglieds.
+    let mut v = state.club.my_data(&user).await?;
+    let sorts = sort_details(&mut v, &params, "/meine-daten");
     let layout =
         Layout::build(&state, &session, Some(&user), "Meine Daten", "/meine-daten").await?;
-    render(&MyDataPage { layout, v })
+    render(&MyDataPage { layout, v, sorts })
 }
 
 /// Hinweis zur Sichtbarkeit der Kontaktdaten bestätigen.
@@ -265,6 +521,10 @@ pub struct DirectoryQuery {
     art: String,
     #[serde(default)]
     schein: String,
+    #[serde(default)]
+    sort_verz: String,
+    #[serde(default)]
+    dir_verz: String,
 }
 
 #[derive(Template)]
@@ -273,12 +533,15 @@ struct DirectoryPage {
     layout: Layout,
     v: DirectoryView,
     types: Vec<(&'static str, String)>,
+    sort: SortCtx,
+    active_filters: usize,
 }
 
 #[derive(Template)]
 #[template(path = "directory_table.html")]
 struct DirectoryTable {
     v: DirectoryView,
+    sort: SortCtx,
 }
 
 pub async fn directory(
@@ -288,35 +551,70 @@ pub async fn directory(
     Query(query): Query<DirectoryQuery>,
     headers: HeaderMap,
 ) -> Result<Response, WebError> {
+    let sort = Sort {
+        key: query.sort_verz.clone(),
+        desc: query.dir_verz == "desc",
+    };
     let filter = DirectoryFilter {
         query: query.q,
         membership_type: parse_membership_type(&query.art),
         license: query.schein,
     };
-    let v = state.club.directory_filtered(&user, &filter).await?;
+    let mut v = state.club.directory_filtered(&user, &filter).await?;
+    sort_rows(
+        &mut v.entries,
+        &sort,
+        &[
+            ("name", |e| text_key(&e.name)),
+            ("nr", |e| SortKey::Num(i64::from(e.member_number))),
+            ("art", |e| text_key(&e.membership_type)),
+            ("email", |e| text_key(e.contact.email().unwrap_or(""))),
+        ],
+    );
+    let params = vec![
+        ("q".to_string(), v.query.clone()),
+        ("art".to_string(), v.membership_type.clone()),
+        ("schein".to_string(), v.license.clone()),
+    ];
+    let ctx = SortCtx::new(
+        "verz",
+        "/mitglieder",
+        params.clone(),
+        &sort,
+        &[
+            ("name", "Name"),
+            ("nr", "Nummer"),
+            ("art", "Mitgliedsart"),
+            ("email", "E-Mail"),
+        ],
+    );
     if headers.contains_key("hx-request") {
-        return render(&DirectoryTable { v });
+        return render(&DirectoryTable { v, sort: ctx });
     }
-    let mut params = vec![];
-    if !v.query.is_empty() {
-        params.push(format!("q={}", crate::session::encode(&v.query)));
+    let active_filters = params.iter().filter(|(_, value)| !value.is_empty()).count();
+    let mut next_params: Vec<String> = params
+        .iter()
+        .filter(|(_, value)| !value.is_empty())
+        .map(|(k, value)| format!("{k}={}", crate::session::encode(value)))
+        .collect();
+    if !sort.key.is_empty() {
+        next_params.push(format!("sort_verz={}", crate::session::encode(&sort.key)));
+        if sort.desc {
+            next_params.push("dir_verz=desc".to_string());
+        }
     }
-    if !v.membership_type.is_empty() {
-        params.push(format!("art={}", v.membership_type));
-    }
-    if !v.license.is_empty() {
-        params.push(format!("schein={}", crate::session::encode(&v.license)));
-    }
-    let next = if params.is_empty() {
+    let next = if next_params.is_empty() {
         "/mitglieder".to_string()
     } else {
-        format!("/mitglieder?{}", params.join("&"))
+        format!("/mitglieder?{}", next_params.join("&"))
     };
     let layout = Layout::build(&state, &session, Some(&user), "Mitglieder", &next).await?;
     render(&DirectoryPage {
         layout,
         v,
         types: membership_types(),
+        sort: ctx,
+        active_filters,
     })
 }
 

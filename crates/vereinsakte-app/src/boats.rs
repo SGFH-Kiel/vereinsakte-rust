@@ -23,6 +23,9 @@ pub struct BoatRow {
     pub id: String,
     pub name: String,
     pub boat_type: String,
+    /// Symbol („jolle“ oder „dickschiff“) und Tooltip („Kielboot · Matcher 37“).
+    pub type_icon: &'static str,
+    pub type_tip: String,
     pub class: String,
     /// Für die laufende Saison freigegeben?
     pub released: bool,
@@ -62,6 +65,8 @@ pub struct BoatPage {
     pub id: String,
     pub name: String,
     pub boat_type: String,
+    pub type_icon: &'static str,
+    pub type_tip: String,
     pub facts: Vec<(&'static str, String)>,
     pub wardens: Vec<String>,
     pub examiners: Vec<String>,
@@ -109,6 +114,19 @@ pub struct BoatForm {
     pub id: String,
     pub version: i64,
     pub input: BoatInput,
+}
+
+/// Symbol und Tooltip des Bootstyps für die Oberfläche.
+pub fn boat_type_display(boat: &Boat) -> (&'static str, String) {
+    let icon = match boat.boat_type {
+        BoatType::Dinghy => "jolle",
+        BoatType::Keelboat => "dickschiff",
+    };
+    let tip = match boat.class.as_deref().filter(|c| !c.is_empty()) {
+        Some(class) => format!("{} · {class}", boat.boat_type),
+        None => boat.boat_type.to_string(),
+    };
+    (icon, tip)
 }
 
 fn trimmed(text: &str) -> Option<String> {
@@ -399,6 +417,8 @@ impl ClubService {
                 id: b.id.to_string(),
                 name: b.name.clone(),
                 boat_type: b.boat_type.to_string(),
+                type_icon: boat_type_display(b).0,
+                type_tip: boat_type_display(b).1,
                 class: b.class.clone().unwrap_or_default(),
                 released: b.is_released_for(season),
                 blocked: b
@@ -493,6 +513,8 @@ impl ClubService {
             id: id.to_string(),
             name: boat.name.clone(),
             boat_type: boat.boat_type.to_string(),
+            type_icon: boat_type_display(&boat).0,
+            type_tip: boat_type_display(&boat).1,
             facts,
             wardens: holders(Role::Boatwarden(id)),
             examiners: holders(Role::Examiner(id)),

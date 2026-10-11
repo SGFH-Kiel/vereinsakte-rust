@@ -1,15 +1,18 @@
-<!doctype html>
+{% import "_ui.html" as ui %}<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#023047">
   <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
   <meta name="csrf-token" content="{{ layout.csrf }}">
   <title>{{ layout.title }} – Vereinsakte</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/sgfh-logo.svg">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
 </head>
-<body hx-headers='{"X-CSRF-Token": "{{ layout.csrf }}"}'>
+<body{% if layout.has_form %} class="has-form"{% endif %} hx-headers='{"X-CSRF-Token": "{{ layout.csrf }}"}'>
+{% include "_icons.html" %}
   <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
 {% if let Some(dev) = layout.dev_bar %}
   <div class="devbar" role="region" aria-label="Entwicklungsmodus">
@@ -34,34 +37,99 @@
     </div>
   </div>
 {% endif %}
-  <header class="app-header">
+  <header class="site-header">
     <div class="bar">
-      <a class="brand" href="/">Vereinsakte <small>Segelgruppe an der FH Kiel</small></a>
+      {% include "_brand.html" %}
+      <span class="header-spacer"></span>
+      <a class="web-link" href="https://segelgruppe-kiel.de/" rel="noopener">{{ ui::icon("external") }}Zur Webseite</a>
     {% if let Some(user) = layout.user %}
-      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Menü öffnen oder schließen">
-      <label for="nav-toggle" class="nav-button" aria-hidden="true">☰ Menü</label>
-      <div class="menu">
-        <nav aria-label="Hauptnavigation">
-        {% for item in user.nav %}
-          <a class="nav-link" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>
-        {% endfor %}
-        </nav>
-        <div class="account">
-          <span class="who">{{ user.name }}{% if !user.offices.is_empty() %} <span class="muted">({{ user.offices|join(", ") }})</span>{% endif %}</span>
+      <details class="account-menu">
+        <summary aria-label="Kontomenü von {{ user.name }}">
+          <span class="avatar {{ user.avatar }}" aria-hidden="true">{{ user.initials }}</span>
+          <span class="account-name">{{ user.name }}</span>
+          {{ ui::icon("chevron-down") }}
+        </summary>
+        <div class="menu-panel">
+          <div class="menu-head">
+            <strong><a class="person" href="/mitglieder/{{ user.member }}">{{ user.name }}</a></strong>
+            <span class="muted">{% if user.offices.is_empty() %}Mitglied{% else %}{{ user.offices|join(", ") }}{% endif %}</span>
+          </div>
+          <a class="menu-item" href="/meine-daten">{{ ui::icon("user") }}Meine Daten</a>
+          <a class="menu-item" href="/konto">{{ ui::icon("euro") }}Mein Konto</a>
           <form method="post" action="/logout">
             <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-            <button type="submit" class="link">Abmelden</button>
+            <button type="submit" class="menu-item">{{ ui::icon("log-out") }}Abmelden</button>
           </form>
         </div>
-      </div>
+      </details>
     {% endif %}
     </div>
   </header>
-  <main id="inhalt">
+  <div class="shell">
+  {% if let Some(user) = layout.user %}
+    <aside class="sidebar">
+      <nav class="sidebar-inner" aria-label="Hauptnavigation">
+      {% for group in user.groups %}
+        <div class="nav-group">
+          <p class="nav-group-title">{{ group.title }}</p>
+          <ul class="nav-list">
+          {% for item in group.items %}
+            <li><a class="nav-link" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ ui::icon(item.icon) }}{{ item.label }}</a></li>
+          {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+      </nav>
+    </aside>
+  {% endif %}
+    <div class="content-col">
+      <main id="inhalt">
 {% if let Some(flash) = layout.flash %}
-    <div class="flash {{ flash.class }}" role="status">{{ flash.text }}</div>
+        <div class="flash {{ flash.class }}" role="status">{{ ui::icon(flash.icon) }}<div>{{ flash.text }}</div></div>
 {% endif %}
+        <header class="page-head">
+          <div class="page-head-text">
+            <div class="eyebrow">{% block eyebrow %}{% endblock %}</div>
+            <h1>{% block page_title %}{{ layout.title }}{% endblock %}</h1>
+            <p class="page-sub">{% block page_sub %}{% endblock %}</p>
+          </div>
+          <div class="page-actions">{% block page_actions %}{% endblock %}</div>
+        </header>
 {% block content %}{% endblock %}
-  </main>
+      </main>
+    </div>
+  </div>
+{% include "_site_footer.html" %}
+{% if let Some(user) = layout.user %}
+  <input type="checkbox" id="more-toggle" class="more-toggle" aria-label="Weitere Bereiche anzeigen">
+  <div class="more-sheet">
+    <label class="more-backdrop" for="more-toggle"><span class="visually-hidden">Schließen</span></label>
+    <nav class="more-panel" aria-label="Alle Bereiche">
+    {% for group in user.groups %}
+      <div class="nav-group">
+        <p class="nav-group-title">{{ group.title }}</p>
+        <ul class="nav-list">
+        {% for item in group.items %}
+          <li><a class="nav-link" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ ui::icon(item.icon) }}{{ item.label }}</a></li>
+        {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+      <div class="nav-group">
+        <p class="nav-group-title">Konto</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="/konto">{{ ui::icon("euro") }}Mein Konto</a></li>
+          <li><form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="nav-link ghost">{{ ui::icon("log-out") }}Abmelden</button></form></li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+  <nav class="tabbar" aria-label="Schnellzugriff">
+  {% for item in user.tabs %}
+    <a class="tab" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ ui::icon(item.icon) }}<span>{{ item.label }}</span></a>
+  {% endfor %}
+    <label class="tab" for="more-toggle">{{ ui::icon("more") }}<span>Mehr</span></label>
+  </nav>
+{% endif %}
 </body>
 </html>

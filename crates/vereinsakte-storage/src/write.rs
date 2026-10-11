@@ -734,7 +734,8 @@ impl Aggregate for Reservation {
                 ("start_at", ts(self.start)),
                 ("end_at", ts(self.end)),
                 ("area", choice(&self.area)),
-                ("tour", boolean(self.tour)),
+                // Nur zur Ablage: die Eigenschaft ergibt sich aus dem Zeitraum.
+                ("tour", boolean(self.is_tour())),
                 ("skipper_id", member(self.skipper)),
                 ("co_skipper_id", opt_member(self.co_skipper)),
                 ("remark", opt_text(self.remark.as_ref())),
@@ -754,22 +755,6 @@ impl Aggregate for Reservation {
                     ("member_id", member(seat.member)),
                     ("from_at", opt_ts(seat.from)),
                     ("until_at", opt_ts(seat.until)),
-                ],
-            )
-            .await?;
-        }
-        for (i, guest) in self.guests.iter().enumerate() {
-            insert(
-                conn,
-                "reservation_guests",
-                vec![
-                    ("reservation_id", text(self.id)),
-                    ("position", int(i as i64)),
-                    ("name", text(&guest.name)),
-                    ("phone", opt_text(guest.phone.as_ref())),
-                    ("invited_by", opt_member(guest.invited_by)),
-                    ("from_at", opt_ts(guest.from)),
-                    ("until_at", opt_ts(guest.until)),
                 ],
             )
             .await?;

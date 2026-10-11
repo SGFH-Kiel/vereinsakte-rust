@@ -1,19 +1,30 @@
+{% import "_ui.html" as ui -%}
 <div id="mitglieder-tabelle" class="table-wrap">
 <table class="responsive">
   <thead>
     <tr>
-      <th>Name</th><th>Ämter</th><th>Nr.</th><th>Mitgliedsart</th><th>E-Mail</th><th>Telefon</th>
+      {{ ui::th_sort(sort, "name", "Name", "") }}
+      {{ ui::th_sort(sort, "nr", "Nr.", "num") }}
+      {{ ui::th_sort(sort, "art", "Art", "") }}
+      <th scope="col">Scheine</th>
+      {{ ui::th_sort(sort, "email", "E-Mail", "") }}
+      <th scope="col">Telefon</th>
     </tr>
   </thead>
   <tbody>
   {% for entry in v.entries %}
     <tr>
-      <td data-label="Name"><a href="/mitglieder/{{ entry.id }}">{{ entry.name }}</a>{% if !entry.licenses.is_empty() %} <span class="muted">{{ entry.licenses|join(", ") }}</span>{% endif %}</td>
-      <td data-label="Ämter">{{ entry.offices|join(", ") }}</td>
+      <td data-label="Name" class="cell-title">
+        <div class="cell-person">
+          {{ ui::avatar(entry.initials, entry.avatar) }}
+          <div class="cell-main"><a class="person" href="/mitglieder/{{ entry.id }}">{{ entry.name }}</a>{% if !entry.offices.is_empty() %}<span class="sub">{{ entry.offices|join(", ") }}</span>{% endif %}</div>
+        </div>
+      </td>
       <td data-label="Nr." class="num">{{ entry.member_number }}</td>
-      <td data-label="Mitgliedsart">{{ entry.membership_type }}</td>
+      <td data-label="Art"><span class="symbols">{{ ui::symbol(entry.type_icon, "kind", entry.membership_type, entry.membership_type) }}</span></td>
+      <td data-label="Scheine">{% if !entry.licenses.is_empty() || !entry.radio_licenses.is_empty() %}<span class="symbols">{% for l in entry.licenses %}{{ ui::symbol("anchor", "", "Segelschein: {}"|format(l), l) }}{% endfor %}{% for l in entry.radio_licenses %}{{ ui::symbol("radio", "radio", "Funklizenz: {}"|format(l), l) }}{% endfor %}</span>{% endif %}</td>
       {% if entry.contact.is_blocked() %}
-      <td data-label="E-Mail"><span class="badge">Kontaktdaten gesperrt</span></td>
+      <td data-label="E-Mail"><span class="badge">{{ ui::icon("lock") }}Kontaktdaten gesperrt</span></td>
       <td data-label="Telefon"></td>
       {% else %}
       <td data-label="E-Mail">{% if let Some(email) = entry.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}</td>
@@ -21,7 +32,7 @@
       {% endif %}
     </tr>
   {% else %}
-    <tr><td colspan="6">Keine Mitglieder gefunden.</td></tr>
+    <tr><td colspan="6">{{ ui::empty("search", "Keine Mitglieder gefunden.") }}</td></tr>
   {% endfor %}
   </tbody>
 </table>

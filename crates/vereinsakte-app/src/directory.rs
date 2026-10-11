@@ -32,7 +32,13 @@ pub struct DirectoryFilter {
 pub struct DirectoryEntry {
     pub id: u32,
     pub licenses: Vec<String>,
+    pub radio_licenses: Vec<String>,
+    /// Schlüssel der Mitgliedsart für das Symbol.
+    pub type_key: &'static str,
+    pub type_icon: &'static str,
     pub name: String,
+    pub initials: String,
+    pub avatar: String,
     pub offices: Vec<String>,
     pub member_number: u32,
     pub membership_type: String,
@@ -92,7 +98,12 @@ impl ClubService {
             .map(|m| DirectoryEntry {
                 id: m.id.get(),
                 licenses: m.sailing_licenses.clone(),
+                radio_licenses: m.radio_licenses.clone(),
+                type_key: crate::members::membership_type_key(m.membership_type),
+                type_icon: crate::members::membership_type_icon(m.membership_type),
                 name: format!("{}, {}", m.last_name, m.first_name),
+                initials: crate::format::initials(&m.first_name, &m.last_name),
+                avatar: crate::format::avatar_class(m.id.get()),
                 offices: office_labels(&offices, &boats, m.id, now),
                 member_number: m.id.get(),
                 membership_type: m.membership_type.to_string(),

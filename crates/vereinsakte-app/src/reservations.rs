@@ -4,7 +4,7 @@
 use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, Timelike};
 use vereinsakte_core::boat::{Boat, SailingArea};
 use vereinsakte_core::ids::{BoatId, MemberId, ReservationId};
-use vereinsakte_core::reservation::{CrewSeat, Guest, Reservation};
+use vereinsakte_core::reservation::{CrewSeat, Reservation};
 use vereinsakte_core::rights::Capability;
 use vereinsakte_core::time::{Timestamp, club_time};
 
@@ -26,17 +26,37 @@ pub struct ReservationFilter {
     pub mine: bool,
 }
 
+/// Crew-Mitglied einer Reservierung für die Anzeige.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CrewLine {
+    pub number: u32,
+    pub name: String,
+    /// Eigener Zeitraum an Bord, z. B. „ (bis 07.07.2026 18:00)“ (leer ohne Angabe).
+    pub period: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReservationRow {
     pub id: String,
     pub boat: String,
+    /// Symbol und Tooltip des Bootstyps.
+    pub boat_icon: &'static str,
+    pub boat_tip: String,
+    /// Erster und letzter Tag der Reservierung (für den Kalender).
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    /// Uhrzeit bei eintägigen Reservierungen, z. B. „10:00–18:00“.
+    pub times: String,
+    pub skipper_id: u32,
+    pub co_skipper_id: Option<u32>,
     pub day: String,
     pub when: String,
     pub area: String,
     pub skipper: String,
     pub co_skipper: String,
     pub crew: Vec<String>,
-    pub guests: Vec<String>,
+    /// Crew-Mitglieder mit Nummer und optionalem eigenem Zeitraum.
+    pub crew_members: Vec<CrewLine>,
     pub remark: String,
     pub tour: bool,
     pub mine: bool,
@@ -78,14 +98,12 @@ pub struct ReservationInput {
     pub from_time: String,
     pub to_date: String,
     pub to_time: String,
-    pub tour: bool,
     /// Leer: das angemeldete Mitglied.
     pub skipper: String,
     pub co_skipper: String,
     /// Je Zeile: `Mitgliedsnummer oder Name[; von[; bis]]`.
     pub crew: String,
-    /// Je Zeile: `Name[; Telefon[; von[; bis]]]`.
-    pub guests: String,
+    /// Bemerkung, auch für Gäste und Hinweise zur Fahrt (bis 5.000 Zeichen).
     pub remark: String,
 }
 
@@ -166,6 +184,24 @@ impl ClubService {
                 .iter()
                 .find(|b| b.id == r.boat)
                 .map_or_else(|| r.boat.to_string(), |b| b.name.clone()),
+            boat_icon: boats
+                .iter()
+                .find(|b| b.id == r.boat)
+                .map_or("boat", |b| crate::boats::boat_type_display(b).0),
+            boat_tip: boats
+                .iter()
+                .find(|b| b.id == r.boat)
+                .map(|b| crate::boats::boat_type_display(b).1)
+                .unwrap_or_default(),
+            start_date: r.start.date_naive(),
+            end_date: r.end.date_naive(),
+            times: if r.start.date_naive() == r.end.date_naive() {
+                format!("{}–{}", r.start.format("%H:%M"), r.end.format("%H:%M"))
+            } else {
+                String::new()
+            },
+            skipper_id: r.skipper.get(),
+            co_skipper_id: r.co_skipper.map(MemberId::get),
             day: format::date(r.start),
             when: if r.start.date_naive() == r.end.date_naive() {
                 format!(
@@ -191,13 +227,17 @@ impl ClubService {
                 .iter()
                 .map(|s| format!("{}{}", name(s.member), period(s.from, s.until)))
                 .collect(),
-            guests: r
-                .guests
+            crew_members: r
+                .crew
                 .iter()
-                .map(|g| format!("{}{}", g.name, period(g.from, g.until)))
+                .map(|s| CrewLine {
+                    number: s.member.get(),
+                    name: name(s.member),
+                    period: period(s.from, s.until),
+                })
                 .collect(),
             remark: r.remark.clone().unwrap_or_default(),
-            tour: r.tour,
+            tour: r.is_tour(),
             mine: r.members_on_board().contains(&me),
             past: r.end < now,
             can_change,
@@ -320,7 +360,7 @@ impl ClubService {
             principal.now,
             can,
         );
-        let (fees, fee_total) = if r.tour {
+        let (fees, fee_total) = if r.is_tour() {
             use vereinsakte_core::tour_fees::PaymentStatus;
             let mut lines: Vec<FeeLine> = scoped
                 .record
@@ -487,20 +527,11 @@ impl ClubService {
                 until,
             });
         }
-        let mut guests = vec![];
-        for line in input
-            .guests
-            .lines()
-            .map(str::trim)
-            .filter(|l| !l.is_empty())
-        {
-            let parts: Vec<&str> = line.split(';').map(str::trim).collect();
-            let mut guest = Guest::new(parts[0]);
-            guest.phone = parts.get(1).and_then(|p| trimmed(p));
-            guest.from = parts.get(2).and_then(|t| parse_stamp(t));
-            guest.until = parts.get(3).and_then(|t| parse_stamp(t));
-            guest.invited_by = Some(user.member);
-            guests.push(guest);
+        if input.remark.chars().count() > 5000 {
+            errors.push(FieldError::new(
+                "remark",
+                "Die Bemerkung darf höchstens 5.000 Zeichen lang sein.",
+            ));
         }
         let (Some(boat), Some(start), Some(end), Some(skipper)) = (boat, start, end, skipper)
         else {
@@ -516,11 +547,9 @@ impl ClubService {
         r.start = start;
         r.end = end;
         r.area = area;
-        r.tour = input.tour;
         r.skipper = skipper;
         r.co_skipper = co_skipper;
         r.crew = crew;
-        r.guests = guests;
         r.remark = trimmed(&input.remark);
         Ok(r)
     }
@@ -664,27 +693,12 @@ impl ClubService {
                 from_time: r.start.format("%H:%M").to_string(),
                 to_date: r.end.format("%Y-%m-%d").to_string(),
                 to_time: r.end.format("%H:%M").to_string(),
-                tour: r.tour,
                 skipper: r.skipper.to_string(),
                 co_skipper: r.co_skipper.map(|m| m.to_string()).unwrap_or_default(),
                 crew: r
                     .crew
                     .iter()
                     .map(|s| line(s.member, s.from, s.until))
-                    .collect::<Vec<_>>()
-                    .join("\n"),
-                guests: r
-                    .guests
-                    .iter()
-                    .map(|g| {
-                        format!(
-                            "{}; {}; {}; {}",
-                            g.name,
-                            g.phone.clone().unwrap_or_default(),
-                            g.from.map(stamp_text).unwrap_or_default(),
-                            g.until.map(stamp_text).unwrap_or_default()
-                        )
-                    })
                     .collect::<Vec<_>>()
                     .join("\n"),
                 remark: r.remark.clone().unwrap_or_default(),
@@ -1001,7 +1015,12 @@ mod tests {
             .reservation_page(&user(GRETA), vereinsakte_core::example::DEHLER_TOUR)
             .await
             .unwrap();
-        assert!(page.row.tour && page.row.guests.len() == 1);
+        assert!(page.row.tour);
+        assert!(
+            page.row.remark.contains("Max Gast"),
+            "Gäste stehen in der Bemerkung"
+        );
+        assert_eq!(page.row.crew_members.len(), 3);
         assert!(!page.fees.is_empty());
         assert!(page.fee_total.is_some());
     }

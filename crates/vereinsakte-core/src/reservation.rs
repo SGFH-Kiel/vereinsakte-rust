@@ -12,29 +12,66 @@ use super::issues::ReservationIssue;
 use super::time::Timestamp;
 
 /// Reservierung eines Bootes im Vormerkkalender.
+///
+/// Ob die Reservierung eine Tour ist, ergibt sich allein aus dem Zeitraum
+/// ([`Reservation::is_tour`]). Gäste werden nicht erfasst; sie stehen in der
+/// Bemerkung.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(from = "RawReservation")]
 pub struct Reservation {
     pub id: ReservationId,
     pub boat: BoatId,
     pub start: Timestamp,
     pub end: Timestamp,
     pub area: SailingArea,
-    /// Tour = Fahrt mit mindestens einer Übernachtung in einem fremden Hafen.
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub tour: bool,
     pub skipper: MemberId,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub co_skipper: Option<MemberId>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub crew: Vec<CrewSeat>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub guests: Vec<Guest>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub remark: Option<String>,
 }
 
-fn is_false(value: &bool) -> bool {
-    !*value
+/// Leseformat: ältere Daten kennen Tour-Kennzeichen und Gästelisten, die
+/// beim Einlesen entfallen bzw. in die Bemerkung übergehen.
+#[derive(Deserialize)]
+struct RawReservation {
+    id: ReservationId,
+    boat: BoatId,
+    start: Timestamp,
+    end: Timestamp,
+    area: SailingArea,
+    #[serde(default)]
+    #[allow(dead_code)]
+    tour: bool,
+    skipper: MemberId,
+    #[serde(default)]
+    co_skipper: Option<MemberId>,
+    #[serde(default)]
+    crew: Vec<CrewSeat>,
+    #[serde(default)]
+    guests: Vec<LegacyGuest>,
+    #[serde(default)]
+    remark: Option<String>,
+}
+
+impl From<RawReservation> for Reservation {
+    fn from(raw: RawReservation) -> Self {
+        let mut reservation = Self {
+            id: raw.id,
+            boat: raw.boat,
+            start: raw.start,
+            end: raw.end,
+            area: raw.area,
+            skipper: raw.skipper,
+            co_skipper: raw.co_skipper,
+            crew: raw.crew,
+            remark: raw.remark,
+        };
+        reservation.append_legacy_guests(&raw.guests);
+        reservation
+    }
 }
 
 /// Crew-Mitglied, optional mit eigenem Zeitraum an Bord (z. B. Crewwechsel).
@@ -57,31 +94,12 @@ impl CrewSeat {
     }
 }
 
-/// Gast an Bord; kein Vereinsmitglied.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Guest {
+/// Früher erfasster Gast (nur zum Einlesen alter Daten).
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+pub struct LegacyGuest {
     pub name: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub phone: Option<String>,
-    /// Einladendes Mitglied; ohne Angabe gilt der Skipper.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub invited_by: Option<MemberId>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub from: Option<Timestamp>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub until: Option<Timestamp>,
-}
-
-impl Guest {
-    pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            phone: None,
-            invited_by: None,
-            from: None,
-            until: None,
-        }
-    }
 }
 
 /// Plausibilitätsfehler einer Reservierung.
@@ -93,7 +111,6 @@ pub enum ReservationError {
     CoSkipperInCrew,
     DuplicateCrewMember(MemberId),
     InvalidCrewPeriod(MemberId),
-    InvalidGuestPeriod(String),
 }
 
 impl fmt::Display for ReservationError {
@@ -106,9 +123,6 @@ impl fmt::Display for ReservationError {
             Self::DuplicateCrewMember(id) => write!(f, "Mitglied {id} steht mehrfach in der Crew"),
             Self::InvalidCrewPeriod(id) => {
                 write!(f, "Zeitraum an Bord von Mitglied {id} ist unzulässig")
-            }
-            Self::InvalidGuestPeriod(name) => {
-                write!(f, "Zeitraum an Bord von Gast {name} ist unzulässig")
             }
         }
     }
@@ -128,13 +142,36 @@ impl Reservation {
             start,
             end,
             area,
-            tour: false,
             skipper,
             co_skipper: None,
             crew: Vec::new(),
-            guests: Vec::new(),
             remark: None,
         }
+    }
+
+    /// Tour = Fahrt mit mindestens einer Übernachtung: das Ende liegt auf einem
+    /// späteren Kalendertag als der Beginn.
+    pub fn is_tour(&self) -> bool {
+        self.end.date_naive() > self.start.date_naive()
+    }
+
+    /// Hängt früher erfasste Gäste als Zeile „Gäste: …“ an die Bemerkung an.
+    pub fn append_legacy_guests(&mut self, guests: &[LegacyGuest]) {
+        if guests.is_empty() {
+            return;
+        }
+        let list: Vec<String> = guests
+            .iter()
+            .map(|g| match g.phone.as_deref().filter(|p| !p.is_empty()) {
+                Some(phone) => format!("{} ({phone})", g.name),
+                None => g.name.clone(),
+            })
+            .collect();
+        let line = format!("Gäste: {}", list.join(", "));
+        self.remark = Some(match self.remark.take() {
+            Some(remark) if !remark.is_empty() => format!("{remark}\n{line}"),
+            _ => line,
+        });
     }
 
     /// Zeitraum an Bord: eigener Zeitraum oder der der Reservierung.
@@ -187,11 +224,6 @@ impl Reservation {
             for seat in &self.crew {
                 if !self.period_is_valid(seat.from, seat.until) {
                     errors.push(ReservationError::InvalidCrewPeriod(seat.member));
-                }
-            }
-            for guest in &self.guests {
-                if !self.period_is_valid(guest.from, guest.until) {
-                    errors.push(ReservationError::InvalidGuestPeriod(guest.name.clone()));
                 }
             }
         }
@@ -268,29 +300,10 @@ impl ClubRecord {
             }
         }
 
-        match boat.crew_rule(r.area) {
-            None => issues.push(ReservationIssue::AreaNotReleased(r.area)),
-            Some(rule) => {
-                // Jede eingetragene Person zählt einmal, unabhängig von eigenen
-                // Zeiträumen an Bord; die zeitliche Prüfung macht der Vorstand.
-                let members = r.members_on_board().len() as u32;
-                let persons = members + r.guests.len() as u32;
-                if rule.co_skipper_required && r.co_skipper.is_none() {
-                    issues.push(ReservationIssue::CoSkipperMissing);
-                }
-                if members < u32::from(rule.min_members) {
-                    issues.push(ReservationIssue::TooFewMembers {
-                        actual: members,
-                        min: rule.min_members.into(),
-                    });
-                }
-                if persons < u32::from(rule.min_persons) {
-                    issues.push(ReservationIssue::TooFewPersons {
-                        actual: persons,
-                        min: rule.min_persons.into(),
-                    });
-                }
-            }
+        // Die Mindestbesatzung wird bewusst nicht geprüft (sie ändert sich oft bis
+        // zur Abfahrt); nur ein für das Fahrtgebiet freigegebenes Boot ist buchbar.
+        if boat.crew_rule(r.area).is_none() {
+            issues.push(ReservationIssue::AreaNotReleased(r.area));
         }
 
         if issues.is_empty() {
@@ -318,14 +331,52 @@ mod tests {
         let club = example::club();
         let tour = find(&club, DEHLER_TOUR);
         assert_eq!(tour.co_skipper, Some(KARIN));
-        assert_eq!(tour.guests[0].name, "Max Gast");
+        assert!(tour.remark.as_deref().unwrap().contains("Max Gast"));
         let json = serde_json::to_string(&tour).unwrap();
         assert_eq!(serde_json::from_str::<Reservation>(&json).unwrap(), tour);
+        let value = serde_json::to_value(&tour).unwrap();
+        assert!(value.get("tour").is_none() && value.get("guests").is_none());
+    }
 
+    #[test]
+    fn old_data_with_tour_flag_and_guests_is_read_into_the_remark() {
+        let club = example::club();
         let mut value = serde_json::to_value(find(&club, JOLLE_SAMSTAG)).unwrap();
-        assert!(value.get("tour").is_none());
-        value.as_object_mut().unwrap().remove("tour");
-        assert!(!serde_json::from_value::<Reservation>(value).unwrap().tour);
+        let object = value.as_object_mut().unwrap();
+        object.insert("tour".into(), serde_json::json!(true));
+        object.insert(
+            "guests".into(),
+            serde_json::json!([
+                {"name": "Max Gast", "phone": "0160 5554443", "invited_by": 101},
+                {"name": "Paula Gast"}
+            ]),
+        );
+        let read: Reservation = serde_json::from_value(value).unwrap();
+        assert_eq!(
+            read.remark.as_deref(),
+            Some("Gäste: Max Gast (0160 5554443), Paula Gast")
+        );
+        assert!(!read.is_tour(), "Tour ergibt sich nur aus dem Zeitraum");
+    }
+
+    #[test]
+    fn tour_follows_from_the_period() {
+        let club = example::club();
+        // Nachmittag: keine Tour
+        assert!(!find(&club, FOLKEBOOT_NACHMITTAG).is_tour());
+        // 1.–14. Juli und Wochenende: Touren
+        assert!(find(&club, DEHLER_TOUR).is_tour());
+        assert!(find(&club, TRIGON_WOCHENENDE).is_tour());
+        // Verkürzt auf einen Nachmittag: keine Tour mehr
+        let mut tour = find(&club, DEHLER_TOUR);
+        tour.end = at(2026, 7, 1, 18, 0);
+        assert!(!tour.is_tour());
+        // Fahrt über Mitternacht (Nachtfahrt) zählt als Tour: Übernachtung an Bord
+        tour.end = at(2026, 7, 2, 2, 0);
+        assert!(tour.is_tour());
+        // Ende genau um Mitternacht liegt bereits am Folgetag
+        tour.end = at(2026, 7, 2, 0, 0);
+        assert!(tour.is_tour());
     }
 
     #[test]
@@ -385,13 +436,11 @@ mod tests {
             (tour.start, at(2026, 7, 7, 18, 0))
         );
         tour.crew[0].from = Some(at(2026, 6, 30, 10, 0));
-        tour.guests[0].until = Some(at(2026, 7, 20, 10, 0));
         assert_eq!(
             tour.validate(),
-            Err(vec![
-                ReservationError::InvalidCrewPeriod(tour.crew[0].member),
-                ReservationError::InvalidGuestPeriod("Max Gast".into())
-            ])
+            Err(vec![ReservationError::InvalidCrewPeriod(
+                tour.crew[0].member
+            )])
         );
     }
 
@@ -513,7 +562,7 @@ mod tests {
     }
 
     #[test]
-    fn minimum_crew() {
+    fn crew_strength_is_not_checked_but_the_area_must_be_released() {
         let club = example::club();
         // Folkeboot im Heimrevier zu zweit
         assert_eq!(
@@ -521,31 +570,17 @@ mod tests {
             Ok(())
         );
 
-        // Matcher außerhalb nur mit Skipper und Co-Skipper
+        // Matcher außerhalb nur mit Skipper: keine Beanstandung der Besatzung,
+        // auch ohne verlangten Co-Skipper und ohne Mindestzahlen.
         let mut trigon = find(&club, TRIGON_WOCHENENDE);
         trigon.crew.clear();
-        trigon.guests.clear();
-        assert_eq!(
-            club.check_reservation(&trigon),
-            Err(vec![ReservationIssue::TooFewPersons { actual: 2, min: 3 }])
-        );
-
-        // Co-Skipper verlangt, aber nicht eingetragen
         trigon.co_skipper = None;
-        trigon.crew = vec![CrewSeat::new(FRANK), CrewSeat::new(KARIN)];
-        assert_eq!(
-            club.check_reservation(&trigon),
-            Err(vec![ReservationIssue::CoSkipperMissing])
-        );
+        assert_eq!(club.check_reservation(&trigon), Ok(()));
 
-        // Gäste zählen nicht als Mitglieder
+        // Folkeboot allein
         let mut folkeboot = find(&club, FOLKEBOOT_NACHMITTAG);
         folkeboot.crew.clear();
-        folkeboot.guests = vec![Guest::new("Paula Gast")];
-        assert_eq!(
-            club.check_reservation(&folkeboot),
-            Err(vec![ReservationIssue::TooFewMembers { actual: 1, min: 2 }])
-        );
+        assert_eq!(club.check_reservation(&folkeboot), Ok(()));
 
         // Jolle außerhalb des Heimreviers
         let mut filou = find(&club, JOLLE_SAMSTAG);
@@ -568,7 +603,6 @@ mod tests {
         // Nur Skipper, Co-Skipper und zwei nacheinander an Bord befindliche Crew-Mitglieder
         tour.crew
             .retain(|seat| seat.member == BEN || seat.member == DAVID);
-        tour.guests.clear();
         assert!(
             tour.crew
                 .iter()

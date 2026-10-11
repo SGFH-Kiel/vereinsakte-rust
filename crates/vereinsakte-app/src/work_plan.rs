@@ -139,6 +139,9 @@ impl ClubService {
                         e.start.format("%H:%M"),
                         e.end.format("%H:%M")
                     ),
+                    start_date: e.start.date_naive(),
+                    end_date: e.end.date_naive(),
+                    times: format!("{}–{}", e.start.format("%H:%M"), e.end.format("%H:%M")),
                     location: e.location.clone().unwrap_or_default(),
                     description: e.description.clone().unwrap_or_default(),
                     boat: e
@@ -147,7 +150,11 @@ impl ClubService {
                         .unwrap_or_default(),
                     registered: e.registrations.len(),
                     max: e.max_participants,
-                    participants: e.registrations.iter().map(|m| name(*m)).collect(),
+                    participants: e
+                        .registrations
+                        .iter()
+                        .map(|m| crate::people::PersonRef::member(*m, name(*m)))
+                        .collect(),
                     mine: e.registrations.contains(&user.member),
                     full: e
                         .max_participants

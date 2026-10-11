@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Verein{% endblock %}
+{% block page_title %}Kalender{% endblock %}
+{% block page_sub %}Reservierungen und Arbeitstermine{% endblock %}
+{% block page_actions %}
+<a class="btn" href="/boote">{{ ui::icon("boat") }}Boot reservieren</a>
+{% if can_create_event %}<a class="btn primary" href="/arbeit/termine/neu">{{ ui::icon("plus") }}Termin anlegen</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="list-layout">
+  <section class="filter-panel" aria-label="Filter">
+    <input type="checkbox" id="filter-toggle" class="filter-toggle" aria-label="Filter ein- oder ausblenden"{% if active_filters > 0 %} checked{% endif %}>
+    <label class="filter-summary" for="filter-toggle">{{ ui::icon("filter") }}<span>Filter{% if active_filters > 0 %} ({{ active_filters }}){% endif %}</span><span class="chev">{{ ui::icon("chevron-down") }}</span></label>
+    <form method="get" action="/kalender" class="filter-body">
+      <input type="hidden" name="ansicht" value="{{ view }}">
+      <div class="field">
+        <label for="f-art">Art</label>
+        <select id="f-art" name="art">
+          <option value="alle"{% if kind == "alle" %} selected{% endif %}>Reservierungen und Arbeitstermine</option>
+          <option value="reservierungen"{% if kind == "reservierungen" %} selected{% endif %}>nur Reservierungen</option>
+          <option value="termine"{% if kind == "termine" %} selected{% endif %}>nur Arbeitstermine</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-boot">Boot</label>
+        <select id="f-boot" name="boot"><option value="">alle Boote</option>
+          {% for (key, name) in boats %}<option value="{{ key }}"{% if *key == boat %} selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+      </div>
+      <label class="check"><input type="checkbox" name="meine" value="1"{% if mine %} checked{% endif %}> nur meine</label>
+      <div class="actions"><button type="submit" class="primary">{{ ui::icon("search") }}Anzeigen</button>{% if active_filters > 0 %}<a class="btn ghost" href="/kalender?ansicht={{ view }}">Zurücksetzen</a>{% endif %}</div>
+    </form>
+  </section>
+  <div>
+    <div class="cal-toolbar">
+      <nav class="view-switch" aria-label="Ansicht wählen">
+      {% for (label, href, current) in switch %}<a href="{{ href }}"{% if *current %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+      </nav>
+      <div class="cal-nav">
+        {% if !previous.is_empty() %}<a class="btn small icon-only" href="{{ previous }}" rel="prev">{{ ui::icon_label("chevron-left", "Zurück") }}</a>{% endif %}
+        <strong class="cal-title-text">{{ title }}</strong>
+        <a class="btn small icon-only" href="{{ next }}" rel="next">{{ ui::icon_label("chevron-right", "Weiter") }}</a>
+        <a class="btn small" href="{{ today_link }}">Heute</a>
+      </div>
+    </div>
+    <p class="cal-legend" aria-label="Legende"><span class="cal-key reservation">{{ ui::icon("boat") }}Reservierung</span><span class="cal-key event">{{ ui::icon("wrench") }}Arbeitstermin</span></p>
+
+    {% if view == "liste" %}
+      {% if weeks.is_empty() %}
+      <section class="card">{{ ui::empty("calendar", "Keine anstehenden Einträge.") }}<p class="actions"><a class="btn" href="/boote">Zu den Booten</a></p></section>
+      {% else %}
+      {% for week in weeks %}
+      <section class="cal-week" aria-labelledby="w-{{ loop.index }}">
+        <h2 id="w-{{ loop.index }}" class="cal-week-title">{{ week.title }}</h2>
+        {% for day in week.days %}
+        <div class="cal-day-group">
+          <h3 class="cal-day-title">{{ day.label }}</h3>
+          <div class="cal-entries">
+          {% for e in day.entries %}{% include "_cal_entry.html" %}{% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </section>
+      {% endfor %}
+      {% endif %}
+    {% else %}
+      <div class="table-wrap cal-wrap">
+      <table class="cal">
+        <caption class="visually-hidden">{{ title }}</caption>
+        <thead><tr>{% for d in weekdays %}<th scope="col">{{ d }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for week in grid %}
+          <tr>
+          {% for day in week.days %}
+            <td class="day{% if day.other_month %} other{% endif %}{% if day.today %} today{% endif %}{% if day.entries.is_empty() %} none{% endif %}" data-label="{{ day.label }}">
+              <span class="day-num">{{ day.number }}{% if day.today %}<span class="visually-hidden"> (heute)</span>{% endif %}</span>
+              <div class="cal-entries">{% for e in day.entries %}{% include "_cal_entry.html" %}{% endfor %}</div>
+            </td>
+          {% endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% if empty %}<p class="muted">In diesem Zeitraum gibt es keine Einträge.</p>{% endif %}
+    {% endif %}
+    {% if archive_hint %}<p class="muted">Vergangene Einträge stehen im Archiv beim Protokoll.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

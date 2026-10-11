@@ -1,68 +1,92 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Start{% endblock %}
+{% block page_title %}Moin {{ v.name }}{% endblock %}
+{% block page_sub %}Deine nächsten Schritte im Überblick{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><h1>Hallo {{ v.name }}</h1><p class="muted">Deine nächsten Schritte im Überblick</p></div>
-</div>
 {% if v.contact_notice %}
 <section class="notice" role="region" aria-label="Hinweis zu Kontaktdaten">
-  <p><strong>Neu:</strong> Deine E-Mail-Adresse und Telefonnummern sind jetzt für alle Vereinsmitglieder sichtbar. Wenn du das nicht möchtest, kannst du einen Sperrvermerk setzen; dann sehen sie nur du und der Vorstand.</p>
-  <form method="post" action="/hinweis/kontakt" class="actions">
-    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-    <a class="btn primary" href="/meine-daten">Sichtbarkeit einstellen</a>
-    <button type="submit">Verstanden</button>
-  </form>
+  {{ ui::icon("info") }}
+  <div>
+    <p><strong>Neu:</strong> Deine E-Mail-Adresse und Telefonnummern sind jetzt für alle Vereinsmitglieder sichtbar. Wenn du das nicht möchtest, kannst du einen Sperrvermerk setzen; dann sehen sie nur du und der Vorstand.</p>
+    <form method="post" action="/hinweis/kontakt" class="actions">
+      <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+      <a class="btn primary small" href="/meine-daten">Sichtbarkeit einstellen</a>
+      <button type="submit" class="small">Verstanden</button>
+    </form>
+  </div>
 </section>
 {% endif %}
+<section class="todo{% if todo.is_empty() %} done{% endif %}" aria-labelledby="todo-title">
+  <h2 id="todo-title">{% if todo.is_empty() %}{{ ui::icon_lg("check-circle") }}Alles erledigt{% else %}{{ ui::icon_lg("alert-circle") }}Was ist zu tun?{% endif %}</h2>
+  {% if todo.is_empty() %}
+  <p class="muted">Aktuell gibt es nichts, was von dir erledigt werden muss.</p>
+  {% else %}
+  <ul class="todo-list">
+  {% for item in todo %}
+    <li class="todo-item">{{ ui::icon(item.icon) }}<span class="todo-text">{{ item.text }}</span><a class="btn small" href="{{ item.href }}">{{ item.label }}</a></li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+</section>
 <div class="grid cols-3">
-  <section class="card">
-    <h2>Segelerlaubnis {{ v.year }}</h2>
-    {% if v.sailing_permit.granted %}
-    <p><span class="badge ok">✓ erteilt</span></p>
-    <p class="muted">Du darfst in dieser Saison segeln.</p>
-    {% else %}
-    <p><span class="badge warn">fehlt</span></p>
-    <ul>{% for reason in v.sailing_permit.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
-    {% endif %}
-    <p><a href="/meine-daten">Details in „Meine Daten“</a></p>
+  <section class="card stat-card">
+    <span class="stat-icon {% if v.sailing_permit.granted %}ok{% else %}warn{% endif %}">{{ ui::icon_lg("anchor") }}</span>
+    <div class="stat-body">
+      <div class="stat-label">Segelerlaubnis {{ v.year }}</div>
+      <div class="stat-value">{% if v.sailing_permit.granted %}Erteilt{% else %}Fehlt{% endif %}</div>
+      <p class="stat-note">{% if v.sailing_permit.granted %}{{ ui::badge("ok", "check", "erteilt") }} Du darfst in dieser Saison segeln.{% else %}{{ ui::badge("warn", "alert", "fehlt") }} <a href="/meine-daten">Was fehlt?</a>{% endif %}</p>
+    </div>
   </section>
-  <section class="card">
-    <h2>Arbeitsstunden {{ v.year }}</h2>
-    <p class="stat">{{ v.credited_hours }} <span class="muted">von {{ v.required_hours }}</span></p>
-    <p class="muted">angerechnete Stunden</p>
+  <section class="card stat-card">
+    <span class="stat-icon {% if v.missing_hours.is_empty() %}ok{% else %}warn{% endif %}">{{ ui::icon_lg("clock") }}</span>
+    <div class="stat-body">
+      <div class="stat-label">Arbeitsstunden {{ v.year }}</div>
+      <div class="stat-value">{{ v.credited_hours }} <small>von {{ v.required_hours }}</small></div>
+      {% if v.required_centi > 0 %}
+      <progress class="{% if v.missing_hours.is_empty() %}ok{% else %}warn{% endif %}" max="{{ v.required_centi }}" value="{{ v.credited_centi }}">{{ v.credited_hours }} von {{ v.required_hours }} Stunden</progress>
+      <p class="stat-note">{% if v.missing_hours.is_empty() %}Soll erfüllt{% else %}Es fehlen {{ v.missing_hours }} Stunden{% endif %}</p>
+      {% else %}
+      <p class="stat-note">Keine Stundenpflicht</p>
+      {% endif %}
+    </div>
   </section>
-  <section class="card">
-    <h2>Konto</h2>
-    <p class="stat">{{ v.balance.label() }}</p>
-    <p><a href="/meine-daten">Forderungen und Einzahlungen</a></p>
+  <section class="card stat-card">
+    <span class="stat-icon {% match v.balance %}{% when vereinsakte_app::my_data::Balance::Due(_) %}danger{% else %}ok{% endmatch %}">{{ ui::icon_lg("euro") }}</span>
+    <div class="stat-body">
+      <div class="stat-label">Konto</div>
+      <div class="stat-value">{{ v.balance.label() }}</div>
+      <p class="stat-note"><a href="/konto">Forderungen und Einzahlungen</a></p>
+    </div>
   </section>
 </div>
-{% if confirmations > 0 %}
-<section class="card">
-  <h2>Offene Bestätigungen</h2>
-  <p><span class="badge warn">{{ confirmations }}</span> Arbeitseinsätze warten auf deine Bestätigung. <a href="/arbeit/bestaetigungen">Jetzt prüfen</a></p>
-</section>
-{% endif %}
-{% if !events.is_empty() %}
-<section class="card">
-  <h2>Anstehende Arbeitstermine</h2>
-  <ul class="plain">
-  {% for e in events %}<li><strong>{{ e.title }}</strong> – {{ e.when }}{% if e.mine %} <span class="badge ok">angemeldet</span>{% endif %}</li>{% endfor %}
-  </ul>
-  <p><a href="/arbeit/termine">Alle Termine</a> · <a href="/arbeit">Einsatz erfassen</a></p>
-</section>
-{% endif %}
-{% if !reservations.is_empty() %}
-<section class="card">
-  <h2>Meine Reservierungen</h2>
-  <ul class="plain">{% for r in reservations %}<li><a href="/reservierungen/{{ r.id }}">{{ r.boat }}</a> – {{ r.when }}{% if r.tour %} <span class="badge info">Tour</span>{% endif %}</li>{% endfor %}</ul>
-  <p><a href="/reservierungen/neu">Boot reservieren</a></p>
-</section>
-{% endif %}
+<div class="grid cols-2">
+  <section class="card">
+    <div class="card-head"><h2>{{ ui::icon("calendar") }}Anstehende Arbeitstermine</h2></div>
+    {% if events.is_empty() %}
+    {{ ui::empty("calendar", "Keine anstehenden Arbeitstermine.") }}
+    {% else %}
+    <ul class="plain">
+    {% for e in events %}<li><a href="/arbeit/termine"><strong>{{ e.title }}</strong></a><span class="muted">{{ e.when }}</span>{% if e.mine %} {{ ui::badge("ok", "check", "angemeldet") }}{% endif %}</li>{% endfor %}
+    </ul>
+    <p class="actions"><a href="/arbeit/termine">Alle Termine</a></p>
+    {% endif %}
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>{{ ui::icon("boat") }}Meine Reservierungen</h2></div>
+    {% if reservations.is_empty() %}
+    {{ ui::empty("boat", "Keine anstehenden Reservierungen.") }}
+    <p class="actions"><a class="btn" href="/boote">Zu den Booten</a></p>
+    {% else %}
+    <ul class="plain">{% for r in reservations %}<li><a href="/reservierungen/{{ r.id }}"><strong>{{ r.boat }}</strong></a><span class="muted">{{ r.when }}</span>{% if r.tour %} {{ ui::badge("info", "anchor", "Tour") }}{% endif %}</li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+</div>
 {% if !tasks.is_empty() %}
 <section class="card">
-  <h2>Meine Aufgaben</h2>
-  <ul class="plain">{% for t in tasks %}<li>{{ t.title }} <span class="badge info">{{ t.status }}</span></li>{% endfor %}</ul>
-  <p><a href="/arbeit/aufgaben">Zu den Aufgaben</a></p>
+  <div class="card-head"><h2>{{ ui::icon("check-square") }}Meine Aufgaben</h2></div>
+  <ul class="plain">{% for t in tasks %}<li><strong>{{ t.title }}</strong> {{ ui::badge("info", "clock", t.status) }}</li>{% endfor %}</ul>
+  <p class="actions"><a href="/arbeit/aufgaben">Zu den Aufgaben</a></p>
 </section>
 {% endif %}
 {% endblock %}

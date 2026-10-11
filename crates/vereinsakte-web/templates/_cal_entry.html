@@ -1,0 +1,7 @@
+<a class="cal-entry {{ e.kind }}{% if !e.mine.is_empty() %} mine{% endif %}" href="{{ e.href }}" title="{{ e.tip }}">
+  <span class="cal-kind">{{ ui::icon(e.icon) }}<span>{{ e.label }}</span></span>
+  <span class="cal-title">{{ e.title }}</span>
+  {% if !e.sub.is_empty() %}<span class="cal-sub">{{ e.sub }}</span>{% endif %}
+  {% if !e.cont.is_empty() %}<span class="cal-sub">{{ e.cont }}</span>{% endif %}
+  {% if !e.mine.is_empty() || !e.tag.is_empty() %}<span class="cal-tags">{% if !e.mine.is_empty() %}{{ ui::badge("ok", "check", e.mine) }}{% endif %}{% if !e.tag.is_empty() %}{{ ui::badge(e.tag_kind, e.tag_icon, e.tag) }}{% endif %}</span>{% endif %}
+</a>

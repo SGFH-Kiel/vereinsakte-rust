@@ -1,8 +1,10 @@
 //! Weboberfläche der Vereinsakte: axum-Router, askama-Templates, htmx,
 //! Anmeldung über Microsoft Entra ID und Sitzungen.
 
+mod assets;
 mod audit;
 mod boats;
+mod calendar;
 pub mod error;
 mod finance;
 pub mod forms;

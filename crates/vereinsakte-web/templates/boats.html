@@ -1,30 +1,43 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Verein{% endblock %}
+{% block page_title %}Boote{% endblock %}
+{% block page_sub %}Saison {{ v.season }}{% endblock %}
+{% block page_actions %}{% if v.can_create %}<a class="btn primary" href="/boote/neu">{{ ui::icon("plus") }}Boot anlegen</a>{% endif %}{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><h1>Boote</h1><p class="muted">Saison {{ v.season }}</p></div>
-  {% if v.can_create %}<div class="actions"><a class="btn primary" href="/boote/neu">Boot anlegen</a></div>{% endif %}
-</div>
-<section class="card">
-  <div class="table-wrap">
+{% if v.rows.is_empty() %}
+<section class="card">{{ ui::empty("boat", "Noch keine Boote erfasst.") }}
+  {% if v.can_create %}<p class="actions"><a class="btn primary" href="/boote/neu">Boot anlegen</a></p>{% endif %}</section>
+{% else %}
+{{ ui::sort_form(sort) }}
+<div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Boot</th><th>Typ</th><th>Klasse</th><th>Zustand</th></tr></thead>
+    <thead><tr>
+      {{ ui::th_sort(sort, "name", "Boot", "") }}
+      {{ ui::th_sort(sort, "typ", "Typ", "") }}
+      {{ ui::th_sort(sort, "zustand", "Zustand", "") }}
+      <th scope="col"><span class="visually-hidden">Aktionen</span></th>
+    </tr></thead>
     <tbody>
     {% for row in v.rows %}
       <tr>
-        <td data-label="Boot"><a href="/boote/{{ row.id }}">{{ row.name }}</a></td>
-        <td data-label="Typ">{{ row.boat_type }}</td>
-        <td data-label="Klasse">{{ row.class }}</td>
-        <td data-label="Zustand">
-          {% if let Some(reason) = row.blocked %}<span class="badge danger">gesperrt</span> <span class="muted">{{ reason }}</span>
-          {% else if row.released %}<span class="badge ok">✓ freigegeben</span>
-          {% else %}<span class="badge warn">nicht freigegeben</span>{% endif %}
+        <td data-label="Boot" class="cell-title">
+          <div class="cell-person">
+            <span class="symbol kind" title="{{ row.type_tip }}">{{ ui::icon(row.type_icon) }}<span class="symbol-text">{{ row.type_tip }}</span></span>
+            <div class="cell-main"><a class="person" href="/boote/{{ row.id }}">{{ row.name }}</a>{% if !row.class.is_empty() %}<span class="sub">{{ row.class }}</span>{% endif %}</div>
+          </div>
         </td>
+        <td data-label="Typ">{{ row.boat_type }}</td>
+        <td data-label="Zustand">
+          {% if let Some(reason) = row.blocked %}{{ ui::badge("danger", "lock", "gesperrt") }} <span class="muted">{{ reason }}</span>
+          {% else if row.released %}{{ ui::badge("ok", "check", "freigegeben") }}
+          {% else %}{{ ui::badge("warn", "alert", "nicht freigegeben") }}{% endif %}
+        </td>
+        <td data-label=""><div class="row-actions"><a class="btn small" href="/reservierungen/neu?boot={{ row.id }}">{{ ui::icon("calendar") }}Reservieren</a></div></td>
       </tr>
-    {% else %}
-      <tr><td colspan="4">Noch keine Boote erfasst.</td></tr>
     {% endfor %}
     </tbody>
   </table>
-  </div>
-</section>
+</div>
+{% endif %}
 {% endblock %}

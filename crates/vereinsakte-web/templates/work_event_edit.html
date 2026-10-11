@@ -1,7 +1,36 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% import "_forms.html" as f %}
+{% block eyebrow %}<a href="/kalender?art=termine">Kalender</a>{% if !id.is_empty() %} › <a href="/arbeit/termine/{{ id }}">Termin</a>{% endif %}{% endblock %}
+{% block page_title %}{% if id.is_empty() %}Termin anlegen{% else %}Termin bearbeiten{% endif %}{% endblock %}
 {% block content %}
-<div class="breadcrumbs"><a href="/arbeit/termine">Arbeitstermine</a> › Bearbeiten</div>
-<div class="page-head"><h1>Termin bearbeiten</h1></div>
-<section class="card">{% include "_event_form.html" %}</section>
+{% if !errors.general().is_empty() %}<div class="notice error" role="alert">{{ ui::icon("alert-circle") }}<div>{% for message in errors.general() %}<p>{{ message }}</p>{% endfor %}</div></div>{% endif %}
+<form method="post" action="{{ action }}" class="stack">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  <p class="form-legend"><span class="req">*</span> Pflichtfeld</p>
+  <section class="form-section">
+    <h2>Termin</h2>
+    <p class="section-intro">Wann und was?</p>
+    <div class="form-grid cols-2">
+      {{ f::req_field("title", "Titel", form.title, errors.get("title"), "text", "") }}
+      {{ f::req_field("date", "Datum", form.date, errors.get("date"), "date", "") }}
+      {{ f::field("start", "Beginn", form.start, errors.get("start"), "time", "") }}
+      {{ f::field("end", "Ende", form.end, errors.get("end"), "time", "") }}
+      {{ f::field("location", "Ort", form.location, "", "text", "") }}
+      {{ f::field("max", "Plätze (optional)", form.max, errors.get("max"), "text", "leer lassen für unbegrenzt") }}
+      <div class="field">
+        <label for="f-boat">Boot (optional)</label>
+        <select id="f-boat" name="boat"><option value="">kein bestimmtes Boot</option>
+          {% for (key, label) in boats %}<option value="{{ key }}"{% if *key == form.boat %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      {{ f::area("description", "Beschreibung", form.description, "", "", "") }}
+    </div>
+  </section>
+  <div class="form-actions sticky">
+    <button type="submit" class="primary">{{ ui::icon("check") }}Speichern</button>
+    <a class="btn" href="{% if id.is_empty() %}/kalender?art=termine{% else %}/arbeit/termine/{{ id }}{% endif %}">Abbrechen</a>
+  </div>
+</form>
 {% endblock %}

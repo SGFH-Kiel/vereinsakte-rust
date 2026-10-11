@@ -1,36 +1,41 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}<a href="/kalender">Kalender</a>{% endblock %}
+{% block page_title %}{{ p.row.boat }}{% endblock %}
+{% block page_sub %}{{ p.row.when }} · {% if p.row.tour %}{{ ui::badge("info", "anchor", "Tour") }}{% else %}{{ ui::badge("neutral", "boat", "Ausfahrt") }}{% endif %}{% if p.row.past %} {{ ui::badge("neutral", "clock", "vorbei") }}{% endif %}{% endblock %}
+{% block page_actions %}
+{% if p.row.can_change %}
+<a class="btn primary" href="/reservierungen/{{ p.row.id }}/bearbeiten">{{ ui::icon("pencil") }}Ändern</a>
+<form method="post" action="/reservierungen/{{ p.row.id }}/stornieren">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <button type="submit" class="danger">{{ ui::icon("trash") }}Stornieren</button>
+</form>
+{% endif %}
+{% endblock %}
 {% block content %}
-<div class="breadcrumbs"><a href="/reservierungen">Reservierungen</a> › {{ p.row.boat }}</div>
-<div class="page-head">
-  <div><h1>{{ p.row.boat }}</h1><p class="muted">{{ p.row.when }}</p></div>
-  {% if p.row.can_change %}
-  <div class="actions">
-    <a class="btn" href="/reservierungen/{{ p.row.id }}/bearbeiten">Ändern</a>
-    <form method="post" action="/reservierungen/{{ p.row.id }}/stornieren">
-      <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-      <button type="submit" class="danger">Stornieren</button>
-    </form>
-  </div>
-  {% endif %}
-</div>
 <section class="card">
+  <div class="card-head"><h2>{{ ui::icon("users") }}Besatzung</h2></div>
   <dl>
-    <dt>Skipper</dt><dd>{{ p.row.skipper }}</dd>
-    {% if !p.row.co_skipper.is_empty() %}<dt>Co-Skipper</dt><dd>{{ p.row.co_skipper }}</dd>{% endif %}
-    <dt>Crew</dt><dd>{% if p.row.crew.is_empty() %}keine{% else %}{{ p.row.crew|join(", ") }}{% endif %}</dd>
-    <dt>Gäste</dt><dd>{% if p.row.guests.is_empty() %}keine{% else %}{{ p.row.guests|join(", ") }}{% endif %}</dd>
+    <dt>Skipper</dt><dd><a class="person" href="/mitglieder/{{ p.row.skipper_id }}">{{ p.row.skipper }}</a></dd>
+    {% if let Some(co) = p.row.co_skipper_id %}<dt>Co-Skipper</dt><dd><a class="person" href="/mitglieder/{{ co }}">{{ p.row.co_skipper }}</a></dd>{% endif %}
+    <dt>Crew</dt><dd>{% if p.row.crew_members.is_empty() %}<span class="muted">keine</span>{% else %}<ul class="plain">{% for c in p.row.crew_members %}<li><a class="person" href="/mitglieder/{{ c.number }}">{{ c.name }}</a>{% if !c.period.is_empty() %}<span class="muted">{{ c.period }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}</dd>
     <dt>Fahrtgebiet</dt><dd>{{ p.row.area }}</dd>
-    <dt>Art</dt><dd>{% if p.row.tour %}Tour (mit Übernachtung in einem fremden Hafen){% else %}Ausfahrt{% endif %}</dd>
-    {% if !p.row.remark.is_empty() %}<dt>Bemerkung</dt><dd>{{ p.row.remark }}</dd>{% endif %}
+    <dt>Art</dt><dd>{% if p.row.tour %}Tour (mindestens eine Übernachtung){% else %}Ausfahrt{% endif %}</dd>
   </dl>
 </section>
+{% if !p.row.remark.is_empty() %}
+<section class="card">
+  <div class="card-head"><h2>{{ ui::icon("file") }}Bemerkung</h2></div>
+  <p class="preline">{{ p.row.remark }}</p>
+</section>
+{% endif %}
 {% if let Some(total) = p.fee_total %}
 <section class="card">
-  <h2>Tourgebühr</h2>
+  <div class="card-head"><h2>{{ ui::icon("euro") }}Tourgebühr</h2></div>
   {% if p.fees.is_empty() %}<p>Für diese Tour fällt keine Gebühr an.</p>{% else %}
   <div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Konto</th><th>Gebühr</th><th class="num">Betrag</th><th>Stand</th></tr></thead>
+    <thead><tr><th scope="col">Konto</th><th scope="col">Gebühr</th><th scope="col" class="num">Betrag</th><th scope="col">Stand</th></tr></thead>
     <tbody>{% for f in p.fees %}
       <tr><td data-label="Konto">{{ f.who }}</td><td data-label="Gebühr">{{ f.text }}</td><td data-label="Betrag" class="num">{{ f.amount }}</td><td data-label="Stand">{{ f.status }}</td></tr>
     {% endfor %}</tbody>
@@ -38,7 +43,7 @@
   </div>
   <p>Summe: <strong>{{ total }}</strong></p>
   {% endif %}
-  <p class="muted">Die Forderungen legt der Kassenwart nach der Fahrt an.</p>
+  <p class="muted">Die Forderungen legt der Kassenwart nach der Fahrt an. Gäste werden nicht abgerechnet.</p>
 </section>
 {% endif %}
 {% endblock %}

@@ -99,15 +99,6 @@ pub enum ReservationIssue {
     Skipper(Vec<EligibilityIssue>),
     CoSkipper(Vec<EligibilityIssue>),
     AreaNotReleased(SailingArea),
-    CoSkipperMissing,
-    TooFewMembers {
-        actual: u32,
-        min: u32,
-    },
-    TooFewPersons {
-        actual: u32,
-        min: u32,
-    },
 }
 
 fn join<T: fmt::Display>(items: &[T]) -> String {
@@ -135,19 +126,6 @@ impl fmt::Display for ReservationIssue {
             Self::Skipper(issues) => write!(f, "Skipper nicht geeignet: {}", join(issues)),
             Self::CoSkipper(issues) => write!(f, "Co-Skipper nicht geeignet: {}", join(issues)),
             Self::AreaNotReleased(area) => write!(f, "Fahrtgebiet nicht freigegeben ({area})"),
-            Self::CoSkipperMissing => f.write_str("Co-Skipper fehlt"),
-            Self::TooFewMembers { actual, min } => {
-                write!(
-                    f,
-                    "zu wenige Vereinsmitglieder an Bord ({actual} statt mindestens {min})"
-                )
-            }
-            Self::TooFewPersons { actual, min } => {
-                write!(
-                    f,
-                    "zu wenige Personen an Bord ({actual} statt mindestens {min})"
-                )
-            }
         }
     }
 }

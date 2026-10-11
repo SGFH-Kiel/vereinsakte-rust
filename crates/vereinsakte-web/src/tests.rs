@@ -747,10 +747,10 @@ async fn navigation_marks_current_area_and_has_menu_without_javascript() {
     client.dev_login(107).await;
     let page = client.get("/mitglieder").await;
     assert!(
-        page.body.contains("id=\"nav-toggle\""),
+        page.body.contains("id=\"more-toggle\""),
         "Menü ohne JavaScript"
     );
-    assert!(page.body.contains("for=\"nav-toggle\""));
+    assert!(page.body.contains("for=\"more-toggle\""));
     assert!(
         page.body
             .contains("href=\"/mitglieder\" aria-current=\"page\"")
@@ -772,11 +772,13 @@ async fn pages_use_no_inline_scripts_or_styles() {
         assert!(!body.contains(" style=\""), "{path}: style-Attribut");
         assert!(!body.contains(" onclick="), "{path}: Inline-Ereignis");
         assert!(!body.contains("<script>"), "{path}: Inline-Skript");
-        for resource in body
-            .split("src=\"")
+        // Ressourcen (Bilder, Skripte, Stylesheets, Symbole) nur von der eigenen Adresse;
+        // Verweise (<a href>) auf die Vereinswebseite sind Navigation, keine Ressource.
+        let links = body
+            .split("<link ")
             .skip(1)
-            .chain(body.split("href=\"").skip(1))
-        {
+            .filter_map(|tag| tag.split("href=\"").nth(1));
+        for resource in body.split("src=\"").skip(1).chain(links) {
             let url = &resource[..resource.find('"').unwrap()];
             assert!(
                 !url.starts_with("http") && !url.starts_with("//"),
@@ -1331,8 +1333,9 @@ async fn resigning_validates_the_date_and_removes_the_office() {
     assert_eq!(ok.status, StatusCode::SEE_OTHER);
     let page = ben.get("/aemter").await;
     assert!(page.body.contains("Das Amt wurde abgegeben."));
+    let overview = page.body.split("<main").nth(1).unwrap();
     assert!(
-        !page.body.contains("/mitglieder/102\">Ben Hansen"),
+        !overview.contains("/mitglieder/102\">Ben Hansen"),
         "nicht mehr in der aktuellen Übersicht"
     );
 }
@@ -1686,7 +1689,8 @@ async fn warden_confirms_and_others_cannot() {
 async fn events_registration_and_start_page_card() {
     let h = dev();
     let mut frank = logged_in(&h, 106).await;
-    let page = frank.get("/arbeit/termine").await;
+    let page = frank.get("/arbeit/termine/neu").await;
+    assert_eq!(page.status, StatusCode::OK);
     let token = csrf(&page.body);
     let created = frank
         .post(
@@ -1702,6 +1706,8 @@ async fn events_registration_and_start_page_card() {
         )
         .await;
     assert_eq!(created.status, StatusCode::SEE_OTHER, "{}", created.body);
+    let detail = created.location().to_string();
+    assert!(detail.starts_with("/arbeit/termine/"));
     let bad = frank
         .post(
             "/arbeit/termine",
@@ -1716,17 +1722,18 @@ async fn events_registration_and_start_page_card() {
         .await;
     assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert!(bad.body.contains("Das Ende muss nach dem Beginn liegen."));
-    let page = frank.get("/arbeit/termine").await;
-    let id = id_after(&page.body, "Herbstputz", "/arbeit/termine/");
+    // Die Terminliste lebt im Kalender.
+    let list = frank.get("/arbeit/termine").await;
+    assert_eq!(list.location(), "/kalender?art=termine");
+    let calendar = frank.get("/kalender?art=termine").await;
+    assert!(calendar.body.contains("Herbstputz") && calendar.body.contains("cal-entry event"));
     let mut anna = logged_in(&h, 101).await;
-    let anna_token = csrf(&anna.get("/arbeit/termine").await.body);
+    let anna_token = csrf(&anna.get(&detail).await.body);
     let ok = anna
-        .post(
-            &format!("/arbeit/termine/{id}/anmelden"),
-            &[("csrf", &anna_token)],
-        )
+        .post(&format!("{detail}/anmelden"), &[("csrf", &anna_token)])
         .await;
     assert_eq!(ok.status, StatusCode::SEE_OTHER);
+    assert_eq!(ok.location(), detail);
     assert!(
         anna.get("/")
             .await
@@ -1734,17 +1741,16 @@ async fn events_registration_and_start_page_card() {
             .contains("Anstehende Arbeitstermine")
     );
     let mut greta = logged_in(&h, 107).await;
-    let greta_token = csrf(&greta.get("/arbeit/termine").await.body);
+    let greta_page = greta.get(&detail).await;
+    let greta_token = csrf(&greta_page.body);
     let full = greta
-        .post(
-            &format!("/arbeit/termine/{id}/anmelden"),
-            &[("csrf", &greta_token)],
-        )
+        .post(&format!("{detail}/anmelden"), &[("csrf", &greta_token)])
         .await;
     assert_eq!(full.status, StatusCode::SEE_OTHER);
-    let page = greta.get("/arbeit/termine").await;
+    let page = greta.get(&detail).await;
     assert!(page.body.contains("ausgebucht") && !page.body.contains("/bearbeiten"));
     assert!(page.body.contains("schreibt keine Stunden gut"));
+    assert!(page.body.contains("/mitglieder/101"), "Teilnehmer als Link");
     let denied = greta
         .post(
             "/arbeit/termine",
@@ -1758,6 +1764,10 @@ async fn events_registration_and_start_page_card() {
         )
         .await;
     assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    assert_eq!(
+        greta.get("/arbeit/termine/neu").await.status,
+        StatusCode::FORBIDDEN
+    );
 }
 
 #[tokio::test]
@@ -1900,35 +1910,83 @@ fn reservation_fields<'a>(boat: &'a str, token: &'a str, day: &'a str) -> Vec<(&
     ]
 }
 
+fn main_of(html: &str) -> String {
+    html[html.find("<main").unwrap()..].to_string()
+}
+
 #[tokio::test]
-async fn reservation_calendar_filters_and_links() {
+async fn calendar_shows_reservations_and_work_events_in_list_month_and_week() {
+    use vereinsakte_core::example::FILOU;
     let h = dev();
+    let mut david = logged_in(&h, 104).await;
+    let token = csrf(&david.get("/reservierungen/neu").await.body);
+    let boat = FILOU.to_string();
+    let created = david
+        .post(
+            "/reservierungen/neu",
+            &reservation_fields(&boat, &token, "2026-10-17"),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::SEE_OTHER, "{}", created.body);
+
+    // Liste: nach Woche und Tag gruppiert, beide Arten erkennbar unterschieden.
     let mut greta = logged_in(&h, 107).await;
-    let page = greta
-        .get("/reservierungen?von=2026-06-01&bis=2026-06-30")
-        .await;
-    assert_eq!(page.status, StatusCode::OK);
-    assert!(page.body.contains("Filou") && page.body.contains("Harald Blauzahn"));
-    assert!(page.body.contains("David Schulz") && page.body.contains("Karin Voß"));
-    let mine = logged_in(&h, 104)
-        .await
-        .get("/reservierungen?von=2026-06-01&bis=2026-06-30&meine=1")
-        .await;
-    let main_of = |html: &str| html[html.find("<main").unwrap()..].to_string();
+    let list = greta.get("/kalender").await;
+    assert_eq!(list.status, StatusCode::OK);
+    let body = main_of(&list.body);
+    assert!(body.contains("Nächste Woche"), "{body}");
+    assert!(body.contains("Samstag, 17. Oktober"));
+    assert!(body.contains("cal-entry reservation") && body.contains("Reservierung"));
+    assert!(body.contains("cal-entry event") && body.contains("Arbeitstermin"));
+    assert!(body.contains("Boote auskranen"));
+    assert!(body.contains("David Schulz"));
+
+    // Filter nach Art, Beteiligung und Boot
+    let only_events = main_of(&greta.get("/kalender?art=termine").await.body);
     assert!(
-        main_of(&mine.body).contains("David Schulz") && !main_of(&mine.body).contains("Karin Voß")
+        only_events.contains("cal-entry event") && !only_events.contains("cal-entry reservation")
     );
-    let boat = vereinsakte_core::example::HARALD_BLAUZAHN;
-    let by_boat = greta
-        .get(&format!(
-            "/reservierungen?von=2026-06-01&bis=2026-06-30&boot={boat}"
-        ))
+    let only_res = main_of(&greta.get("/kalender?art=reservierungen").await.body);
+    assert!(only_res.contains("cal-entry reservation") && !only_res.contains("cal-entry event"));
+    let mine = main_of(&david.get("/kalender?meine=1").await.body);
+    assert!(mine.contains("cal-entry reservation") && !mine.contains("cal-entry event"));
+    let other_boat = vereinsakte_core::example::HARALD_BLAUZAHN;
+    let by_boat = main_of(
+        &greta
+            .get(&format!("/kalender?art=reservierungen&boot={other_boat}"))
+            .await
+            .body,
+    );
+    assert!(!by_boat.contains("cal-entry reservation"));
+
+    // Monat und Woche: dieselben Einträge im Raster
+    let month = greta.get("/kalender?ansicht=monat&monat=2026-10").await;
+    let body = main_of(&month.body);
+    assert!(body.contains("<table class=\"cal\"") && body.contains("Sa, 17.10."));
+    assert!(body.contains("cal-entry reservation") && body.contains("cal-entry event"));
+    assert!(body.contains("monat=2026-11") && body.contains("monat=2026-09"));
+    let week = greta.get("/kalender?ansicht=woche&woche=2026-10-12").await;
+    let body = main_of(&week.body);
+    assert!(body.contains("Woche vom 12.10.") && body.contains("Sa, 17.10."));
+    assert!(body.contains("cal-entry reservation") && body.contains("cal-entry event"));
+
+    // Vergangenes steht nur im Archiv
+    let past = main_of(
+        &greta
+            .get("/kalender?ansicht=monat&monat=2026-06")
+            .await
+            .body,
+    );
+    assert!(!past.contains("cal-entry"), "{past}");
+    assert!(past.contains("Archiv"));
+
+    // Die alte Reservierungsliste leitet in den Kalender um.
+    let old = greta
+        .get(&format!("/reservierungen?boot={boat}&meine=1"))
         .await;
-    assert!(
-        main_of(&by_boat.body).contains("Karin Voß")
-            && !main_of(&by_boat.body).contains("David Schulz")
-    );
-    assert!(page.body.contains("Vorherige Woche") && page.body.contains("Nächste Woche"));
+    assert_eq!(old.status, StatusCode::SEE_OTHER);
+    assert!(old.location().starts_with("/kalender?art=reservierungen"));
+    assert!(old.location().contains("boot=") && old.location().contains("meine=1"));
 }
 
 #[tokio::test]
@@ -1986,10 +2044,8 @@ async fn ineligible_skipper_gets_clear_reasons_and_nothing_is_saved() {
             .contains("Die Reservierung ist so nicht möglich")
             && response.body.contains("Skipper nicht geeignet")
     );
-    let list = greta
-        .get("/reservierungen?von=2026-10-17&bis=2026-10-17")
-        .await;
-    assert!(list.body.contains("keine Reservierungen"));
+    let list = greta.get("/kalender?art=reservierungen").await;
+    assert!(!main_of(&list.body).contains("cal-entry reservation"));
     let mut foreign = reservation_fields(&boat, &token, "2026-10-17");
     foreign.push(("skipper", "104"));
     let denied = greta.post("/reservierungen/neu", &foreign).await;
@@ -2045,11 +2101,8 @@ async fn reservations_can_be_changed_and_cancelled_by_their_skipper_only() {
         .await;
     assert_eq!(cancelled.status, StatusCode::SEE_OTHER);
     assert!(
-        david
-            .get("/reservierungen?von=2026-10-17&bis=2026-10-17")
-            .await
-            .body
-            .contains("keine Reservierungen")
+        !main_of(&david.get("/kalender?art=reservierungen").await.body)
+            .contains("cal-entry reservation")
     );
 }
 
@@ -2422,4 +2475,172 @@ async fn contact_notice_is_shown_once_until_confirmed() {
             .body
             .contains("jetzt für alle Vereinsmitglieder sichtbar")
     );
+}
+
+fn crew_form<'a>(token: &'a str, extra: &[(&'a str, &'a str)]) -> Vec<(&'a str, &'a str)> {
+    use vereinsakte_core::example::FILOU;
+    let boat: &'static str = Box::leak(FILOU.to_string().into_boxed_str());
+    let mut fields = vec![
+        ("csrf", token),
+        ("boat", boat),
+        ("area", "home"),
+        ("from_date", "2026-10-17"),
+        ("from_time", "10:00"),
+        ("to_date", "2026-10-17"),
+        ("to_time", "16:00"),
+    ];
+    fields.extend_from_slice(extra);
+    fields
+}
+
+#[tokio::test]
+async fn reservation_form_has_no_tour_or_guest_fields_and_a_large_remark() {
+    use vereinsakte_core::example::FILOU;
+    let h = dev();
+    let mut david = logged_in(&h, 104).await;
+    let form = david
+        .get(&format!("/reservierungen/neu?boot={FILOU}"))
+        .await;
+    assert_eq!(form.status, StatusCode::OK);
+    let body = main_of(&form.body);
+    assert!(!body.contains("name=\"tour\"") && !body.contains("name=\"guests\""));
+    assert!(body.contains("<textarea id=\"f-remark\" name=\"remark\" class=\"large\""));
+    assert!(
+        body.contains(&format!("value=\"{FILOU}\" selected")),
+        "Boot vorausgewählt"
+    );
+    assert!(body.contains("Heimrevier"));
+    assert!(body.contains("Mitfahrer hinzufügen"));
+}
+
+#[tokio::test]
+async fn crew_list_adds_removes_and_saves_members_with_profile_links() {
+    let h = dev();
+    let mut anna = logged_in(&h, 104).await;
+    let token = csrf(&anna.get("/reservierungen/neu").await.body);
+
+    // Hinzufügen ohne JavaScript: Seite wird neu gezeigt, nichts gespeichert.
+    let added = anna
+        .post(
+            "/reservierungen/neu",
+            &crew_form(&token, &[("action", "crew_add"), ("add_member", "103")]),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::OK, "{}", added.body);
+    let body = main_of(&added.body);
+    assert!(body.contains("href=\"/mitglieder/103\""), "Crew als Link");
+    assert!(body.contains("name=\"crew_member\" value=\"103\""));
+    assert!(body.contains("value=\"2026-10-17\""), "Eingaben bleiben");
+    assert!(
+        !main_of(&anna.get("/kalender?art=reservierungen").await.body)
+            .contains("cal-entry reservation"),
+        "Hinzufügen speichert nicht"
+    );
+
+    // Zweites Mitglied, dann doppelt, dann entfernen
+    let two = anna
+        .post(
+            "/reservierungen/neu",
+            &crew_form(
+                &token,
+                &[
+                    ("crew_member", "103"),
+                    ("crew_from", ""),
+                    ("crew_to", ""),
+                    ("action", "crew_add"),
+                    ("add_member", "102"),
+                ],
+            ),
+        )
+        .await;
+    let body = main_of(&two.body);
+    assert!(body.contains("value=\"103\"") && body.contains("name=\"crew_member\" value=\"102\""));
+    let myself = anna
+        .post(
+            "/reservierungen/neu",
+            &crew_form(&token, &[("action", "crew_add"), ("add_member", "104")]),
+        )
+        .await;
+    assert!(
+        main_of(&myself.body).contains("bereits an Bord"),
+        "der Skipper selbst"
+    );
+    let duplicate = anna
+        .post(
+            "/reservierungen/neu",
+            &crew_form(
+                &token,
+                &[
+                    ("crew_member", "103"),
+                    ("action", "crew_add"),
+                    ("add_member", "103"),
+                ],
+            ),
+        )
+        .await;
+    assert_eq!(duplicate.status, StatusCode::OK);
+    assert!(main_of(&duplicate.body).contains("bereits an Bord"));
+    let removed = anna
+        .post(
+            "/reservierungen/neu",
+            &crew_form(
+                &token,
+                &[
+                    ("crew_member", "103"),
+                    ("crew_member", "102"),
+                    ("action", "crew_remove:1"),
+                ],
+            ),
+        )
+        .await;
+    let body = main_of(&removed.body);
+    assert!(body.contains("name=\"crew_member\" value=\"103\""));
+    assert!(!body.contains("name=\"crew_member\" value=\"102\""));
+
+    // Speichern mit Crew und Gästen in der Bemerkung; Boot ist die Filou, Anna darf sie führen?
+    let save = anna
+        .post(
+            "/reservierungen/neu",
+            &crew_form(
+                &token,
+                &[
+                    ("crew_member", "102"),
+                    ("crew_from", ""),
+                    ("crew_to", ""),
+                    ("remark", "Gast: Max Gast, 0160 123"),
+                    ("action", "speichern"),
+                ],
+            ),
+        )
+        .await;
+    assert_eq!(save.status, StatusCode::SEE_OTHER, "{}", save.body);
+    let page = anna.get(save.location()).await;
+    let body = main_of(&page.body);
+    assert!(body.contains("href=\"/mitglieder/102\"") && body.contains("Ben Hansen"));
+    assert!(body.contains("Gast: Max Gast, 0160 123"));
+}
+
+#[tokio::test]
+async fn tour_follows_the_duration_of_the_reservation() {
+    use vereinsakte_core::example::FILOU;
+    let h = dev();
+    let mut david = logged_in(&h, 104).await;
+    let token = csrf(&david.get("/reservierungen/neu").await.body);
+    let boat = FILOU.to_string();
+    let mut fields = reservation_fields(&boat, &token, "2026-10-17");
+    let one_day = david.post("/reservierungen/neu", &fields).await;
+    let page = david.get(one_day.location()).await;
+    assert!(
+        main_of(&page.body).contains("Ausfahrt") && !main_of(&page.body).contains("Tourgebühr")
+    );
+    // Mehrtägig: Tour ohne Haken im Formular
+    fields[5] = ("to_date", "2026-10-20");
+    fields[2] = ("area", "home");
+    let mut shifted = fields.clone();
+    shifted[3] = ("from_date", "2026-10-25");
+    shifted[5] = ("to_date", "2026-10-28");
+    let tour = david.post("/reservierungen/neu", &shifted).await;
+    assert_eq!(tour.status, StatusCode::SEE_OTHER, "{}", tour.body);
+    let page = david.get(tour.location()).await;
+    assert!(main_of(&page.body).contains("Tour"));
 }

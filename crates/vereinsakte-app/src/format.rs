@@ -10,6 +10,22 @@ pub fn hours(value: f64) -> String {
         .replace('.', ",")
 }
 
+/// Initialen aus Vor- und Nachname für den Namenskreis, z. B. „EM“.
+pub fn initials(first: &str, last: &str) -> String {
+    first
+        .chars()
+        .next()
+        .into_iter()
+        .chain(last.chars().next())
+        .flat_map(char::to_uppercase)
+        .collect()
+}
+
+/// Farbklasse des Namenskreises, stabil je Mitgliedsnummer.
+pub fn avatar_class(member: u32) -> String {
+    format!("av-{}", member % 6)
+}
+
 /// Datum, z. B. „09.10.2026“.
 pub fn date(t: Timestamp) -> String {
     t.format("%d.%m.%Y").to_string()

@@ -676,7 +676,7 @@ impl ClubService {
             })
             .await?;
         let record = &scoped.record;
-        let mut tours: Vec<_> = record.reservations.iter().filter(|r| r.tour).collect();
+        let mut tours: Vec<_> = record.reservations.iter().filter(|r| r.is_tour()).collect();
         tours.sort_by_key(|r| r.start);
         let name = |m: MemberId| {
             record
@@ -736,7 +736,7 @@ impl ClubService {
             .reservation(id)
             .cloned()
             .ok_or_else(|| AppError::NotFound("Reservierung".into()))?;
-        if !reservation.tour {
+        if !reservation.is_tour() {
             return Err(AppError::rejected("", "Diese Reservierung ist keine Tour."));
         }
         let claims = new.tour_fee_claims(&reservation, principal.now);

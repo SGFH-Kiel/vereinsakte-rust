@@ -13,6 +13,7 @@ use vereinsakte_core::ids::{BoatId, MemberId};
 
 use crate::error::WebError;
 use crate::forms::{FieldErrors, non_empty, parse_date, redirect_with_flash, unprocessable};
+use crate::list::{Sort, SortCtx, SortKey, sort_rows, text_key};
 use crate::pages::{Layout, render};
 use crate::session::{FlashKind, RequireUser, flash};
 use crate::state::AppState;
@@ -33,6 +34,7 @@ fn get<'a>(fields: &'a Fields, name: &str) -> &'a str {
 struct ListPage {
     layout: Layout,
     v: BoatList,
+    sort: SortCtx,
 }
 
 #[derive(Template)]
@@ -40,6 +42,8 @@ struct ListPage {
 struct ShowPage {
     layout: Layout,
     p: BoatPage,
+    /// Geöffneter Bereich nach einem Fehler: „sperren“, „abnahme“ oder „widerruf“.
+    open: String,
 }
 
 #[derive(Template)]
@@ -58,10 +62,38 @@ pub async fn list(
     State(state): State<AppState>,
     session: Session,
     RequireUser(user): RequireUser,
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
-    let v = state.club.boat_list(&user).await?;
+    let mut v = state.club.boat_list(&user).await?;
+    let sort = Sort::from_params(&params, "boote");
+    sort_rows(
+        &mut v.rows,
+        &sort,
+        &[
+            ("name", |r| text_key(&r.name)),
+            ("typ", |r| text_key(&r.type_tip)),
+            ("zustand", |r| {
+                SortKey::Num(match (&r.blocked, r.released) {
+                    (Some(_), _) => 0,
+                    (None, false) => 1,
+                    (None, true) => 2,
+                })
+            }),
+        ],
+    );
+    let ctx = SortCtx::new(
+        "boote",
+        "/boote",
+        vec![],
+        &sort,
+        &[("name", "Boot"), ("typ", "Typ"), ("zustand", "Zustand")],
+    );
     let layout = Layout::build(&state, &session, Some(&user), "Boote", "/boote").await?;
-    render(&ListPage { layout, v })
+    render(&ListPage {
+        layout,
+        v,
+        sort: ctx,
+    })
 }
 
 pub async fn show(
@@ -69,7 +101,9 @@ pub async fn show(
     session: Session,
     RequireUser(user): RequireUser,
     Path(id): Path<String>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Response, WebError> {
+    let open = params.get("offen").cloned().unwrap_or_default();
     let p = state.club.boat_page(&user, boat_id(&id)?).await?;
     let layout = Layout::build(
         &state,
@@ -79,7 +113,7 @@ pub async fn show(
         &format!("/boote/{id}"),
     )
     .await?;
-    render(&ShowPage { layout, p })
+    render(&ShowPage { layout, p, open })
 }
 
 fn input_from(fields: &Fields) -> BoatInput {
@@ -145,7 +179,8 @@ async fn form_page(
         },
         if is_new { "/boote/neu" } else { "/boote" },
     )
-    .await?;
+    .await?
+    .form();
     let invalid = !errors.is_empty();
     let action = if is_new {
         "/boote/neu".to_string()
@@ -267,12 +302,28 @@ async fn done(
     result: Result<(), AppError>,
     ok: &str,
 ) -> Result<Response, WebError> {
+    done_in(session, id, result, ok, "").await
+}
+
+/// Wie [`done`]; bei Fehlern wird der betroffene Bereich (`panel`) geöffnet gezeigt.
+async fn done_in(
+    session: &Session,
+    id: &str,
+    result: Result<(), AppError>,
+    ok: &str,
+    panel: &str,
+) -> Result<Response, WebError> {
     match result {
         Ok(()) => Ok(redirect_with_flash(session, &format!("/boote/{id}"), ok).await),
         Err(AppError::Rejected(list)) => {
             let message = list.first().map(|e| e.message.clone()).unwrap_or_default();
             flash(session, FlashKind::Error, message).await;
-            Ok(Redirect::to(&format!("/boote/{id}")).into_response())
+            let target = if panel.is_empty() {
+                format!("/boote/{id}")
+            } else {
+                format!("/boote/{id}?offen={panel}")
+            };
+            Ok(Redirect::to(&target).into_response())
         }
         Err(other) => Err(other.into()),
     }
@@ -296,14 +347,14 @@ pub async fn block(
     ) {
         (Ok(s), Ok(e)) => (s, e),
         (Err(m), _) | (_, Err(m)) => {
-            return done(&session, &id, Err(AppError::rejected("", m)), "").await;
+            return done_in(&session, &id, Err(AppError::rejected("", m)), "", "sperren").await;
         }
     };
     let result = state
         .club
         .block_boat(&user, boat, get(&fields, "reason"), start, end)
         .await;
-    done(&session, &id, result, "Das Boot wurde gesperrt.").await
+    done_in(&session, &id, result, "Das Boot wurde gesperrt.", "sperren").await
 }
 
 pub async fn lift(
@@ -344,11 +395,12 @@ pub async fn checkout(
         .ok()
         .and_then(MemberId::new);
     let Some(member) = member else {
-        return done(
+        return done_in(
             &session,
             &id,
             Err(AppError::rejected("member", "Bitte ein Mitglied wählen.")),
             "",
+            "abnahme",
         )
         .await;
     };
@@ -357,7 +409,14 @@ pub async fn checkout(
         .club
         .record_checkout(&user, boat_id(&id)?, member, passed, get(&fields, "remark"))
         .await;
-    done(&session, &id, result, "Die Abnahme wurde gespeichert.").await
+    done_in(
+        &session,
+        &id,
+        result,
+        "Die Abnahme wurde gespeichert.",
+        "abnahme",
+    )
+    .await
 }
 
 pub async fn revoke(
@@ -372,11 +431,12 @@ pub async fn revoke(
         .ok()
         .and_then(MemberId::new);
     let Some(member) = member else {
-        return done(
+        return done_in(
             &session,
             &id,
             Err(AppError::rejected("member", "Bitte ein Mitglied wählen.")),
             "",
+            "widerruf",
         )
         .await;
     };
@@ -384,11 +444,12 @@ pub async fn revoke(
         .club
         .revoke_permit(&user, boat_id(&id)?, member, get(&fields, "reason"))
         .await;
-    done(
+    done_in(
         &session,
         &id,
         result,
         "Die Bootserlaubnis wurde widerrufen.",
+        "widerruf",
     )
     .await
 }

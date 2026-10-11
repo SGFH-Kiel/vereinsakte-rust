@@ -1,0 +1,25 @@
+{# Bausteine der Oberfläche: Symbole, Personenlinks, Plaketten, leere Zustände. #}
+{% macro icon(name) %}<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-{{ name }}"/></svg>{% endmacro %}
+
+{% macro icon_lg(name) %}<svg class="icon icon-lg" aria-hidden="true" focusable="false"><use href="#i-{{ name }}"/></svg>{% endmacro %}
+
+{# Plakette mit Symbol und Text; kind: ok, warn, danger, info, neutral #}
+{% macro badge(kind, symbol, text) %}<span class="badge {{ kind }}"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-{{ symbol }}"/></svg>{{ text }}</span>{% endmacro %}
+
+{# Leerer Zustand mit Symbol, Erklärung und optionalem nächstem Schritt #}
+{% macro empty(symbol, text) %}<div class="empty"><svg class="icon icon-xl" aria-hidden="true" focusable="false"><use href="#i-{{ symbol }}"/></svg><p>{{ text }}</p></div>{% endmacro %}
+
+{# Symbol-Schaltfläche (nur Symbol) mit zugänglicher Beschriftung #}
+{% macro icon_label(name, label) %}<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-{{ name }}"/></svg><span class="visually-hidden">{{ label }}</span>{% endmacro %}
+
+{# Sortierbarer Spaltenkopf (s: SortCtx, key: Schlüssel, cls: z. B. "num" oder "") #}
+{% macro th_sort(s, key, label, cls) %}<th scope="col" class="{{ cls }}" aria-sort="{{ s.aria(key) }}"><a href="{{ s.link(key) }}">{{ label }}<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-{{ s.icon(key) }}"/></svg></a></th>{% endmacro %}
+
+{# Auswahl „Sortieren nach“ für die Kartenansicht am Handy #}
+{% macro sort_form(s) %}<form method="get" action="{{ s.base() }}" class="sort-select">{% for (k, v) in s.params() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}<div class="field"><label for="sort-{{ s.id }}">Sortieren nach</label><div class="actions"><select id="sort-{{ s.id }}" name="{{ s.sort_name() }}">{% for (k, l) in s.options %}<option value="{{ k }}"{% if k.as_str() == s.selected() %} selected{% endif %}>{{ l }}</option>{% endfor %}</select><select name="{{ s.dir_name() }}" aria-label="Richtung"><option value="asc">aufsteigend</option><option value="desc"{% if s.is_desc() %} selected{% endif %}>absteigend</option></select><button type="submit" class="small">Sortieren</button></div></div></form>{% endmacro %}
+
+{# Namenskreis mit Initialen #}
+{% macro avatar(initials, cls) %}<span class="avatar sm {{ cls }}" aria-hidden="true">{{ initials }}</span>{% endmacro %}
+
+{# Symbol mit Tooltip und Text für Hilfstechnik; kind: "" oder "radio" oder "kind" #}
+{% macro symbol(icon, kind, tip, text) %}<span class="symbol {{ kind }}" title="{{ tip }}"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-{{ icon }}"/></svg><span class="symbol-text">{{ text }}</span></span>{% endmacro %}

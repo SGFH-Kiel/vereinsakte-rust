@@ -83,23 +83,13 @@ impl ClubRecord {
                 .iter()
                 .filter_map(|seat| member(seat.member, seat.from, seat.until)),
         );
-        persons.extend(r.guests.iter().map(|guest| {
-            let (from, until) = r.period(guest.from, guest.until);
-            Person {
-                account: guest.invited_by.unwrap_or(r.skipper),
-                guest: Some(guest.name.clone()),
-                tariff: TariffGroup::Guest,
-                from,
-                until,
-            }
-        }));
         persons
     }
 
     /// Fehlende Tourgebühren einer Reservierung (Vorschau; eintragen mit
     /// [`ClubRecord::add_claims`]). Nur Touren sind gebührenpflichtig.
     pub fn tour_fee_claims(&self, r: &Reservation, now: Timestamp) -> Vec<(MemberId, Claim)> {
-        if !r.tour {
+        if !r.is_tour() {
             return Vec::new();
         }
         let fees = self.fees(r.start.year());
@@ -226,7 +216,11 @@ mod tests {
                 })
                 .map(|(_, c)| c.amount)
         };
-        assert_eq!(claims.len(), 6);
+        assert_eq!(
+            claims.len(),
+            5,
+            "Skipperin, Co-Skipperin, drei Crew-Mitglieder; keine Gäste"
+        );
         assert_eq!(
             amount(ANNA, None),
             Some(eur("140")),
@@ -250,28 +244,16 @@ mod tests {
         );
         assert_eq!(
             amount(ANNA, Some("Max Gast")),
-            Some(eur("90")),
-            "Gast ohne Einladenden: Konto der Skipperin"
+            None,
+            "Gäste werden nicht abgerechnet"
         );
-
-        let (_, guest) = claims
-            .iter()
-            .find(|(_, c)| c.text.contains("Max Gast"))
-            .unwrap();
-        assert_eq!(
-            guest.text,
-            "Tourgebühr Schruvtrekker 01.07.–03.07.2026 für Gast Max Gast (3 Tage)"
-        );
-        assert_eq!(guest.due_at, Some(at(2026, 7, 10, 0, 0)));
-        let (_, anna) = claims
-            .iter()
-            .find(|(m, c)| *m == ANNA && !c.text.contains("Gast"))
-            .unwrap();
+        assert!(claims.iter().all(|(_, c)| !c.text.contains("Gast")));
+        let (_, anna) = claims.iter().find(|(m, _)| *m == ANNA).unwrap();
         assert_eq!(anna.due_at, Some(at(2026, 7, 21, 0, 0)));
     }
 
     #[test]
-    fn honorary_member_pays_regular_rate_and_invited_guest_goes_to_inviter() {
+    fn honorary_member_pays_regular_rate_and_guests_are_not_billed() {
         let club = example::club_without_accounts();
         let r = club.reservation(TRIGON_WOCHENENDE).unwrap();
         let claims = club.tour_fee_claims(r, at(2026, 8, 17, 10, 0));
@@ -280,11 +262,8 @@ mod tests {
                 .iter()
                 .any(|(m, c)| *m == EVA && c.amount == eur("36"))
         );
-        assert!(
-            claims.iter().any(|(m, c)| *m == FRANK
-                && c.text.contains("Ole Svensson")
-                && c.amount == eur("90"))
-        );
+        assert!(claims.iter().all(|(_, c)| !c.text.contains("Ole Svensson")));
+        assert_eq!(claims.len(), 3, "Eva, Frank und Lukas");
     }
 
     #[test]
@@ -313,7 +292,6 @@ mod tests {
                 .status
         };
         assert_eq!(status(&club, ANNA, None), PaymentStatus::Paid);
-        assert_eq!(status(&club, ANNA, Some("Max Gast")), PaymentStatus::Paid);
         assert_eq!(status(&club, BEN, None), PaymentStatus::Paid);
         assert_eq!(status(&club, DAVID, None), PaymentStatus::Open);
         club.member_mut(DAVID)
@@ -325,6 +303,6 @@ mod tests {
             status(&club, DAVID, None),
             PaymentStatus::Partial(eur("38"))
         );
-        assert_eq!(club.tour_fee_overview(&r).len(), 6);
+        assert_eq!(club.tour_fee_overview(&r).len(), 5);
     }
 }

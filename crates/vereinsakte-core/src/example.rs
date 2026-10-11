@@ -21,7 +21,7 @@ use super::member::{
 use super::money::Money;
 use super::office::{Office, Role};
 use super::requirement::{AnyOf, Qualification, Requirement};
-use super::reservation::{CrewSeat, Guest, Reservation};
+use super::reservation::{CrewSeat, Reservation};
 use super::sailing_permit::{AnnualRecord, Compensation, Reduction};
 use super::task::{Task, TaskStatus};
 use super::time::{Timestamp, club_time};
@@ -1069,7 +1069,6 @@ pub fn reservations() -> Vec<Reservation> {
         ANNA,
     );
     dehler.id = DEHLER_TOUR;
-    dehler.tour = true;
     dehler.co_skipper = Some(KARIN);
     dehler.crew = vec![
         CrewSeat {
@@ -1084,14 +1083,10 @@ pub fn reservations() -> Vec<Reservation> {
         },
         CrewSeat::new(HANNES),
     ];
-    dehler.guests = vec![Guest {
-        name: "Max Gast".into(),
-        phone: Some("0160 5554443".into()),
-        invited_by: None,
-        from: None,
-        until: Some(at(2026, 7, 3, 18, 0)),
-    }];
-    dehler.remark = Some("Kiel – Marstal – Svendborg – Kiel".into());
+    dehler.remark = Some(
+        "Kiel – Marstal – Svendborg – Kiel\nGast: Max Gast (0160 5554443), bis 3. Juli an Bord"
+            .into(),
+    );
 
     let mut trigon = Reservation::new(
         TRIGON,
@@ -1101,13 +1096,9 @@ pub fn reservations() -> Vec<Reservation> {
         EVA,
     );
     trigon.id = TRIGON_WOCHENENDE;
-    trigon.tour = true;
     trigon.co_skipper = Some(FRANK);
     trigon.crew = vec![CrewSeat::new(LUKAS)];
-    trigon.guests = vec![Guest {
-        invited_by: Some(FRANK),
-        ..Guest::new("Ole Svensson")
-    }];
+    trigon.remark = Some("Gast: Ole Svensson (eingeladen von Frank)".into());
 
     vec![jolle, folkeboot, dehler, trigon]
 }
@@ -1167,11 +1158,7 @@ fn payments(member: MemberId) -> Vec<(Money, Timestamp, &'static str)> {
     match member {
         ANNA => vec![
             (eur(25000), lastschrift, "Überweisung Jahresbeitrag 2026"),
-            (
-                eur(23000),
-                at(2026, 7, 20, 0, 0),
-                "Tourgebühren Dänemark inkl. Gast",
-            ),
+            (eur(14000), at(2026, 7, 20, 0, 0), "Tourgebühr Dänemark"),
         ],
         BEN => vec![
             beitrag(24000),
@@ -1183,11 +1170,7 @@ fn payments(member: MemberId) -> Vec<(Money, Timestamp, &'static str)> {
         ],
         FRANK => vec![
             beitrag(24000),
-            (
-                eur(12600),
-                at(2026, 8, 20, 0, 0),
-                "Tourgebühr Trigon inkl. Gast",
-            ),
+            (eur(3600), at(2026, 8, 20, 0, 0), "Tourgebühr Trigon"),
         ],
         HANNES => vec![(eur(10000), at(2026, 7, 20, 0, 0), "Tourgebühr Hannes")],
         EVA => vec![(eur(3600), at(2026, 8, 20, 0, 0), "Tourgebühr Trigon")],

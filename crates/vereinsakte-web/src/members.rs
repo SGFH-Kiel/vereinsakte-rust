@@ -135,6 +135,7 @@ pub struct LicenseView {
 struct MemberPageTemplate {
     layout: Layout,
     p: MemberPage,
+    sorts: Option<crate::pages::DetailSorts>,
 }
 
 #[derive(Template)]
@@ -193,8 +194,13 @@ pub async fn show(
     session: Session,
     RequireUser(user): RequireUser,
     Path(number): Path<u32>,
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
-    let p = state.club.member_page(&user, member_id(number)?).await?;
+    let mut p = state.club.member_page(&user, member_id(number)?).await?;
+    let sorts = p
+        .details
+        .as_mut()
+        .map(|v| crate::pages::sort_details(v, &params, &format!("/mitglieder/{number}")));
     let layout = Layout::build(
         &state,
         &session,
@@ -203,7 +209,7 @@ pub async fn show(
         &format!("/mitglieder/{number}"),
     )
     .await?;
-    render(&MemberPageTemplate { layout, p })
+    render(&MemberPageTemplate { layout, p, sorts })
 }
 
 /// `/meine-daten/bearbeiten` führt zur eigenen Bearbeitungsseite.

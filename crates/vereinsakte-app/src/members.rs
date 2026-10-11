@@ -131,6 +131,18 @@ pub fn membership_type_key(t: MembershipType) -> &'static str {
         .map_or("regular", |(k, _)| k)
 }
 
+/// Symbol der Mitgliedsart für die Oberfläche.
+pub fn membership_type_icon(t: MembershipType) -> &'static str {
+    match t {
+        MembershipType::Regular => "user",
+        MembershipType::Student => "cap",
+        MembershipType::Extraordinary => "user-plus",
+        MembershipType::Honorary => "star",
+        MembershipType::ChildOfMember => "smile",
+        MembershipType::Erasmus => "globe",
+    }
+}
+
 fn trimmed(text: &str) -> Option<String> {
     let text = text.trim();
     (!text.is_empty()).then(|| text.to_string())

@@ -17,7 +17,7 @@ use vereinsakte_core::member::{
 };
 use vereinsakte_core::office::{Office, Role};
 use vereinsakte_core::requirement::{AnyOf, Qualification, Requirement};
-use vereinsakte_core::reservation::{CrewSeat, Guest, Reservation};
+use vereinsakte_core::reservation::{CrewSeat, LegacyGuest, Reservation};
 use vereinsakte_core::sailing_permit::{AnnualRecord, Compensation, Reduction};
 use vereinsakte_core::task::Task;
 use vereinsakte_core::work_event::WorkEvent;
@@ -663,12 +663,9 @@ pub(crate) async fn load_reservations(conn: &mut SqliteConnection) -> Result<Vec
         .await?,
         |r| get::<String>(r, "reservation_id"),
         |r| {
-            Ok(Guest {
+            Ok(LegacyGuest {
                 name: get(r, "name")?,
                 phone: get(r, "phone")?,
-                invited_by: get_opt_member(r, "invited_by")?,
-                from: get_opt_ts(r, "from_at")?,
-                until: get_opt_ts(r, "until_at")?,
             })
         },
     )?;
@@ -677,19 +674,21 @@ pub(crate) async fn load_reservations(conn: &mut SqliteConnection) -> Result<Vec
         .iter()
         .map(|r| {
             let key: String = get(r, "id")?;
-            Ok(Reservation {
+            let mut reservation = Reservation {
                 id: get_id(r, "id", ReservationId::from_uuid)?,
                 boat: get_id(r, "boat_id", BoatId::from_uuid)?,
                 start: get_ts(r, "start_at")?,
                 end: get_ts(r, "end_at")?,
                 area: get_choice(r, "area")?,
-                tour: get_bool(r, "tour")?,
                 skipper: get_member(r, "skipper_id")?,
                 co_skipper: get_opt_member(r, "co_skipper_id")?,
                 crew: crew.remove(&key).unwrap_or_default(),
-                guests: guests.remove(&key).unwrap_or_default(),
                 remark: get(r, "remark")?,
-            })
+            };
+            // Früher erfasste Gäste gehen in die Bemerkung über; beim nächsten
+            // Speichern verschwinden die alten Zeilen.
+            reservation.append_legacy_guests(&guests.remove(&key).unwrap_or_default());
+            Ok(reservation)
         })
         .collect()
 }

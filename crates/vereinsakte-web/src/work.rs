@@ -9,7 +9,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 use tower_sessions::Session;
 use vereinsakte_app::work::{
-    EntryInput, EntryLine, EventInput, EventsView, HoursOverview, TaskInput, TasksView, WorkView,
+    EntryInput, EntryLine, EventInput, HoursOverview, TaskInput, TasksView, WorkView,
 };
 use vereinsakte_app::{AppError, CurrentUser};
 use vereinsakte_core::ids::{MemberId, TaskId, WorkEntryId, WorkEventId};
@@ -320,19 +320,6 @@ pub async fn confirm(
 
 // ---- Termine -----------------------------------------------------------------------------
 
-#[derive(Template)]
-#[template(path = "work_events.html")]
-struct EventsPage {
-    layout: Layout,
-    nav: WorkNav,
-    v: EventsView,
-    form: EventInput,
-    errors: FieldErrors,
-    action: String,
-    version: i64,
-    boats: Vec<(String, String)>,
-}
-
 fn event_input(fields: &Fields) -> EventInput {
     let t = |n: &str| get(fields, n).trim().to_string();
     EventInput {
@@ -347,32 +334,96 @@ fn event_input(fields: &Fields) -> EventInput {
     }
 }
 
-async fn events_page(
+/// Die Terminliste lebt im Kalender (`/kalender`).
+pub async fn events() -> Redirect {
+    Redirect::to("/kalender?art=termine")
+}
+
+#[derive(Template)]
+#[template(path = "work_event.html")]
+struct EventPage {
+    layout: Layout,
+    e: vereinsakte_app::work::EventLine,
+    can_manage: bool,
+}
+
+pub async fn event_show(
+    State(state): State<AppState>,
+    session: Session,
+    RequireUser(user): RequireUser,
+    Path(id): Path<String>,
+) -> Result<Response, WebError> {
+    let _: WorkEventId = parse_id(&id, "Arbeitstermin")?;
+    let v = state.club.events_view(&user).await?;
+    let can_manage = v.can_manage;
+    let e = v
+        .events
+        .into_iter()
+        .find(|e| e.id == id)
+        .ok_or_else(|| AppError::NotFound("Arbeitstermin".into()))?;
+    let layout = Layout::build(
+        &state,
+        &session,
+        Some(&user),
+        &e.title.clone(),
+        &format!("/arbeit/termine/{id}"),
+    )
+    .await?;
+    render(&EventPage {
+        layout,
+        e,
+        can_manage,
+    })
+}
+
+#[derive(Template)]
+#[template(path = "work_event_edit.html")]
+struct EventEditPage {
+    layout: Layout,
+    form: EventInput,
+    errors: FieldErrors,
+    action: String,
+    version: i64,
+    boats: Vec<(String, String)>,
+    /// Kennung des Termins beim Ändern, leer beim Anlegen.
+    id: String,
+}
+
+async fn event_edit_page(
     state: &AppState,
     session: &Session,
     user: &CurrentUser,
+    id: Option<&str>,
     form: EventInput,
+    version: i64,
     errors: FieldErrors,
 ) -> Result<Response, WebError> {
-    let v = state.club.events_view(user).await?;
+    let boats = state.club.events_view(user).await?.boats;
     let layout = Layout::build(
         state,
         session,
         Some(user),
-        "Arbeitstermine",
+        if id.is_some() {
+            "Termin bearbeiten"
+        } else {
+            "Termin anlegen"
+        },
         "/arbeit/termine",
     )
-    .await?;
+    .await?
+    .form();
     let invalid = !errors.is_empty();
-    let response = render(&EventsPage {
-        nav: nav(state, user, "termine").await?,
+    let response = render(&EventEditPage {
         layout,
-        boats: v.boats.clone(),
-        v,
         form,
         errors,
-        action: "/arbeit/termine".into(),
-        version: 0,
+        action: id.map_or_else(
+            || "/arbeit/termine".to_string(),
+            |id| format!("/arbeit/termine/{id}/bearbeiten"),
+        ),
+        version,
+        boats,
+        id: id.unwrap_or("").to_string(),
     })?;
     Ok(if invalid {
         unprocessable(response)
@@ -381,16 +432,23 @@ async fn events_page(
     })
 }
 
-pub async fn events(
+pub async fn new_event(
     State(state): State<AppState>,
     session: Session,
     RequireUser(user): RequireUser,
 ) -> Result<Response, WebError> {
-    events_page(
+    state
+        .club
+        .principal(&user)
+        .await?
+        .require(&Capability::ManageWorkEvents)?;
+    event_edit_page(
         &state,
         &session,
         &user,
+        None,
         EventInput::default(),
+        0,
         FieldErrors::new(),
     )
     .await
@@ -404,59 +462,17 @@ pub async fn create_event(
 ) -> Result<Response, WebError> {
     let input = event_input(&fields);
     match state.club.create_event(&user, &input).await {
-        Ok(_) => Ok(
-            redirect_with_flash(&session, "/arbeit/termine", "Der Termin wurde angelegt.").await,
-        ),
+        Ok(id) => Ok(redirect_with_flash(
+            &session,
+            &format!("/arbeit/termine/{id}"),
+            "Der Termin wurde angelegt.",
+        )
+        .await),
         Err(error) => {
             let errors = errors_from(error)?;
-            events_page(&state, &session, &user, input, errors).await
+            event_edit_page(&state, &session, &user, None, input, 0, errors).await
         }
     }
-}
-
-#[derive(Template)]
-#[template(path = "work_event_edit.html")]
-struct EventEditPage {
-    layout: Layout,
-    form: EventInput,
-    errors: FieldErrors,
-    action: String,
-    version: i64,
-    boats: Vec<(String, String)>,
-}
-
-async fn event_edit_page(
-    state: &AppState,
-    session: &Session,
-    user: &CurrentUser,
-    id: &str,
-    form: EventInput,
-    version: i64,
-    errors: FieldErrors,
-) -> Result<Response, WebError> {
-    let boats = state.club.events_view(user).await?.boats;
-    let layout = Layout::build(
-        state,
-        session,
-        Some(user),
-        "Termin bearbeiten",
-        "/arbeit/termine",
-    )
-    .await?;
-    let invalid = !errors.is_empty();
-    let response = render(&EventEditPage {
-        layout,
-        form,
-        errors,
-        action: format!("/arbeit/termine/{id}/bearbeiten"),
-        version,
-        boats,
-    })?;
-    Ok(if invalid {
-        unprocessable(response)
-    } else {
-        response
-    })
 }
 
 pub async fn edit_event(
@@ -473,7 +489,7 @@ pub async fn edit_event(
         &state,
         &session,
         &user,
-        &id,
+        Some(&id),
         form,
         version,
         FieldErrors::new(),
@@ -492,30 +508,32 @@ pub async fn edit_event_submit(
     let input = event_input(&fields);
     let version = get(&fields, "version").parse().unwrap_or(0);
     match state.club.update_event(&user, event, version, &input).await {
-        Ok(()) => {
-            Ok(
-                redirect_with_flash(&session, "/arbeit/termine", "Der Termin wurde geändert.")
-                    .await,
-            )
-        }
+        Ok(()) => Ok(redirect_with_flash(
+            &session,
+            &format!("/arbeit/termine/{id}"),
+            "Der Termin wurde geändert.",
+        )
+        .await),
         Err(error) => {
             let errors = errors_from(error)?;
-            event_edit_page(&state, &session, &user, &id, input, version, errors).await
+            event_edit_page(&state, &session, &user, Some(&id), input, version, errors).await
         }
     }
 }
 
 async fn event_result(
     session: &Session,
+    id: &str,
     result: Result<(), AppError>,
     ok: &str,
 ) -> Result<Response, WebError> {
+    let target = format!("/arbeit/termine/{id}");
     match result {
-        Ok(()) => Ok(redirect_with_flash(session, "/arbeit/termine", ok).await),
+        Ok(()) => Ok(redirect_with_flash(session, &target, ok).await),
         Err(AppError::Rejected(list)) => {
             let message = list.first().map(|e| e.message.clone()).unwrap_or_default();
             flash(session, FlashKind::Error, message).await;
-            Ok(Redirect::to("/arbeit/termine").into_response())
+            Ok(Redirect::to(&target).into_response())
         }
         Err(other) => Err(other.into()),
     }
@@ -531,7 +549,7 @@ pub async fn register(
         .club
         .register_event(&user, parse_id::<WorkEventId>(&id, "Arbeitstermin")?)
         .await;
-    event_result(&session, result, "Du bist angemeldet.").await
+    event_result(&session, &id, result, "Du bist angemeldet.").await
 }
 
 pub async fn unregister(
@@ -544,7 +562,7 @@ pub async fn unregister(
         .club
         .unregister_event(&user, parse_id::<WorkEventId>(&id, "Arbeitstermin")?)
         .await;
-    event_result(&session, result, "Du bist abgemeldet.").await
+    event_result(&session, &id, result, "Du bist abgemeldet.").await
 }
 
 // ---- Aufgaben --------------------------------------------------------------------------------

@@ -1,0 +1,29 @@
+{# Zustandsstreifen: Segelerlaubnis, Arbeitsstunden, Konto (v: MyDataView) #}
+<div class="grid cols-3">
+  <section class="card stat-card">
+    <span class="stat-icon {% if v.sailing_permit.granted %}ok{% else %}warn{% endif %}">{{ ui::icon_lg("anchor") }}</span>
+    <div class="stat-body">
+      <div class="stat-label">Segelerlaubnis {{ v.year }}</div>
+      <div class="stat-value">{% if v.sailing_permit.granted %}Erteilt{% else %}Fehlt{% endif %}</div>
+      <p class="stat-note">{% if v.sailing_permit.granted %}{{ ui::badge("ok", "check", "erteilt") }}{% else %}{{ ui::badge("warn", "alert", "fehlt") }}{% endif %}</p>
+    </div>
+  </section>
+  <section class="card stat-card">
+    <span class="stat-icon {% if v.missing_hours.is_empty() %}ok{% else %}warn{% endif %}">{{ ui::icon_lg("clock") }}</span>
+    <div class="stat-body">
+      <div class="stat-label">Arbeitsstunden {{ v.year }}</div>
+      <div class="stat-value">{{ v.credited_hours }} <small>von {{ v.required_hours }}</small></div>
+      {% if v.required_centi > 0 %}
+      <progress class="{% if v.missing_hours.is_empty() %}ok{% else %}warn{% endif %}" max="{{ v.required_centi }}" value="{{ v.credited_centi }}">{{ v.credited_hours }} von {{ v.required_hours }} Stunden</progress>
+      <p class="stat-note">{% if v.missing_hours.is_empty() %}Soll erfüllt{% else %}Es fehlen {{ v.missing_hours }} Stunden{% endif %}</p>
+      {% else %}<p class="stat-note">Keine Stundenpflicht</p>{% endif %}
+    </div>
+  </section>
+  <section class="card stat-card">
+    <span class="stat-icon {% match v.balance %}{% when vereinsakte_app::my_data::Balance::Due(_) %}danger{% else %}ok{% endmatch %}">{{ ui::icon_lg("euro") }}</span>
+    <div class="stat-body">
+      <div class="stat-label">Konto</div>
+      <div class="stat-value">{{ v.balance.label() }}</div>
+    </div>
+  </section>
+</div>
