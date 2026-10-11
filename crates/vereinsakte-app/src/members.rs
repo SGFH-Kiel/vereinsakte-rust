@@ -369,8 +369,9 @@ impl ClubService {
         let old = self.load_member(id).await?;
         let mut new = old.record.clone();
         let member = new.member_mut(id).expect("geladen");
+        member.contact_notice_seen = true;
         if member.contact_blocked == blocked {
-            return Ok(());
+            return self.save(&old, &new, vec![]).await;
         }
         member.contact_blocked = blocked;
         let entry = audit(
@@ -382,6 +383,18 @@ impl ClubService {
             "Sperrvermerk geändert".to_string(),
         );
         self.save(&old, &new, vec![entry]).await
+    }
+
+    /// Den einmaligen Hinweis zur Sichtbarkeit der Kontaktdaten bestätigen.
+    pub async fn dismiss_contact_notice(&self, user: &CurrentUser) -> Result<(), AppError> {
+        let id = user.member;
+        let old = self.load_member(id).await?;
+        if old.record.member(id).is_some_and(|m| m.contact_notice_seen) {
+            return Ok(());
+        }
+        let mut new = old.record.clone();
+        new.member_mut(id).expect("geladen").contact_notice_seen = true;
+        self.save(&old, &new, vec![]).await
     }
 
     /// Mitglied aufnehmen (Vorstand).

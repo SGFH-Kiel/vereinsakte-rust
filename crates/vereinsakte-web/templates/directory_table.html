@@ -2,8 +2,7 @@
 <table class="responsive">
   <thead>
     <tr>
-      <th>Name</th><th>Ämter</th>
-      {% if v.show_contact %}<th>Nr.</th><th>Mitgliedsart</th><th>E-Mail</th><th>Telefon</th>{% endif %}
+      <th>Name</th><th>Ämter</th><th>Nr.</th><th>Mitgliedsart</th><th>E-Mail</th><th>Telefon</th>
     </tr>
   </thead>
   <tbody>
@@ -11,11 +10,14 @@
     <tr>
       <td data-label="Name"><a href="/mitglieder/{{ entry.id }}">{{ entry.name }}</a>{% if !entry.licenses.is_empty() %} <span class="muted">{{ entry.licenses|join(", ") }}</span>{% endif %}</td>
       <td data-label="Ämter">{{ entry.offices|join(", ") }}</td>
-      {% if let Some(contact) = entry.contact %}
-      <td data-label="Nr." class="num">{{ contact.member_number }}</td>
-      <td data-label="Mitgliedsart">{{ contact.membership_type }}</td>
-      <td data-label="E-Mail">{% if let Some(email) = contact.email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}</td>
-      <td data-label="Telefon">{{ contact.phones|join(", ") }}</td>
+      <td data-label="Nr." class="num">{{ entry.member_number }}</td>
+      <td data-label="Mitgliedsart">{{ entry.membership_type }}</td>
+      {% if entry.contact.is_blocked() %}
+      <td data-label="E-Mail"><span class="badge">Kontaktdaten gesperrt</span></td>
+      <td data-label="Telefon"></td>
+      {% else %}
+      <td data-label="E-Mail">{% if let Some(email) = entry.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}</td>
+      <td data-label="Telefon">{{ entry.contact.phones()|join(", ") }}</td>
       {% endif %}
     </tr>
   {% else %}

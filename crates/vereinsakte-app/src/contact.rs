@@ -46,3 +46,25 @@ impl ContactInfo {
         }
     }
 }
+
+impl ContactInfo {
+    pub fn is_blocked(&self) -> bool {
+        matches!(self, Self::Blocked)
+    }
+
+    /// Kontakt-E-Mail, falls sichtbar und vorhanden.
+    pub fn email(&self) -> Option<&str> {
+        match self {
+            Self::Visible { email, .. } => email.as_deref(),
+            Self::Blocked => None,
+        }
+    }
+
+    /// Telefonnummern, falls sichtbar.
+    pub fn phones(&self) -> &[String] {
+        match self {
+            Self::Visible { phones, .. } => phones,
+            Self::Blocked => &[],
+        }
+    }
+}

@@ -25,8 +25,5 @@
   </div>
   <button type="submit" class="primary">Filtern</button>
 </form>
-{% if !v.show_contact %}
-<p class="notice">Kontaktdaten sind nur für Mitglieder mit einem Amt sichtbar.</p>
-{% endif %}
 {% include "directory_table.html" %}
 {% endblock %}

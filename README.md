@@ -103,6 +103,15 @@ Kurz je Rolle:
 - **Vorstand:** Mitglieder und Ämter verwalten, Widerrufe, Arbeitstermine, Stundenübertrag und Abgeltung, Konten, Saisons und Gebührensätze, Jahresbeiträge und Tourgebühren anlegen, Protokoll einsehen.
 - **Revisor:** liest alle Konten, Stunden und das Protokoll, ändert nichts.
 
+**Sichtbarkeit von Kontaktdaten:** E-Mail-Adresse und Telefonnummern sind unter allen
+aktiven Mitgliedern sichtbar (Mitgliederliste, Mitgliedsseite, Ämterübersicht). Jedes
+Mitglied kann unter „Meine Daten“ einen **Sperrvermerk** setzen; dann sehen nur das
+Mitglied selbst und der Vorstand die Angaben, alle anderen „Kontaktdaten gesperrt“.
+Anschrift, Segelerlaubnis, Stunden und Konto bleiben auf das Mitglied, den Vorstand und
+die Revisoren beschränkt. Nach dem Update zeigt die Startseite jedem Mitglied einmalig
+einen Hinweis auf die geänderte Sichtbarkeit; der Verein sollte seine Mitglieder
+zusätzlich vorab darüber informieren.
+
 Jede schreibende Aktion steht mit Urheber und Zeitpunkt im Protokoll (`/protokoll`);
 dort stehen nur Kennungen und Feldnamen, keine Beträge oder Kontaktdaten. Gleichzeitige
 Änderungen am selben Datensatz werden erkannt (HTTP 409) statt überschrieben.

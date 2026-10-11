@@ -13,12 +13,13 @@
   {% if section.rows.is_empty() %}<p class="muted">Derzeit nicht besetzt.</p>{% else %}
   <div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Amt</th><th>Inhaber</th><th>Seit</th><th></th></tr></thead>
+    <thead><tr><th>Amt</th><th>Inhaber</th><th>Kontakt</th><th>Seit</th><th></th></tr></thead>
     <tbody>
     {% for row in section.rows %}
       <tr>
         <td data-label="Amt">{{ row.role }}</td>
         <td data-label="Inhaber"><a href="/mitglieder/{{ row.holder_id }}">{{ row.holder }}</a></td>
+        <td data-label="Kontakt">{% if row.contact.is_blocked() %}<span class="badge">Kontaktdaten gesperrt</span>{% else %}{% if let Some(email) = row.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}{% if !row.contact.phones().is_empty() %}<br>{{ row.contact.phones()|join(", ") }}{% endif %}{% endif %}</td>
         <td data-label="Seit">{{ row.since }}</td>
         <td data-label="">{% if row.can_resign %}
           <form method="post" action="/aemter/{{ row.id }}/abgeben" class="inline">

@@ -135,6 +135,7 @@ pub(crate) async fn load_members(conn: &mut SqliteConnection, f: &Filter) -> Res
             child_of: get_opt_member(r, "child_of")?,
             board_consent: get_bool(r, "board_consent")?,
             contact_blocked: get_bool(r, "contact_blocked")?,
+            contact_notice_seen: get_bool(r, "contact_notice_seen")?,
             membership: Membership {
                 joined_at: get_ts(r, "joined_at")?,
                 provisional_until: get_opt_ts(r, "provisional_until")?,

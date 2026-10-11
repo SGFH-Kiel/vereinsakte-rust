@@ -228,6 +228,35 @@ pub async fn my_data(
     render(&MyDataPage { layout, v })
 }
 
+/// Hinweis zur Sichtbarkeit der Kontaktdaten bestätigen.
+pub async fn dismiss_contact_notice(
+    State(state): State<AppState>,
+    RequireUser(user): RequireUser,
+) -> Result<Response, WebError> {
+    state.club.dismiss_contact_notice(&user).await?;
+    Ok(axum::response::Redirect::to("/").into_response())
+}
+
+/// Sperrvermerk für die eigenen Kontaktdaten setzen oder entfernen.
+pub async fn set_contact_block(
+    State(state): State<AppState>,
+    session: Session,
+    RequireUser(user): RequireUser,
+    axum::Form(fields): axum::Form<std::collections::HashMap<String, String>>,
+) -> Result<Response, WebError> {
+    let blocked = fields.contains_key("blocked");
+    state
+        .club
+        .set_contact_blocked(&user, user.member, blocked)
+        .await?;
+    let text = if blocked {
+        "Deine Kontaktdaten sind jetzt für andere Mitglieder gesperrt."
+    } else {
+        "Deine Kontaktdaten sind wieder für alle Mitglieder sichtbar."
+    };
+    Ok(crate::forms::redirect_with_flash(&session, "/meine-daten", text).await)
+}
+
 #[derive(Deserialize)]
 pub struct DirectoryQuery {
     #[serde(default)]

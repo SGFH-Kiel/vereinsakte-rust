@@ -16,8 +16,10 @@
     <dt>Eintritt</dt><dd>{{ p.joined }}</dd>
     {% if let Some(left) = p.left %}<dt>Ende der Mitgliedschaft</dt><dd>{{ left }}</dd>{% endif %}
     <dt>Ämter</dt><dd>{% if p.offices.is_empty() %}keine{% else %}{{ p.offices|join(", ") }}{% endif %}</dd>
+    <dt>E-Mail</dt><dd>{% if p.contact.is_blocked() %}<span class="badge">Kontaktdaten gesperrt</span>{% else if let Some(email) = p.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% else %}<span class="muted">nicht angegeben</span>{% endif %}</dd>
+    {% if !p.contact.is_blocked() %}<dt>Telefon</dt><dd>{% if p.contact.phones().is_empty() %}<span class="muted">nicht angegeben</span>{% else %}{{ p.contact.phones()|join(", ") }}{% endif %}</dd>{% endif %}
   </dl>
-  {% if p.details.is_none() %}<p class="muted">Kontaktdaten, Segelerlaubnis, Stunden und Konto sind nur für das Mitglied selbst, den Vorstand und die Revisoren sichtbar.</p>{% endif %}
+  {% if p.details.is_none() %}<p class="muted">Anschrift, Segelerlaubnis, Stunden und Konto sind nur für das Mitglied selbst, den Vorstand und die Revisoren sichtbar.</p>{% endif %}
 </section>
 {% if let Some(v) = p.details %}
 <p class="actions"><a class="btn" href="/finanzen/nachweis/{{ p.id }}">Jahresnachweis</a> <a class="btn" href="/finanzen/konten/{{ p.id }}">Konto</a></p>

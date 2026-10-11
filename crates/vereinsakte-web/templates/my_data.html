@@ -9,4 +9,13 @@
 
 {% include "_member_details.html" %}
 <p class="actions"><a class="btn primary" href="/meine-daten/bearbeiten">Kontaktdaten, Scheine und Lizenzen bearbeiten</a></p>
+<section class="card">
+  <h2>Sichtbarkeit meiner Kontaktdaten</h2>
+  <p>Deine E-Mail-Adresse und Telefonnummern sind für alle Vereinsmitglieder sichtbar. Mit einem Sperrvermerk sehen sie nur du selbst und der Vorstand; alle anderen sehen „Kontaktdaten gesperrt“.</p>
+  <form method="post" action="/meine-daten/sperrvermerk">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <label class="check"><input type="checkbox" name="blocked" value="1"{% if v.contact_blocked %} checked{% endif %}> Kontaktdaten nicht anzeigen (Sperrvermerk)</label>
+    <div class="form-actions"><button type="submit" class="primary">Speichern</button></div>
+  </form>
+</section>
 {% endblock %}

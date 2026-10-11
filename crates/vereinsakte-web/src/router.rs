@@ -35,6 +35,8 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/auth/callback", get(login::callback))
         .route("/logout", post(login::logout))
         .route("/meine-daten", get(pages::my_data))
+        .route("/meine-daten/sperrvermerk", post(pages::set_contact_block))
+        .route("/hinweis/kontakt", post(pages::dismiss_contact_notice))
         .route("/mitglieder", get(pages::directory))
         .route(
             "/mitglieder/neu",

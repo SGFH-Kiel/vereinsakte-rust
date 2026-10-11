@@ -24,6 +24,10 @@ pub struct MyDataView {
     pub phones: Vec<(&'static str, String)>,
     pub email: Option<String>,
     pub login_email: Option<String>,
+    /// Sperrvermerk für E-Mail und Telefon gesetzt?
+    pub contact_blocked: bool,
+    /// Hinweis zur Sichtbarkeit der Kontaktdaten noch nicht bestätigt?
+    pub contact_notice: bool,
     pub joined: String,
     pub sailing_licenses: Vec<String>,
     pub radio_licenses: Vec<String>,
@@ -223,6 +227,8 @@ impl ClubService {
             postal_code: member.address.postal_code.clone(),
             city: member.address.city.clone(),
             address_invalid: !member.address_valid,
+            contact_blocked: member.contact_blocked,
+            contact_notice: !member.contact_notice_seen,
             phones,
             email: member.email.clone(),
             login_email: member.login_email.clone(),

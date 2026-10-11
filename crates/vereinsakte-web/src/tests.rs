@@ -516,7 +516,11 @@ async fn switching_user_shows_page_from_new_perspective() {
     let mut client = Client::new(&h);
     client.dev_login(107).await; // Greta, ohne Amt
     let page = client.get("/mitglieder").await;
-    assert!(!page.body.contains("@example.org"));
+    assert!(
+        page.body.contains("anna.petersen@example.org"),
+        "Kontaktdaten sind vereinsintern sichtbar"
+    );
+    assert!(page.body.contains("angemeldet als Greta Lorenzen"));
     let switch = client
         .post(
             "/dev/switch",
@@ -529,10 +533,6 @@ async fn switching_user_shows_page_from_new_perspective() {
         .await;
     assert_eq!(switch.location(), "/mitglieder");
     let page = client.get("/mitglieder").await;
-    assert!(
-        page.body.contains("anna.petersen@example.org"),
-        "Ben sieht Kontaktdaten"
-    );
     assert!(page.body.contains("angemeldet als Ben Hansen"));
 }
 
@@ -624,20 +624,97 @@ async fn foreign_member_number_in_url_is_ignored() {
 // --- 7.2 Mitgliederverzeichnis ------------------------------------------------------------
 
 #[tokio::test]
-async fn directory_hides_contact_data_without_office() {
+async fn directory_shows_contact_data_to_every_member() {
     let h = dev();
     let mut client = Client::new(&h);
-    client.dev_login(107).await;
+    client.dev_login(107).await; // Greta, ohne Amt
     let page = client.get("/mitglieder").await;
     assert!(page.body.contains("Petersen, Anna"));
-    assert!(!page.body.contains("@example.org"));
+    assert!(page.body.contains("anna.petersen@example.org"));
+    assert!(
+        !page
+            .body
+            .contains("Kontaktdaten sind nur für Mitglieder mit einem Amt")
+    );
     let partial = client.get_htmx("/mitglieder?q=").await;
     assert!(
         partial.body.starts_with("<div id=\"mitglieder-tabelle\""),
         "nur die Tabelle"
     );
-    assert!(!partial.body.contains("<html"));
-    assert!(!partial.body.contains("@example.org"));
+    assert!(partial.body.contains("anna.petersen@example.org"));
+}
+
+async fn set_contact_block(h: &Harness, member: u32, blocked: bool) -> Response {
+    let mut client = logged_in(h, member).await;
+    let page = client.get("/meine-daten").await;
+    let token = csrf(&page.body);
+    let mut fields = vec![("csrf", token.as_str())];
+    if blocked {
+        fields.push(("blocked", "1"));
+    }
+    client.post("/meine-daten/sperrvermerk", &fields).await
+}
+
+#[tokio::test]
+async fn blocked_contact_data_is_not_in_any_page_for_others() {
+    let h = dev();
+    let response = set_contact_block(&h, 101, true).await; // Anna
+    assert_eq!(response.location(), "/meine-daten");
+    for (viewer, expects_blocked) in [
+        (107, true),
+        (102, true),
+        (103, true),
+        (105, false),
+        (106, false),
+        (101, false),
+    ] {
+        let mut client = logged_in(&h, viewer).await;
+        let pages = [
+            client.get("/mitglieder").await,
+            client.get_htmx("/mitglieder?q=").await,
+            client.get("/mitglieder/101").await,
+            client.get("/aemter").await,
+        ];
+        let any = pages
+            .iter()
+            .any(|p| p.body.contains("anna.petersen@example.org"));
+        if expects_blocked {
+            assert!(!any, "Betrachter {viewer} darf Annas E-Mail nicht sehen");
+            assert!(pages[0].body.contains("Kontaktdaten gesperrt"));
+            assert!(pages[2].body.contains("Kontaktdaten gesperrt"));
+        } else {
+            assert!(
+                pages[0].body.contains("anna.petersen@example.org"),
+                "Betrachter {viewer} sieht Annas E-Mail"
+            );
+        }
+    }
+    // Zurücknehmen
+    set_contact_block(&h, 101, false).await;
+    let page = logged_in(&h, 107).await.get("/mitglieder").await;
+    assert!(page.body.contains("anna.petersen@example.org"));
+}
+
+#[tokio::test]
+async fn contact_block_switch_shows_state_and_is_only_for_oneself() {
+    let h = dev();
+    let mut anna = logged_in(&h, 101).await;
+    let page = anna.get("/meine-daten").await;
+    assert!(page.body.contains("Kontaktdaten nicht anzeigen"));
+    assert!(!page.body.contains("name=\"blocked\" value=\"1\" checked"));
+    set_contact_block(&h, 101, true).await;
+    let page = anna.get("/meine-daten").await;
+    assert!(page.body.contains("name=\"blocked\" value=\"1\" checked"));
+    // Das Formular kennt kein Zielmitglied: ein fremdes lässt sich nicht setzen.
+    let form_start = page
+        .body
+        .find("action=\"/meine-daten/sperrvermerk\"")
+        .unwrap();
+    let form =
+        &page.body[form_start..form_start + page.body[form_start..].find("</form>").unwrap()];
+    assert!(!form.contains("name=\"member\""));
+    let log = logged_in(&h, 105).await.get("/protokoll").await;
+    assert!(log.body.contains("Sperrvermerk geändert"));
 }
 
 #[tokio::test]
@@ -810,8 +887,12 @@ async fn member_page_hides_details_from_members_without_rights() {
     let page = logged_in(&h, 107).await.get("/mitglieder/103").await;
     assert_eq!(page.status, StatusCode::OK);
     assert!(page.body.contains("Clara Jensen"));
-    assert!(!page.body.contains("clara.jensen@example.org"));
+    assert!(
+        page.body.contains("clara.jensen@example.org"),
+        "Kontakt ist vereinsintern sichtbar"
+    );
     assert!(!page.body.contains("Kontostand"));
+    assert!(!page.body.contains("Arbeitsstunden"));
     let page = logged_in(&h, 105).await.get("/mitglieder/103").await;
     assert!(
         page.body.contains("clara.jensen@example.org"),
@@ -1139,7 +1220,10 @@ async fn offices_overview_for_everyone_with_admin_only_for_the_board() {
         assert!(page.body.contains(text), "{text}");
     }
     assert!(!page.body.contains("Mitglied ernennen") && !page.body.contains("Amtshistorie"));
-    assert!(!page.body.contains("@example.org"), "keine Kontaktdaten");
+    assert!(
+        page.body.contains("@example.org"),
+        "Kontaktdaten der Inhaber sind sichtbar"
+    );
     assert_eq!(
         greta.get("/aemter/historie").await.status,
         StatusCode::FORBIDDEN
@@ -2300,4 +2384,42 @@ async fn audit_page_is_filtered_by_role_and_never_shows_values() {
     );
     // Navigation zeigt Protokoll allen Mitgliedern.
     assert!(greta.get("/").await.body.contains("href=\"/protokoll\""));
+}
+
+#[tokio::test]
+async fn contact_notice_is_shown_once_until_confirmed() {
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let page = greta.get("/").await;
+    assert!(
+        page.body
+            .contains("jetzt für alle Vereinsmitglieder sichtbar")
+    );
+    assert!(page.body.contains("action=\"/hinweis/kontakt\""));
+    // Anderes Mitglied sieht ihn unabhängig von Gretas Bestätigung.
+    let token = csrf(&page.body);
+    let response = greta.post("/hinweis/kontakt", &[("csrf", &token)]).await;
+    assert_eq!(response.location(), "/");
+    let page = greta.get("/").await;
+    assert!(
+        !page
+            .body
+            .contains("jetzt für alle Vereinsmitglieder sichtbar")
+    );
+    let mut anna = logged_in(&h, 101).await;
+    assert!(
+        anna.get("/")
+            .await
+            .body
+            .contains("jetzt für alle Vereinsmitglieder sichtbar")
+    );
+    // Wer den Sperrvermerk bearbeitet, hat den Hinweis ebenfalls gesehen.
+    set_contact_block(&h, 101, false).await;
+    assert!(
+        !anna
+            .get("/")
+            .await
+            .body
+            .contains("jetzt für alle Vereinsmitglieder sichtbar")
+    );
 }

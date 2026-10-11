@@ -41,6 +41,9 @@ pub struct Member {
     /// E-Mail noch Telefonnummern.
     #[serde(default, skip_serializing_if = "is_false")]
     pub contact_blocked: bool,
+    /// Hinweis auf die vereinsinterne Sichtbarkeit der Kontaktdaten gesehen?
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub contact_notice_seen: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub sailing_licenses: Vec<SailingLicense>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -86,6 +89,7 @@ impl Member {
             board_consent: false,
             membership: Membership::joined(joined_at),
             contact_blocked: false,
+            contact_notice_seen: false,
             sailing_licenses: Vec::new(),
             radio_licenses: Vec::new(),
             account: MemberAccount::default(),

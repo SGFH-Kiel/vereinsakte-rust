@@ -3,6 +3,16 @@
 <div class="page-head">
   <div><h1>Hallo {{ v.name }}</h1><p class="muted">Deine nächsten Schritte im Überblick</p></div>
 </div>
+{% if v.contact_notice %}
+<section class="notice" role="region" aria-label="Hinweis zu Kontaktdaten">
+  <p><strong>Neu:</strong> Deine E-Mail-Adresse und Telefonnummern sind jetzt für alle Vereinsmitglieder sichtbar. Wenn du das nicht möchtest, kannst du einen Sperrvermerk setzen; dann sehen sie nur du und der Vorstand.</p>
+  <form method="post" action="/hinweis/kontakt" class="actions">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <a class="btn primary" href="/meine-daten">Sichtbarkeit einstellen</a>
+    <button type="submit">Verstanden</button>
+  </form>
+</section>
+{% endif %}
 <div class="grid cols-3">
   <section class="card">
     <h2>Segelerlaubnis {{ v.year }}</h2>
