@@ -216,15 +216,11 @@ Filter in der Filterleiste SHALL in der Adresse stehen und ohne JavaScript funkt
 - **THEN** sind dieselben Filter in der Leiste gesetzt und dieselben Mitglieder gelistet
 
 ### Requirement: Sortierbare Tabellen
-Jede Tabelle mit mehreren Zeilen SHALL durch Klick auf einen Spaltenkopf nach dieser Spalte sortierbar sein; ein weiterer Klick SHALL die Richtung umkehren. Die aktive Spalte und Richtung SHALL durch Symbol und für Hilfstechnik lesbaren Text (`aria-sort`) erkennbar sein, die Sortierung SHALL in der Adresse stehen und ohne JavaScript funktionieren. Zahlen, Beträge und Daten SHALL nach ihrem Wert, Text nach deutscher Sortierreihenfolge (Umlaute eingeordnet, Groß-/Kleinschreibung ignoriert) sortiert werden. Spalten ohne sinnvolle Ordnung (Aktionen) SHALL nicht sortierbar sein.
+Jede Tabelle mit mehreren Zeilen SHALL durch Klick auf einen Spaltenkopf nach dieser Spalte sortierbar sein; ein weiterer Klick SHALL die Richtung umkehren. Die aktive Spalte und Richtung SHALL durch Symbol und für Hilfstechnik lesbaren Text (`aria-sort`) erkennbar sein, die Sortierung SHALL in der Adresse stehen und ohne JavaScript funktionieren.
 
 #### Scenario: Nach Spalte sortieren
 - **WHEN** der Kassenwart in der Forderungsliste auf den Kopf „Betrag“ klickt
 - **THEN** ist die Liste nach Betrag aufsteigend sortiert, der Kopf zeigt ein Pfeilsymbol, und ein weiterer Klick kehrt die Richtung um
-
-#### Scenario: Umlaute
-- **WHEN** das Verzeichnis nach „Name“ sortiert wird
-- **THEN** steht „Möller“ zwischen „Lorenzen“ und „Petersen“
 
 #### Scenario: Verlinkbar
 - **WHEN** die Adresse einer sortierten Tabelle kopiert und erneut geöffnet wird
@@ -233,3 +229,14 @@ Jede Tabelle mit mehreren Zeilen SHALL durch Klick auf einen Spaltenkopf nach di
 #### Scenario: Am Handy
 - **WHEN** eine Tabelle bei 375 px Breite als Karten erscheint
 - **THEN** bietet ein Auswahlfeld „Sortieren nach“ mit Richtung dieselben Spalten an
+
+### Requirement: Sortierreihenfolge nach Art der Spalte
+Zahlen, Beträge und Daten SHALL nach ihrem Wert, Text nach deutscher Sortierreihenfolge (Umlaute eingeordnet, Groß-/Kleinschreibung ignoriert) sortiert werden. Spalten ohne sinnvolle Ordnung, etwa Aktionen, SHALL nicht sortierbar sein.
+
+#### Scenario: Umlaute
+- **WHEN** das Verzeichnis nach „Name“ sortiert wird
+- **THEN** steht „Möller“ zwischen „Lorenzen“ und „Petersen“
+
+#### Scenario: Aktionsspalte
+- **WHEN** eine Tabelle eine Aktionsspalte hat
+- **THEN** ist deren Kopf kein Sortierlink

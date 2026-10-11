@@ -26,8 +26,8 @@
 - [ ] 4.3 Boote und Bootsseite: Zustandskarte zuerst (Eignung, Freigabe, Sperre), Stammdaten kompakt, Sperren/Abnahme/Widerruf als eingeklappte Bereiche, bei Fehler geöffnet; Tests: Bereich standardmäßig geschlossen, nach Fehler offen, Rechte unverändert.
 - [ ] 4.4 Ämter und Reservierungsdetail: Listen mit Nebenzeile und Zustandsplaketten, leere Zustände mit nächstem Schritt; Reservierungsformular gegliedert und vom Boot aus erreichbar (Hauptaktion „Reservieren“ auf Bootsseite, Zeilenaktion in der Bootsliste, Boot vorausgewählt); Tests: Link von der Bootsseite wählt das Boot vor, Konfliktfehler bleibt am Feld, kein Menüpunkt „Reservierungen“.
 - [ ] 4.5 Arbeit (Stunden, Termine, Aufgaben, Bestätigungen, Übersicht): Fortschritt oben, Zeilenaktionen als beschriftete Symbol-Schaltflächen, Unternavigation mit Symbolen, leere Zustände; Tests: Löschen verlangt weiterhin Bestätigung, Schaltflächen haben `aria-label`.
-- [ ] 4.7 Sortierung in allen Tabellen aktivieren (Verzeichnis, Boote, Reservierungsdetails, Arbeitsstunden, Bestätigungen, Termine, Aufgaben, Ämter, Finanzen, Protokoll, Archiv) mit sinnvoller Standardreihenfolge; Test: jede Tabelle der Seiten mit mehreren Zeilen hat mindestens einen sortierbaren Kopf, Klick ändert die Reihenfolge, Adresse enthält die Sortierung.
-- [ ] 4.6 Finanzen, Konto, Jahresnachweis und Protokoll: Kennzahlenkacheln, Zustandsplaketten mit Symbol, Protokoll als kompakte Zeitleiste; Tests: Druckansicht des Nachweises ohne Navigation, vorhandene Finanztests grün.
+- [ ] 4.6 Sortierung in allen Tabellen aktivieren (Verzeichnis, Boote, Reservierungsdetails, Arbeitsstunden, Bestätigungen, Termine, Aufgaben, Ämter, Finanzen, Protokoll, Archiv) mit sinnvoller Standardreihenfolge; Test: jede Tabelle der Seiten mit mehreren Zeilen hat mindestens einen sortierbaren Kopf, Klick ändert die Reihenfolge, Adresse enthält die Sortierung.
+- [ ] 4.7 Finanzen, Konto, Jahresnachweis und Protokoll: Kennzahlenkacheln, Zustandsplaketten mit Symbol, Protokoll als kompakte Zeitleiste; Tests: Druckansicht des Nachweises ohne Navigation, vorhandene Finanztests grün.
 
 ## 5. Tour aus der Dauer
 
