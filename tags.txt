@@ -2,7 +2,9 @@
 # Zum Erzeugen und Pushen lokal ausführen:
 #   git fetch origin claude/sweet-hopper-sffn4n
 #   git tag -a change-add-kontakt-sichtbarkeit 6d34cbf -m "add-kontakt-sichtbarkeit umgesetzt"
+#   git tag -a change-add-ui-fuehrung c92768a -m "add-ui-fuehrung umgesetzt"
 #   git push origin --tags
 #
 # Name                              Hash      Change
 change-add-kontakt-sichtbarkeit     6d34cbf   add-kontakt-sichtbarkeit
+change-add-ui-fuehrung          c92768a   add-ui-fuehrung
