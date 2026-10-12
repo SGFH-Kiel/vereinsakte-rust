@@ -1,6 +1,7 @@
 //! Anwendungsschicht der Vereinsakte: Anwendungsfälle, Zugriffsprüfung und
 //! Ports (Schnittstellen zu Speicher und Uhr). Kennt weder HTTP noch SQL.
 
+pub mod archive;
 pub mod audit;
 pub mod auth;
 pub mod boats;

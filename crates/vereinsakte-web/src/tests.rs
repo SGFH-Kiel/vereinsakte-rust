@@ -1221,19 +1221,22 @@ async fn offices_overview_for_everyone_with_admin_only_for_the_board() {
     ] {
         assert!(page.body.contains(text), "{text}");
     }
-    assert!(!page.body.contains("Mitglied ernennen") && !page.body.contains("Amtshistorie"));
+    assert!(!page.body.contains("Mitglied ernennen") && !page.body.contains("Archiv"));
     assert!(
         page.body.contains("@example.org"),
         "Kontaktdaten der Inhaber sind sichtbar"
     );
     assert_eq!(
-        greta.get("/aemter/historie").await.status,
+        greta.get("/protokoll/archiv").await.status,
         StatusCode::FORBIDDEN
     );
     let mut frank = logged_in(&h, 106).await;
     let page = frank.get("/aemter").await;
-    assert!(page.body.contains("Mitglied ernennen") && page.body.contains("Amtshistorie"));
-    let history = frank.get("/aemter/historie").await;
+    assert!(page.body.contains("Mitglied ernennen") && page.body.contains("im Archiv"));
+    // Die frühere Historienseite führt ins Archiv.
+    let old = frank.get("/aemter/historie").await;
+    assert_eq!(old.location(), "/protokoll/archiv?tab=aemter");
+    let history = frank.get("/protokoll/archiv?tab=aemter").await;
     assert!(history.body.contains("Eva Möller") && history.body.contains("laufend"));
 }
 
@@ -2358,7 +2361,7 @@ async fn tours_and_annual_proof_pages() {
         proof.body.contains("Jahresnachweis 2026")
             && proof.body.contains("20,5 angerechnet von 25")
     );
-    assert!(proof.body.contains("4,5") && proof.body.contains("class=\"actions no-print\""));
+    assert!(proof.body.contains("4,5") && proof.body.contains("no-print"));
     let mut greta = logged_in(&h, 107).await;
     assert_eq!(
         greta.get("/finanzen/nachweis/103").await.status,
@@ -2643,4 +2646,106 @@ async fn tour_follows_the_duration_of_the_reservation() {
     assert_eq!(tour.status, StatusCode::SEE_OTHER, "{}", tour.body);
     let page = david.get(tour.location()).await;
     assert!(main_of(&page.body).contains("Tour"));
+}
+
+#[tokio::test]
+async fn archive_collects_what_is_no_longer_current_for_board_and_auditors_only() {
+    let h = dev();
+    // Ben gibt sein Amt ab: weg aus Ämterübersicht und Mitgliedsseite, rein ins Archiv.
+    let mut ben = logged_in(&h, 102).await;
+    let page = ben.get("/aemter").await;
+    let action = {
+        let at = page.body.find("/mitglieder/102\">Ben Hansen").unwrap();
+        let rest = &page.body[at..];
+        let start = rest.find("action=\"/aemter/").unwrap() + "action=\"".len();
+        rest[start..start + rest[start..].find('"').unwrap()].to_string()
+    };
+    let done = ben
+        .post(
+            &action,
+            &[("csrf", &csrf(&page.body)), ("date", "09.10.2026")],
+        )
+        .await;
+    assert_eq!(done.status, StatusCode::SEE_OTHER);
+    let overview = main_of(&ben.get("/aemter").await.body);
+    assert!(!overview.contains("/mitglieder/102\">Ben Hansen"));
+    let member = main_of(&ben.get("/mitglieder/102").await.body);
+    assert!(
+        !member.contains("Bootswart (Harald Blauzahn)"),
+        "nicht mehr bei Ben"
+    );
+    let list = main_of(&ben.get("/mitglieder").await.body);
+    assert!(!list.contains("Bootswart (Harald Blauzahn)"));
+
+    // Archiv: Vorstand (Eva) und Revisor (Lukas) sehen es, Greta und Ben nicht.
+    let mut eva = logged_in(&h, 105).await;
+    let archive = eva.get("/protokoll/archiv?tab=aemter").await;
+    assert_eq!(archive.status, StatusCode::OK);
+    assert!(
+        main_of(&archive.body).contains("Ben Hansen")
+            && main_of(&archive.body).contains("09.10.2026")
+    );
+    assert_eq!(
+        logged_in(&h, 112)
+            .await
+            .get("/protokoll/archiv")
+            .await
+            .status,
+        StatusCode::OK
+    );
+    for member in [107, 102] {
+        assert_eq!(
+            logged_in(&h, member)
+                .await
+                .get("/protokoll/archiv")
+                .await
+                .status,
+            StatusCode::FORBIDDEN
+        );
+    }
+    // Reiter: ausgeschiedene Mitglieder, vergangene Reservierungen und Termine mit Jahresfilter
+    let members = main_of(&eva.get("/protokoll/archiv?tab=mitglieder").await.body);
+    assert!(members.contains("Dupont") || members.contains("Keine ausgeschiedenen"));
+    let past = main_of(
+        &eva.get("/protokoll/archiv?tab=reservierungen&jahr=2026")
+            .await
+            .body,
+    );
+    assert!(past.contains("Filou") && past.contains("Schruvtrekker"));
+    let none = main_of(
+        &eva.get("/protokoll/archiv?tab=reservierungen&jahr=2020")
+            .await
+            .body,
+    );
+    assert!(none.contains("Keine vergangenen Reservierungen"));
+    let sorted = main_of(
+        &eva.get("/protokoll/archiv?tab=reservierungen&sort_arch=boot&dir_arch=desc")
+            .await
+            .body,
+    );
+    assert!(sorted.contains("aria-sort=\"descending\""));
+    // Das Protokoll verweist auf das Archiv (nur Berechtigte).
+    assert!(
+        eva.get("/protokoll")
+            .await
+            .body
+            .contains("/protokoll/archiv")
+    );
+    assert!(
+        !logged_in(&h, 107)
+            .await
+            .get("/protokoll")
+            .await
+            .body
+            .contains("/protokoll/archiv")
+    );
+    // Stornierte Forderungen bleiben im Konto sichtbar (keine Archivdaten).
+    let account = main_of(
+        &logged_in(&h, 110)
+            .await
+            .get("/finanzen/konten/102")
+            .await
+            .body,
+    );
+    assert!(account.contains("Schlüsselpfand") && account.contains("storniert"));
 }

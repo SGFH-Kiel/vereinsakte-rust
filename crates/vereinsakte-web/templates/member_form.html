@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% import "_forms.html" as f %}
+{% block eyebrow %}<a href="/mitglieder">Mitglieder</a>{% if !is_new %} › <a href="/mitglieder/{{ values.number }}">{{ values.name }}</a>{% endif %}{% endblock %}
+{% block page_title %}{% if is_new %}Mitglied aufnehmen{% else %}{{ values.name }} bearbeiten{% endif %}{% endblock %}
 {% block content %}
-<div class="breadcrumbs"><a href="/mitglieder">Mitglieder</a> › {% if is_new %}Neues Mitglied{% else %}<a href="/mitglieder/{{ values.number }}">{{ values.name }}</a> › Bearbeiten{% endif %}</div>
-<div class="page-head"><h1>{% if is_new %}Mitglied aufnehmen{% else %}{{ values.name }} bearbeiten{% endif %}</h1></div>
 {% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
 
-<form method="post" action="{{ action }}" class="card">
+<form method="post" action="{{ action }}" class="form-section">
   <input type="hidden" name="csrf" value="{{ layout.csrf }}">
   <input type="hidden" name="version" value="{{ values.version }}">
   <h2>Kontaktdaten</h2>

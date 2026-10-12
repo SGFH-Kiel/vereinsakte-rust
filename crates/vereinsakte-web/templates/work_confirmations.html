@@ -1,24 +1,30 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Arbeit{% endblock %}
+{% block page_title %}Offene Bestätigungen{% endblock %}
+{% block page_sub %}Einsätze, die du bestätigen darfst{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Arbeit</h1><p class="muted">Offene Bestätigungen</p></div></div>
 {% include "_work_nav.html" %}
-<section class="card">
-  {% if lines.is_empty() %}<p>Es gibt nichts zu bestätigen.</p>{% else %}
-  <div class="table-wrap">
+{% if lines.is_empty() %}
+<section class="card">{{ ui::empty("check-circle", "Es gibt nichts zu bestätigen.") }}</section>
+{% else %}
+{{ ui::sort_form(sort) }}
+<div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Mitglied</th><th>Datum</th><th class="num">Stunden</th><th>Gegenstand</th><th>Beschreibung</th><th></th></tr></thead>
+    <thead><tr>
+      {{ ui::th_sort(sort, "mitglied", "Mitglied", "") }}{{ ui::th_sort(sort, "datum", "Datum", "") }}{{ ui::th_sort(sort, "stunden", "Stunden", "num") }}{{ ui::th_sort(sort, "gegenstand", "Gegenstand", "") }}<th scope="col">Beschreibung</th><th scope="col"><span class="visually-hidden">Aktion</span></th>
+    </tr></thead>
     <tbody>
     {% for e in lines %}
       <tr>
-        <td data-label="Mitglied">{{ e.member }}</td><td data-label="Datum">{{ e.date }}</td><td data-label="Stunden" class="num">{{ e.hours }}</td>
+        <td data-label="Mitglied" class="cell-title"><a class="person" href="/mitglieder/{{ e.member_id }}">{{ e.member }}</a></td><td data-label="Datum">{{ e.date }}</td><td data-label="Stunden" class="num">{{ e.hours }}</td>
         <td data-label="Gegenstand">{{ e.subject }}</td><td data-label="Beschreibung">{{ e.description }}</td>
-        <td data-label=""><form method="post" action="/arbeit/einsaetze/{{ e.id }}/bestaetigen" class="inline">
-          <input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary small">Bestätigen</button></form></td>
+        <td data-label=""><form method="post" action="/arbeit/einsaetze/{{ e.id }}/bestaetigen">
+          <input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary small">{{ ui::icon("check") }}Bestätigen</button></form></td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-  </div>
-  {% endif %}
-</section>
+</div>
+{% endif %}
 {% endblock %}

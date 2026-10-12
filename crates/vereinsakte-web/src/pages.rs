@@ -90,10 +90,11 @@ pub fn avatar_class(member: u32) -> String {
 /// Bereich (der Eintrag mit dem längsten passenden Adressanfang).
 fn navigation(principal: &Principal, path: &str) -> (Vec<NavGroup>, Vec<NavItem>) {
     let path = path.split('?').next().unwrap_or(path);
-    let mut groups: Vec<(
+    type RawGroup = (
         &'static str,
         Vec<(&'static str, &'static str, &'static str)>,
-    )> = vec![
+    );
+    let mut groups: Vec<RawGroup> = vec![
         (
             "Persönlich",
             vec![
@@ -434,7 +435,7 @@ pub async fn home(
         .tasks
         .into_iter()
         .filter(|t| t.status_key != "done" && t.can_update && !t.assignees.is_empty())
-        .filter(|t| t.assignees.contains(&principal.name))
+        .filter(|t| t.assignees.iter().any(|p| p.name == principal.name))
         .collect();
     let today = principal.now.date_naive();
     let reservations = state

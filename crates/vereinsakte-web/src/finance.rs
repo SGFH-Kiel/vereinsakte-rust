@@ -20,6 +20,7 @@ use crate::forms::{
     FieldErrors, errors_from, non_empty, parse_date, parse_money, redirect_with_flash,
     unprocessable,
 };
+use crate::list::{Sort, SortCtx, SortKey, date_key, num_key, sort_rows, text_key};
 use crate::pages::{Layout, render};
 use crate::session::RequireUser;
 use crate::state::AppState;
@@ -42,6 +43,8 @@ struct AccountPage {
     layout: Layout,
     v: AccountView,
     errors: FieldErrors,
+    claims_sort: SortCtx,
+    payments_sort: SortCtx,
 }
 
 async fn account_page(
@@ -50,16 +53,77 @@ async fn account_page(
     user: &CurrentUser,
     member: MemberId,
     errors: FieldErrors,
+    params: &HashMap<String, String>,
 ) -> Result<Response, WebError> {
-    let v = state.club.account_view(user, member).await?;
+    let mut v = state.club.account_view(user, member).await?;
     let path = if v.is_self {
         "/konto".to_string()
     } else {
         format!("/finanzen/konten/{}", member.get())
     };
+    let claims = Sort::from_params(params, "ford");
+    let payments = Sort::from_params(params, "einz");
+    sort_rows(
+        &mut v.claims,
+        &claims,
+        &[
+            ("forderung", |l| text_key(&l.text)),
+            ("betrag", |l| num_key(&l.amount)),
+            ("faellig", |l| date_key(l.due.as_deref().unwrap_or(""))),
+            ("stand", |l| text_key(&l.state.label())),
+        ],
+    );
+    sort_rows(
+        &mut v.payments,
+        &payments,
+        &[
+            ("datum", |l| date_key(&l.date)),
+            ("betrag", |l| num_key(&l.amount)),
+            ("zweck", |l| text_key(&l.text)),
+        ],
+    );
+    let other = |id: &str, sort: &Sort| -> Vec<(String, String)> {
+        let mut out = vec![];
+        if !sort.key.is_empty() {
+            out.push((format!("sort_{id}"), sort.key.clone()));
+            if sort.desc {
+                out.push((format!("dir_{id}"), "desc".into()));
+            }
+        }
+        out
+    };
+    let claims_sort = SortCtx::new(
+        "ford",
+        &path,
+        other("einz", &payments),
+        &claims,
+        &[
+            ("forderung", "Forderung"),
+            ("betrag", "Betrag"),
+            ("faellig", "Fällig"),
+            ("stand", "Stand"),
+        ],
+    );
+    let payments_sort = SortCtx::new(
+        "einz",
+        &path,
+        other("ford", &claims),
+        &payments,
+        &[
+            ("datum", "Datum"),
+            ("betrag", "Betrag"),
+            ("zweck", "Verwendungszweck"),
+        ],
+    );
     let layout = Layout::build(state, session, Some(user), "Konto", &path).await?;
     let invalid = !errors.is_empty();
-    let response = render(&AccountPage { layout, v, errors })?;
+    let response = render(&AccountPage {
+        layout,
+        v,
+        errors,
+        claims_sort,
+        payments_sort,
+    })?;
     Ok(if invalid {
         unprocessable(response)
     } else {
@@ -71,8 +135,17 @@ pub async fn own_account(
     State(state): State<AppState>,
     session: Session,
     RequireUser(user): RequireUser,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
-    account_page(&state, &session, &user, user.member, FieldErrors::new()).await
+    account_page(
+        &state,
+        &session,
+        &user,
+        user.member,
+        FieldErrors::new(),
+        &params,
+    )
+    .await
 }
 
 pub async fn account(
@@ -80,6 +153,7 @@ pub async fn account(
     session: Session,
     RequireUser(user): RequireUser,
     Path(number): Path<u32>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
     account_page(
         &state,
@@ -87,6 +161,7 @@ pub async fn account(
         &user,
         member_id(number)?,
         FieldErrors::new(),
+        &params,
     )
     .await
 }
@@ -123,7 +198,7 @@ pub async fn payment(
             Err(error) => errors = errors_from(error)?,
         }
     }
-    account_page(&state, &session, &user, member, errors).await
+    account_page(&state, &session, &user, member, errors, &HashMap::new()).await
 }
 
 pub async fn claim(
@@ -165,7 +240,7 @@ pub async fn claim(
             }
         }
     }
-    account_page(&state, &session, &user, member, errors).await
+    account_page(&state, &session, &user, member, errors, &HashMap::new()).await
 }
 
 pub async fn cancel_claim(
@@ -196,7 +271,7 @@ pub async fn cancel_claim(
                 let message = errors.get("reason");
                 errors.add_general(message);
             }
-            account_page(&state, &session, &user, member, errors).await
+            account_page(&state, &session, &user, member, errors, &HashMap::new()).await
         }
     }
 }
@@ -214,6 +289,7 @@ pub struct OutstandingQuery {
 struct OutstandingPage {
     layout: Layout,
     v: OutstandingView,
+    sort: SortCtx,
     at: String,
     at_iso: String,
     nav: &'static str,
@@ -224,18 +300,50 @@ pub async fn outstanding(
     session: Session,
     RequireUser(user): RequireUser,
     Query(query): Query<OutstandingQuery>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
     let date = query
         .stichtag
         .as_deref()
         .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
-    let v = state
+    let mut v = state
         .club
         .outstanding_view(&user, date, query.ueberfaellig.is_some())
         .await?;
+    let sort_state = Sort::from_params(&params, "aus");
+    sort_rows(
+        &mut v.rows,
+        &sort_state,
+        &[
+            ("name", |r| text_key(&r.name)),
+            ("offen", |r| num_key(&r.open)),
+            ("ueberfaellig", |r| num_key(&r.overdue)),
+        ],
+    );
+    let sort = SortCtx::new(
+        "aus",
+        "/finanzen",
+        vec![
+            (
+                "stichtag".to_string(),
+                query.stichtag.clone().unwrap_or_default(),
+            ),
+            (
+                "ueberfaellig".to_string(),
+                query.ueberfaellig.clone().unwrap_or_default(),
+            ),
+        ],
+        &sort_state,
+        &[
+            ("name", "Mitglied"),
+            ("offen", "Offen"),
+            ("ueberfaellig", "Davon überfällig"),
+        ],
+    );
     let layout = Layout::build(&state, &session, Some(&user), "Finanzen", "/finanzen").await?;
     render(&OutstandingPage {
         layout,
+        sort,
         at: v.at.format("%d.%m.%Y").to_string(),
         at_iso: v.at.to_string(),
         nav: "aussenstaende",
@@ -329,6 +437,7 @@ struct FeesPage {
     layout: Layout,
     v: AnnualFeePreview,
     nav: &'static str,
+    sort: SortCtx,
 }
 
 pub async fn fees(
@@ -336,8 +445,33 @@ pub async fn fees(
     session: Session,
     RequireUser(user): RequireUser,
     Query(query): Query<YearQuery>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
-    let v = state.club.annual_fee_preview(&user, query.jahr).await?;
+    let mut v = state.club.annual_fee_preview(&user, query.jahr).await?;
+    let sort_state = Sort::from_params(&params, "bei");
+    sort_rows(
+        &mut v.lines,
+        &sort_state,
+        &[
+            ("name", |l| text_key(&l.name)),
+            ("forderung", |l| text_key(&l.text)),
+            ("betrag", |l| num_key(&l.amount)),
+        ],
+    );
+    let sort = SortCtx::new(
+        "bei",
+        "/finanzen/beitraege",
+        vec![(
+            "jahr".to_string(),
+            query.jahr.map(|y| y.to_string()).unwrap_or_default(),
+        )],
+        &sort_state,
+        &[
+            ("name", "Mitglied"),
+            ("forderung", "Forderung"),
+            ("betrag", "Betrag"),
+        ],
+    );
     let layout = Layout::build(
         &state,
         &session,
@@ -350,6 +484,7 @@ pub async fn fees(
         layout,
         v,
         nav: "beitraege",
+        sort,
     })
 }
 
@@ -379,14 +514,41 @@ struct ToursPage {
     layout: Layout,
     v: TourBilling,
     nav: &'static str,
+    sort: SortCtx,
 }
 
 pub async fn tours(
     State(state): State<AppState>,
     session: Session,
     RequireUser(user): RequireUser,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
-    let v = state.club.tour_billing(&user).await?;
+    let mut v = state.club.tour_billing(&user).await?;
+    let sort_state = Sort::from_params(&params, "tour");
+    sort_rows(
+        &mut v.rows,
+        &sort_state,
+        &[
+            ("tour", |r| date_key(&r.when)),
+            ("boot", |r| text_key(&r.boat)),
+            ("skipper", |r| text_key(&r.skipper)),
+            ("summe", |r| num_key(&r.total)),
+            ("stand", |r| SortKey::Num(r.missing as i64)),
+        ],
+    );
+    let sort = SortCtx::new(
+        "tour",
+        "/finanzen/touren",
+        vec![],
+        &sort_state,
+        &[
+            ("tour", "Datum"),
+            ("boot", "Boot"),
+            ("skipper", "Skipper"),
+            ("summe", "Summe"),
+            ("stand", "Stand"),
+        ],
+    );
     let layout = Layout::build(
         &state,
         &session,
@@ -399,6 +561,7 @@ pub async fn tours(
         layout,
         v,
         nav: "touren",
+        sort,
     })
 }
 

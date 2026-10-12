@@ -106,10 +106,10 @@ pub fn action_label(code: &str) -> String {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AuditRow {
     pub when: String,
-    pub actor: String,
+    pub actor: crate::people::PersonRef,
     pub action: String,
     pub summary: String,
-    pub subject: String,
+    pub subject: Option<crate::people::PersonRef>,
     pub object: String,
 }
 
@@ -157,10 +157,10 @@ impl crate::service::ClubService {
         let records = self.store.audit(&filter).await?;
         let members = self.store.active_members(principal.now).await?;
         let name = |m: MemberId| {
-            members
-                .iter()
-                .find(|x| x.id == m)
-                .map_or_else(|| format!("Mitglied {m}"), |x| x.full_name())
+            members.iter().find(|x| x.id == m).map_or_else(
+                || crate::people::PersonRef::text(format!("Mitglied {m}")),
+                |x| crate::people::PersonRef::member(m, x.full_name()),
+            )
         };
         Ok(AuditView {
             rows: records
@@ -170,7 +170,7 @@ impl crate::service::ClubService {
                     actor: name(r.entry.actor),
                     action: action_label(&r.entry.action),
                     summary: r.entry.summary.clone(),
-                    subject: r.entry.subject.map(name).unwrap_or_default(),
+                    subject: r.entry.subject.map(name),
                     object: format!("{} {}", r.entry.object_kind, r.entry.object_id),
                 })
                 .collect(),
@@ -235,7 +235,7 @@ mod tests {
             .audit_view(&user(GRETA), &AuditQuery::default())
             .await
             .unwrap();
-        assert!(!own.sees_all && own.rows.len() == 1 && own.rows[0].actor == "Greta Lorenzen");
+        assert!(!own.sees_all && own.rows.len() == 1 && own.rows[0].actor.name == "Greta Lorenzen");
         let none = service
             .audit_view(&user(ANNA), &AuditQuery::default())
             .await

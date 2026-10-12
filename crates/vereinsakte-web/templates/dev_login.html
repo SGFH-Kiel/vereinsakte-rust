@@ -9,10 +9,11 @@
 <body>
   <div class="devbar"><div class="inner"><strong>Entwicklungsmodus</strong> – Anmeldung ohne Microsoft Entra ID</div></div>
   <main>
+    {% include "_brand.html" %}
     <h1>Als Mitglied anmelden</h1>
     <p>Rollen ergeben sich aus den Ämtern: wähle ein Mitglied mit dem passenden Amt.</p>
     {% for group in groups %}
-    <section class="card">
+    <section class="form-section">
       <h2>{{ group.label }}</h2>
       <ul class="plain choices">
       {% for choice in group.choices %}

@@ -1,23 +1,27 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% import "_forms.html" as f %}
+{% block eyebrow %}{% if v.is_self %}Persönlich{% else %}<a href="/finanzen">Finanzen</a>{% endif %}{% endblock %}
+{% block page_title %}{% if v.is_self %}Mein Konto{% else %}Konto {{ v.name }}{% endif %}{% endblock %}
+{% block page_sub %}<a class="person" href="/mitglieder/{{ v.member }}">{{ v.name }}</a> · Mitglied {{ v.member }}{% endblock %}
+{% block page_actions %}<a class="btn" href="/finanzen/nachweis/{{ v.member }}">{{ ui::icon("file") }}Jahresnachweis</a>{% endblock %}
 {% block content %}
-{% if !v.is_self %}<div class="breadcrumbs"><a href="/finanzen">Finanzen</a> › Konto {{ v.name }}</div>{% endif %}
-<div class="page-head">
-  <div><h1>{% if v.is_self %}Mein Konto{% else %}Konto {{ v.name }}{% endif %}</h1><p class="muted">Mitglied {{ v.member }}</p></div>
-  <div class="actions"><a class="btn" href="/finanzen/nachweis/{{ v.member }}">Jahresnachweis</a></div>
-</div>
-{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ ui::icon("alert-circle") }}<div>{{ message }}</div></div>{% endfor %}
+<section class="card stat-card">
+  <span class="stat-icon {% match v.balance %}{% when vereinsakte_app::my_data::Balance::Due(_) %}danger{% else %}ok{% endmatch %}">{{ ui::icon_lg("euro") }}</span>
+  <div class="stat-body"><div class="stat-label">Kontostand</div><div class="stat-value">{{ v.balance.label() }}</div></div>
+</section>
 <section class="card">
-  <p>Kontostand: <strong>{{ v.balance.label() }}</strong></p>
-  <h2>Forderungen</h2>
-  {% if v.claims.is_empty() %}<p>Keine Forderungen.</p>{% else %}
+  <div class="card-head"><h2>{{ ui::icon("list") }}Forderungen</h2></div>
+  {% if v.claims.is_empty() %}{{ ui::empty("check-circle", "Keine Forderungen.") }}{% else %}
+  {{ ui::sort_form(claims_sort) }}
   <div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Forderung</th><th class="num">Betrag</th><th>Fällig</th><th>Stand</th><th></th></tr></thead>
+    <thead><tr>{{ ui::th_sort(claims_sort, "forderung", "Forderung", "") }}{{ ui::th_sort(claims_sort, "betrag", "Betrag", "num") }}{{ ui::th_sort(claims_sort, "faellig", "Fällig", "") }}{{ ui::th_sort(claims_sort, "stand", "Stand", "") }}<th scope="col"><span class="visually-hidden">Aktionen</span></th></tr></thead>
     <tbody>
     {% for c in v.claims %}
       <tr>
-        <td data-label="Forderung">{{ c.text }}</td><td data-label="Betrag" class="num">{{ c.amount }}</td>
+        <td data-label="Forderung" class="cell-title">{{ c.text }}</td><td data-label="Betrag" class="num">{{ c.amount }}</td>
         <td data-label="Fällig">{% if let Some(due) = c.due %}{{ due }}{% endif %}</td>
         <td data-label="Stand">{{ c.state.label() }}</td>
         <td data-label="">{% if v.can_post && !c.state.label().starts_with("storniert") %}
@@ -32,38 +36,43 @@
   </table>
   </div>
   {% endif %}
-  <h2 class="spaced">Einzahlungen</h2>
-  {% if v.payments.is_empty() %}<p>Keine Einzahlungen.</p>{% else %}
+</section>
+<section class="card">
+  <div class="card-head"><h2>{{ ui::icon("euro") }}Einzahlungen</h2></div>
+  {% if v.payments.is_empty() %}{{ ui::empty("euro", "Keine Einzahlungen.") }}{% else %}
+  {{ ui::sort_form(payments_sort) }}
   <div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Datum</th><th class="num">Betrag</th><th>Verwendungszweck</th></tr></thead>
-    <tbody>{% for p in v.payments %}<tr><td data-label="Datum">{{ p.date }}</td><td data-label="Betrag" class="num">{{ p.amount }}</td><td data-label="Verwendungszweck">{{ p.text }}</td></tr>{% endfor %}</tbody>
+    <thead><tr>{{ ui::th_sort(payments_sort, "datum", "Datum", "") }}{{ ui::th_sort(payments_sort, "betrag", "Betrag", "num") }}{{ ui::th_sort(payments_sort, "zweck", "Verwendungszweck", "") }}</tr></thead>
+    <tbody>{% for p in v.payments %}<tr><td data-label="Datum" class="cell-title">{{ p.date }}</td><td data-label="Betrag" class="num">{{ p.amount }}</td><td data-label="Verwendungszweck">{{ p.text }}</td></tr>{% endfor %}</tbody>
   </table>
   </div>
   {% endif %}
 </section>
 {% if v.can_post %}
 <div class="grid cols-2">
-<section class="card">
+<form method="post" action="/finanzen/konten/{{ v.member }}/einzahlung" class="form-section">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
   <h2>Einzahlung buchen</h2>
-  <form method="post" action="/finanzen/konten/{{ v.member }}/einzahlung" class="form-grid">
-    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-    {{ f::field("amount", "Betrag in €", "", errors.get("amount"), "text", "z. B. 240,00") }}
+  <p class="section-intro">Zahlungseingang auf das Konto.</p>
+  <div class="form-grid">
+    {{ f::req_field("amount", "Betrag in €", "", errors.get("amount"), "text", "z. B. 240,00") }}
     {{ f::field("date", "Datum (optional)", "", errors.get("date"), "date", "leer lassen für heute") }}
     {{ f::field("text", "Verwendungszweck", "", "", "text", "") }}
-    <div class="form-actions"><button type="submit" class="primary">Buchen</button></div>
-  </form>
-</section>
-<section class="card">
+  </div>
+  <div class="form-actions"><button type="submit" class="primary">Buchen</button></div>
+</form>
+<form method="post" action="/finanzen/konten/{{ v.member }}/forderung" class="form-section">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
   <h2>Forderung anlegen</h2>
-  <form method="post" action="/finanzen/konten/{{ v.member }}/forderung" class="form-grid">
-    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-    {{ f::field("claim_amount", "Betrag in €", "", errors.get("claim_amount"), "text", "") }}
-    {{ f::field("claim_text", "Text", "", errors.get("claim_text"), "text", "z. B. Schlüsselpfand") }}
+  <p class="section-intro">Sonstige Forderung gegen das Mitglied.</p>
+  <div class="form-grid">
+    {{ f::req_field("claim_amount", "Betrag in €", "", errors.get("claim_amount"), "text", "") }}
+    {{ f::req_field("claim_text", "Text", "", errors.get("claim_text"), "text", "z. B. Schlüsselpfand") }}
     {{ f::field("due", "Fällig am (optional)", "", errors.get("due"), "date", "") }}
-    <div class="form-actions"><button type="submit" class="primary">Anlegen</button></div>
-  </form>
-</section>
+  </div>
+  <div class="form-actions"><button type="submit" class="primary">Anlegen</button></div>
+</form>
 </div>
 {% endif %}
 {% endblock %}

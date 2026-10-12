@@ -34,7 +34,8 @@ pub enum Capability {
     Appoint(Role),
     /// Ein Amt des Mitglieds beenden.
     Resign(MemberId),
-    ReadOfficeHistory,
+    /// Archiv: Nicht mehr Aktuelles (beendete Ämter usw.).
+    ReadArchive,
 
     // --- Boote (Web) ---
     CreateBoat,
@@ -145,8 +146,8 @@ impl<'a> Authorizer<'a> {
             ReadMember(member) | ReadAccount(member) => {
                 self.me(member) || self.board() || self.auditor()
             }
-            ManageMembers | Appoint(_) | ReadOfficeHistory | CreateBoat | ManageWorkEvents
-            | GrantHours | PostFinance => self.board(),
+            ManageMembers | Appoint(_) | CreateBoat | ManageWorkEvents | GrantHours
+            | PostFinance => self.board(),
             Resign(member) => self.me(member) || self.board(),
             EditBoat(boat) => self.boat_manager(boat),
             EditWorkEntry { owner, confirmed } => {
@@ -158,7 +159,9 @@ impl<'a> Authorizer<'a> {
             }
             ManageTasks => self.any_office(),
             UpdateTask { assigned } => assigned || self.any_office(),
-            ReadAllHours | ReadAllAccounts | ReadAudit => self.board() || self.auditor(),
+            ReadAllHours | ReadAllAccounts | ReadAudit | ReadArchive => {
+                self.board() || self.auditor()
+            }
             Reserve { boat, skipper } => self.me(skipper) || self.boat_manager(boat),
             ChangeReservation {
                 boat,
@@ -224,7 +227,6 @@ mod tests {
             ManageMembers,
             Appoint(Role::Chair),
             Appoint(Role::Boatwarden(FILOU)),
-            ReadOfficeHistory,
             CreateBoat,
             ManageWorkEvents,
             GrantHours,
@@ -273,6 +275,13 @@ mod tests {
             "Revisor schreibt keine Buchungen"
         );
         assert!(allowed(LUKAS, ReadAudit) && !allowed(GRETA, ReadAudit));
+        assert!(
+            allowed(LUKAS, ReadArchive)
+                && allowed(EVA, ReadArchive)
+                && !allowed(GRETA, ReadArchive)
+                && !allowed(BEN, ReadArchive),
+            "Archiv: Vorstand und Revisoren"
+        );
 
         // Arbeit.
         let own = EditWorkEntry {

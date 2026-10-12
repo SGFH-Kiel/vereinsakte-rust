@@ -40,6 +40,7 @@ const defaults = [
   ['101', '/konto'], ['110', '/finanzen'], ['110', '/finanzen/konten/103'], ['110', '/finanzen/saisons?jahr=2027'],
   ['110', '/finanzen/beitraege?jahr=2027'], ['110', '/finanzen/touren'], ['110', '/finanzen/nachweis/103'],
   ['112', '/protokoll'],
+  ['105', '/kalender'], ['105', '/kalender?ansicht=monat'], ['105', '/protokoll/archiv'], ['105', '/protokoll/archiv?bereich=reservierungen'],
 ];
 const pages = JSON.parse(process.env.SCREEN_PAGES ?? JSON.stringify(defaults));
 const sizes = [['mobil', 375, 800], ['desktop', 1280, 900]];

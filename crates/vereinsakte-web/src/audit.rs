@@ -10,7 +10,7 @@ use vereinsakte_app::audit::{AuditQuery, AuditRow, AuditView};
 use vereinsakte_core::ids::MemberId;
 
 use crate::error::WebError;
-use crate::list::{ListQuery, Pager, paginate};
+use crate::list::{ListQuery, Pager, Sort, SortCtx, date_key, paginate, sort_rows, text_key};
 use crate::pages::{Layout, render};
 use crate::session::RequireUser;
 use crate::state::AppState;
@@ -22,6 +22,10 @@ pub struct AuditParams {
     akteur: Option<String>,
     art: Option<String>,
     seite: Option<usize>,
+    #[serde(default)]
+    sort_prot: String,
+    #[serde(default)]
+    dir_prot: String,
 }
 
 #[derive(Template)]
@@ -35,6 +39,10 @@ struct AuditPage {
     to: String,
     actor: String,
     action: String,
+    sort: SortCtx,
+    active_filters: usize,
+    tab: &'static str,
+    can_archive: bool,
 }
 
 pub async fn show(
@@ -68,7 +76,56 @@ pub async fn show(
         ],
         ..ListQuery::default()
     };
-    let (rows, pager) = paginate(std::mem::take(&mut v.rows), &list, "/protokoll");
+    // Sortierung vor dem Seitenwechsel, damit die Seiten zusammenpassen.
+    let sort_state = Sort {
+        key: params.sort_prot.clone(),
+        desc: params.dir_prot == "desc",
+    };
+    let mut all_rows = std::mem::take(&mut v.rows);
+    sort_rows(
+        &mut all_rows,
+        &sort_state,
+        &[
+            ("zeit", |r| date_key(&r.when)),
+            ("akteur", |r| text_key(&r.actor.name)),
+            ("aktion", |r| text_key(&r.action)),
+        ],
+    );
+    let filter_params = vec![
+        ("von".to_string(), params.von.clone().unwrap_or_default()),
+        ("bis".to_string(), params.bis.clone().unwrap_or_default()),
+        (
+            "akteur".to_string(),
+            params.akteur.clone().unwrap_or_default(),
+        ),
+        ("art".to_string(), params.art.clone().unwrap_or_default()),
+    ];
+    let active_filters = filter_params.iter().filter(|(_, v)| !v.is_empty()).count();
+    let mut list = list;
+    if !sort_state.key.is_empty() {
+        list.extra
+            .push(("sort_prot".into(), sort_state.key.clone()));
+        if sort_state.desc {
+            list.extra.push(("dir_prot".into(), "desc".into()));
+        }
+    }
+    let sort = SortCtx::new(
+        "prot",
+        "/protokoll",
+        filter_params,
+        &sort_state,
+        &[
+            ("zeit", "Zeitpunkt"),
+            ("akteur", "Handelnd"),
+            ("aktion", "Aktion"),
+        ],
+    );
+    let can_archive = state
+        .club
+        .principal(&user)
+        .await?
+        .can(&vereinsakte_core::rights::Capability::ReadArchive);
+    let (rows, pager) = paginate(all_rows, &list, "/protokoll");
     let layout = Layout::build(&state, &session, Some(&user), "Protokoll", "/protokoll").await?;
     render(&AuditPage {
         layout,
@@ -79,5 +136,9 @@ pub async fn show(
         to: params.bis.unwrap_or_default(),
         actor: params.akteur.unwrap_or_default(),
         action: params.art.unwrap_or_default(),
+        sort,
+        active_filters,
+        tab: "protokoll",
+        can_archive,
     })
 }

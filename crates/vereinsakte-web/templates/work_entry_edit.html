@@ -1,10 +1,8 @@
 {% extends "base.html" %}
-{% import "_forms.html" as f %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}<a href="/arbeit">Arbeit</a>{% endblock %}
+{% block page_title %}Einsatz ändern{% endblock %}
 {% block content %}
-<div class="breadcrumbs"><a href="/arbeit">Arbeit</a> › Einsatz ändern</div>
-<div class="page-head"><h1>Einsatz ändern</h1></div>
-<p class="notice">Eine Änderung hebt die Bestätigung auf, falls der Einsatz schon bestätigt war.</p>
-<section class="card">
+<div class="notice">{{ ui::icon("info") }}<div>Eine Änderung hebt die Bestätigung auf, falls der Einsatz schon bestätigt war.</div></div>
 {% include "_work_entry_form.html" %}
-</section>
 {% endblock %}

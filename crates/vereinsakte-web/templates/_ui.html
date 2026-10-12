@@ -23,3 +23,6 @@
 
 {# Symbol mit Tooltip und Text für Hilfstechnik; kind: "" oder "radio" oder "kind" #}
 {% macro symbol(icon, kind, tip, text) %}<span class="symbol {{ kind }}" title="{{ tip }}"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-{{ icon }}"/></svg><span class="symbol-text">{{ text }}</span></span>{% endmacro %}
+
+{# Person: Link zur Profilseite, wenn es eine gibt, sonst einfacher Text (p: PersonRef) #}
+{% macro person(p) %}{% if let Some(id) = p.id %}<a class="person" href="/mitglieder/{{ id }}">{{ p.name }}</a>{% else %}{{ p.name }}{% endif %}{% endmacro %}

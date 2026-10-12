@@ -513,8 +513,8 @@ impl ClubService {
             id: id.to_string(),
             name: boat.name.clone(),
             boat_type: boat.boat_type.to_string(),
-            type_icon: boat_type_display(&boat).0,
-            type_tip: boat_type_display(&boat).1,
+            type_icon: boat_type_display(boat).0,
+            type_tip: boat_type_display(boat).1,
             facts,
             wardens: holders(Role::Boatwarden(id)),
             examiners: holders(Role::Examiner(id)),
@@ -530,9 +530,11 @@ impl ClubService {
             released_seasons: boat.releases.iter().map(|r| r.season).collect(),
             season,
             released: boat.is_released_for(season),
+            // Beendete Sperren stehen nur im Archiv.
             blocks: boat
                 .blocks
                 .iter()
+                .filter(|b| b.end.is_none_or(|end| end > principal.now))
                 .map(|b| BlockLine {
                     period: match b.end {
                         Some(end) => format!("{} bis {}", format::date(b.start), format::date(end)),

@@ -1,25 +1,28 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% import "_forms.html" as f %}
+{% block eyebrow %}Verein{% endblock %}
+{% block page_title %}Ämter{% endblock %}
+{% block page_sub %}Aktuelle Besetzung nach Satzung und Segelordnung{% endblock %}
+{% block page_actions %}{% if v.can_see_history %}<a class="btn" href="/protokoll/archiv?tab=aemter">{{ ui::icon("archive") }}Frühere Besetzungen im Archiv</a>{% endif %}{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><h1>Ämter</h1><p class="muted">Aktuelle Besetzung nach Satzung und Segelordnung</p></div>
-  {% if v.can_see_history %}<div class="actions"><a class="btn" href="/aemter/historie">Amtshistorie</a></div>{% endif %}
-</div>
-{% for hint in hints %}<div class="notice warn" role="status">Hinweis: {{ hint }}</div>{% endfor %}
-{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
+{% for hint in hints %}<div class="notice warn" role="status">{{ ui::icon("alert") }}<div>Hinweis: {{ hint }}</div></div>{% endfor %}
+{% for message in errors.general() %}<div class="notice error" role="alert">{{ ui::icon("alert-circle") }}<div>{{ message }}</div></div>{% endfor %}
 {% for section in v.sections %}
+{% let sort = sorts[loop.index0] %}
 <section class="card">
-  <h2>{{ section.title }}</h2>
+  <div class="card-head"><h2>{{ ui::icon("award") }}{{ section.title }}</h2></div>
   {% if section.rows.is_empty() %}<p class="muted">Derzeit nicht besetzt.</p>{% else %}
+  {{ ui::sort_form(sort) }}
   <div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Amt</th><th>Inhaber</th><th>Kontakt</th><th>Seit</th><th></th></tr></thead>
+    <thead><tr>{{ ui::th_sort(sort, "amt", "Amt", "") }}{{ ui::th_sort(sort, "inhaber", "Inhaber", "") }}<th scope="col">Kontakt</th>{{ ui::th_sort(sort, "seit", "Seit", "") }}<th scope="col"><span class="visually-hidden">Aktionen</span></th></tr></thead>
     <tbody>
     {% for row in section.rows %}
       <tr>
-        <td data-label="Amt">{{ row.role }}</td>
-        <td data-label="Inhaber"><a href="/mitglieder/{{ row.holder_id }}">{{ row.holder }}</a></td>
-        <td data-label="Kontakt">{% if row.contact.is_blocked() %}<span class="badge">Kontaktdaten gesperrt</span>{% else %}{% if let Some(email) = row.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}{% if !row.contact.phones().is_empty() %}<br>{{ row.contact.phones()|join(", ") }}{% endif %}{% endif %}</td>
+        <td data-label="Amt" class="cell-title">{{ row.role }}</td>
+        <td data-label="Inhaber"><a class="person" href="/mitglieder/{{ row.holder_id }}">{{ row.holder }}</a></td>
+        <td data-label="Kontakt">{% if row.contact.is_blocked() %}{{ ui::badge("neutral", "lock", "Kontaktdaten gesperrt") }}{% else %}{% if let Some(email) = row.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}{% if !row.contact.phones().is_empty() %}<br>{{ row.contact.phones()|join(", ") }}{% endif %}{% endif %}</td>
         <td data-label="Seit">{{ row.since }}</td>
         <td data-label="">{% if row.can_resign %}
           <form method="post" action="/aemter/{{ row.id }}/abgeben" class="inline">
@@ -35,27 +38,30 @@
 </section>
 {% endfor %}
 {% if v.can_appoint %}
-<section class="card">
-  <h2>Mitglied ernennen</h2>
-  <form method="post" action="/aemter" class="form-grid cols-2">
-    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-    <div class="field{% if !errors.get("member").is_empty() %} has-error{% endif %}">
-      <label for="f-member">Mitglied</label>
-      <select id="f-member" name="member">
-        {% for (number, name) in v.member_options %}<option value="{{ number }}"{% if number.to_string() == chosen_member %} selected{% endif %}>{{ name }}</option>{% endfor %}
-      </select>
-      {% if !errors.get("member").is_empty() %}<span class="error-text">{{ errors.get("member") }}</span>{% endif %}
+<form method="post" action="/aemter" class="stack">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <section class="form-section">
+    <h2>Mitglied ernennen</h2>
+    <p class="section-intro">Ein aktives Mitglied in ein Amt berufen.</p>
+    <div class="form-grid cols-2">
+      <div class="field{% if !errors.get("member").is_empty() %} has-error{% endif %}">
+        <label for="f-member">Mitglied<span class="req" aria-hidden="true">*</span></label>
+        <select id="f-member" name="member">
+          {% for (number, name) in v.member_options %}<option value="{{ number }}"{% if number.to_string() == chosen_member %} selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+        {% if !errors.get("member").is_empty() %}<span class="error-text">{{ ui::icon("alert-circle") }}{{ errors.get("member") }}</span>{% endif %}
+      </div>
+      <div class="field{% if !errors.get("role").is_empty() %} has-error{% endif %}">
+        <label for="f-role">Amt<span class="req" aria-hidden="true">*</span></label>
+        <select id="f-role" name="role">
+          {% for (key, label) in v.role_options %}<option value="{{ key }}"{% if *key == chosen_role %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% if !errors.get("role").is_empty() %}<span class="error-text">{{ ui::icon("alert-circle") }}{{ errors.get("role") }}</span>{% endif %}
+      </div>
+      {{ f::field("start", "Beginn", chosen_start, errors.get("start"), "date", "leer lassen für heute") }}
     </div>
-    <div class="field{% if !errors.get("role").is_empty() %} has-error{% endif %}">
-      <label for="f-role">Amt</label>
-      <select id="f-role" name="role">
-        {% for (key, label) in v.role_options %}<option value="{{ key }}"{% if *key == chosen_role %} selected{% endif %}>{{ label }}</option>{% endfor %}
-      </select>
-      {% if !errors.get("role").is_empty() %}<span class="error-text">{{ errors.get("role") }}</span>{% endif %}
-    </div>
-    {{ f::field("start", "Beginn", chosen_start, errors.get("start"), "date", "leer lassen für heute") }}
-    <div class="form-actions wide"><button type="submit" class="primary">Ernennen</button></div>
-  </form>
-</section>
+  </section>
+  <div class="form-actions"><button type="submit" class="primary">{{ ui::icon("check") }}Ernennen</button></div>
+</form>
 {% endif %}
 {% endblock %}

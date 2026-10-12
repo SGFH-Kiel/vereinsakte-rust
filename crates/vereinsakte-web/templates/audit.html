@@ -1,39 +1,52 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% import "_forms.html" as f %}
+{% block eyebrow %}Verwaltung{% endblock %}
+{% block page_title %}Protokoll{% endblock %}
+{% block page_sub %}{% if v.sees_all %}Alle Änderungen an der Vereinsakte{% else %}Änderungen, die dich betreffen oder die du vorgenommen hast{% endif %}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Protokoll</h1><p class="muted">{% if v.sees_all %}Alle Änderungen an der Vereinsakte{% else %}Änderungen, die dich betreffen oder die du vorgenommen hast{% endif %}</p></div></div>
-<form method="get" action="/protokoll" class="filters">
-  {{ f::field("von", "Von", from, "", "date", "") }}
-  {{ f::field("bis", "Bis", to, "", "date", "") }}
-  {% if v.sees_all %}
-  <div class="field"><label for="f-akteur">Handelnd</label>
-    <select id="f-akteur" name="akteur"><option value="">alle</option>
-      {% for (number, name) in v.members %}<option value="{{ number }}"{% if number.to_string() == actor %} selected{% endif %}>{{ name }}</option>{% endfor %}
-    </select></div>
+{% include "_protokoll_nav.html" %}
+<div class="list-layout">
+  <section class="filter-panel" aria-label="Filter">
+    <input type="checkbox" id="filter-toggle" class="filter-toggle" aria-label="Filter ein- oder ausblenden"{% if active_filters > 0 %} checked{% endif %}>
+    <label class="filter-summary" for="filter-toggle">{{ ui::icon("filter") }}<span>Filter{% if active_filters > 0 %} ({{ active_filters }}){% endif %}</span><span class="chev">{{ ui::icon("chevron-down") }}</span></label>
+    <form method="get" action="/protokoll" class="filter-body">
+      {{ f::field("von", "Von", from, "", "date", "") }}
+      {{ f::field("bis", "Bis", to, "", "date", "") }}
+      {% if v.sees_all %}
+      <div class="field"><label for="f-akteur">Handelnd</label>
+        <select id="f-akteur" name="akteur"><option value="">alle</option>
+          {% for (number, name) in v.members %}<option value="{{ number }}"{% if number.to_string() == actor %} selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select></div>
+      {% endif %}
+      <div class="field"><label for="f-art">Art</label>
+        <select id="f-art" name="art"><option value="">alle</option>
+          {% for (code, label) in v.actions %}<option value="{{ code }}"{% if *code == action %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></div>
+      <div class="actions"><button type="submit" class="primary">{{ ui::icon("search") }}Filtern</button>{% if active_filters > 0 %}<a class="btn ghost" href="/protokoll">Zurücksetzen</a>{% endif %}</div>
+    </form>
+  </section>
+  <div>
+  {% if rows.is_empty() %}
+    <section class="card">{{ ui::empty("clipboard", "Keine Einträge gefunden.") }}</section>
+  {% else %}
+    {{ ui::sort_form(sort) }}
+    <div class="table-wrap">
+    <table class="responsive">
+      <thead><tr>{{ ui::th_sort(sort, "zeit", "Zeitpunkt", "") }}{{ ui::th_sort(sort, "akteur", "Handelnd", "") }}{{ ui::th_sort(sort, "aktion", "Aktion", "") }}<th scope="col">Betrifft</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td data-label="Zeitpunkt" class="cell-title">{{ r.when }}</td><td data-label="Handelnd">{{ ui::person(r.actor) }}</td>
+          <td data-label="Aktion"><strong>{{ r.action }}</strong><br><span class="muted">{{ r.summary }}</span></td>
+          <td data-label="Betrifft">{% if let Some(s) = r.subject %}{{ ui::person(s) }}{% else %}<span class="muted">{{ r.object }}</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% include "_pager.html" %}
   {% endif %}
-  <div class="field"><label for="f-art">Art</label>
-    <select id="f-art" name="art"><option value="">alle</option>
-      {% for (code, label) in v.actions %}<option value="{{ code }}"{% if *code == action %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select></div>
-  <button type="submit" class="primary">Filtern</button>
-</form>
-<section class="card">
-  {% if rows.is_empty() %}<p>Keine Einträge gefunden.</p>{% else %}
-  <div class="table-wrap">
-  <table class="responsive">
-    <thead><tr><th>Zeitpunkt</th><th>Handelnd</th><th>Aktion</th><th>Betrifft</th></tr></thead>
-    <tbody>
-    {% for r in rows %}
-      <tr>
-        <td data-label="Zeitpunkt">{{ r.when }}</td><td data-label="Handelnd">{{ r.actor }}</td>
-        <td data-label="Aktion"><strong>{{ r.action }}</strong><br><span class="muted">{{ r.summary }}</span></td>
-        <td data-label="Betrifft">{% if !r.subject.is_empty() %}{{ r.subject }}{% else %}<span class="muted">{{ r.object }}</span>{% endif %}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
   </div>
-  {% include "_pager.html" %}
-  {% endif %}
-</section>
+</div>
 {% endblock %}

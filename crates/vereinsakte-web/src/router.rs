@@ -67,6 +67,7 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/boote/{id}/abnahme", post(boats::checkout))
         .route("/boote/{id}/widerruf", post(boats::revoke))
         .route("/protokoll", get(audit::show))
+        .route("/protokoll/archiv", get(crate::archive::show))
         .route("/konto", get(finance::own_account))
         .route("/finanzen", get(finance::outstanding))
         .route("/finanzen/konten/{nr}", get(finance::account))
@@ -130,7 +131,7 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         .route("/arbeit/uebertrag", post(work::transfer))
         .route("/arbeit/abgeltung", post(work::compensate))
         .route("/aemter", get(offices::overview).post(offices::appoint))
-        .route("/aemter/historie", get(offices::history))
+        .route("/aemter/historie", get(crate::archive::offices_history))
         .route("/aemter/{id}/abgeben", post(offices::resign));
     if settings.development {
         // Nur im Entwicklungsmodus registriert – sonst existieren die Routen nicht.

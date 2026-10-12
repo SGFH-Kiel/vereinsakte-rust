@@ -129,6 +129,17 @@ David (Bootswart und Abnehmer Filou), Clara und Lukas (Revisoren), Greta (ohne A
 Anmeldeverknüpfungen gehören bewusst nicht dazu. Für eine vollständige Sicherung also die
 Datenbankdatei (`vereinsakte.db`, im Betrieb samt `-wal`/`-shm`) kopieren.
 
+### Oberfläche
+
+Die Oberfläche folgt Farben, Schrift (Amaranth, lokal eingebunden) und Logo der
+Webseite der Segelgruppe. Navigation: Seitenleiste (Desktop) bzw. untere Leiste
+mit „Mehr“ (Mobil); Listen sind sortierbar (Spaltenköpfe) und filterbar.
+**Kalender** zeigt anstehende Reservierungen und Termine (Liste, Monat, Woche);
+**Archiv** enthält Vergangenes (Reservierungen, Termine, Ämterhistorie, Protokoll).
+**Tour-Regel:** Eine Reservierung ist eine Tour, wenn das Enddatum nach dem
+Startdatum liegt; Gäste werden nicht erfasst (Hinweise in der Bemerkung), die
+Mindestbesatzung wird nicht geprüft.
+
 ### Bildschirmfotos zur Prüfung des Designs
 
 ```sh

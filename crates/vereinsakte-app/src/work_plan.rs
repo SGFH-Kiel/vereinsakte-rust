@@ -344,7 +344,11 @@ impl ClubService {
                     description: t.description.clone().unwrap_or_default(),
                     status,
                     status_key: key,
-                    assignees: t.assignees.iter().map(|m| name(*m)).collect(),
+                    assignees: t
+                        .assignees
+                        .iter()
+                        .map(|m| crate::people::PersonRef::member(*m, name(*m)))
+                        .collect(),
                     boat: t
                         .boat
                         .map(|b| boat_name(&record.boats, b))

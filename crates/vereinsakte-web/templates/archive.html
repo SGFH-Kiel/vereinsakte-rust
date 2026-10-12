@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Verwaltung{% endblock %}
+{% block page_title %}Archiv{% endblock %}
+{% block page_sub %}Was nicht mehr aktuell ist: beendete Ämter, Ausgeschiedene, abgelaufene Sperren, vergangene Reservierungen und Termine{% endblock %}
+{% block content %}
+{% include "_protokoll_nav.html" %}
+{% let tab = tab.as_str() %}
+<nav class="view-switch archive-tabs" aria-label="Art des Archivs">
+{% for (key, label, icon, href) in tabs %}<a href="{{ href }}"{% if *key == tab %} aria-current="page"{% endif %}>{{ ui::icon(icon) }}&nbsp;{{ label }}</a>{% endfor %}
+</nav>
+{% if tab == "reservierungen" || tab == "termine" %}
+<form method="get" action="/protokoll/archiv" class="filters">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <div class="field"><label for="f-jahr">Jahr</label><input id="f-jahr" type="number" name="jahr" value="{{ year }}" placeholder="alle"></div>
+  <button type="submit" class="primary">{{ ui::icon("search") }}Anzeigen</button>
+</form>
+{% endif %}
+{% if tab == "aemter" %}
+  {% if offices.is_empty() %}<section class="card">{{ ui::empty("award", "Keine Ämter erfasst.") }}</section>{% else %}
+  {{ ui::sort_form(sort) }}
+  <div class="table-wrap"><table class="responsive">
+    <thead><tr>{{ ui::th_sort(sort, "amt", "Amt", "") }}{{ ui::th_sort(sort, "inhaber", "Inhaber", "") }}{{ ui::th_sort(sort, "von", "Von", "") }}{{ ui::th_sort(sort, "bis", "Bis", "") }}</tr></thead>
+    <tbody>{% for row in offices %}
+      <tr><td data-label="Amt" class="cell-title">{{ row.role }}</td>
+        <td data-label="Inhaber"><a class="person" href="/mitglieder/{{ row.holder_id }}">{{ row.holder }}</a></td>
+        <td data-label="Von">{{ row.since }}</td>
+        <td data-label="Bis">{% if let Some(until) = row.until %}{{ until }}{% else %}{{ ui::badge("ok", "check", "laufend") }}{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% endif %}
+{% else if tab == "mitglieder" %}
+  {% if members.is_empty() %}<section class="card">{{ ui::empty("users", "Keine ausgeschiedenen Mitglieder.") }}</section>{% else %}
+  {{ ui::sort_form(sort) }}
+  <div class="table-wrap"><table class="responsive">
+    <thead><tr>{{ ui::th_sort(sort, "name", "Name", "") }}{{ ui::th_sort(sort, "art", "Mitgliedsart", "") }}{{ ui::th_sort(sort, "eintritt", "Eintritt", "") }}{{ ui::th_sort(sort, "ende", "Ende", "") }}<th scope="col">Grund</th></tr></thead>
+    <tbody>{% for m in members %}
+      <tr><td data-label="Name" class="cell-title">{{ ui::person(m.person) }}</td><td data-label="Mitgliedsart">{{ m.membership_type }}</td><td data-label="Eintritt">{{ m.joined }}</td><td data-label="Ende">{{ m.ended }}</td><td data-label="Grund">{{ m.reason }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% endif %}
+{% else if tab == "sperren" %}
+  {% if blocks.is_empty() %}<section class="card">{{ ui::empty("lock", "Keine beendeten Sperren.") }}</section>{% else %}
+  {{ ui::sort_form(sort) }}
+  <div class="table-wrap"><table class="responsive">
+    <thead><tr>{{ ui::th_sort(sort, "boot", "Boot", "") }}{{ ui::th_sort(sort, "zeitraum", "Zeitraum", "") }}{{ ui::th_sort(sort, "grund", "Grund", "") }}<th scope="col">Von</th></tr></thead>
+    <tbody>{% for b in blocks %}
+      <tr><td data-label="Boot" class="cell-title"><a class="person" href="/boote/{{ b.boat_id }}">{{ b.boat }}</a></td><td data-label="Zeitraum">{{ b.period }}</td><td data-label="Grund">{{ b.reason }}</td><td data-label="Von">{{ ui::person(b.by) }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% endif %}
+{% else if tab == "reservierungen" %}
+  {% if reservations.is_empty() %}<section class="card">{{ ui::empty("boat", "Keine vergangenen Reservierungen.") }}</section>{% else %}
+  {{ ui::sort_form(sort) }}
+  <div class="table-wrap"><table class="responsive">
+    <thead><tr>{{ ui::th_sort(sort, "wann", "Wann", "") }}{{ ui::th_sort(sort, "boot", "Boot", "") }}{{ ui::th_sort(sort, "skipper", "Skipper", "") }}<th scope="col">Art</th></tr></thead>
+    <tbody>{% for r in reservations %}
+      <tr><td data-label="Wann" class="cell-title"><a href="/reservierungen/{{ r.id }}">{{ r.when }}</a></td><td data-label="Boot">{{ r.boat }}</td>
+        <td data-label="Skipper"><a class="person" href="/mitglieder/{{ r.skipper_id }}">{{ r.skipper }}</a></td>
+        <td data-label="Art">{% if r.tour %}{{ ui::badge("info", "anchor", "Tour") }}{% else %}Ausfahrt{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% endif %}
+{% else %}
+  {% if events.is_empty() %}<section class="card">{{ ui::empty("wrench", "Keine vergangenen Arbeitstermine.") }}</section>{% else %}
+  {{ ui::sort_form(sort) }}
+  <div class="table-wrap"><table class="responsive">
+    <thead><tr>{{ ui::th_sort(sort, "wann", "Wann", "") }}{{ ui::th_sort(sort, "titel", "Titel", "") }}{{ ui::th_sort(sort, "ort", "Ort", "") }}<th scope="col" class="num">Anmeldungen</th></tr></thead>
+    <tbody>{% for e in events %}
+      <tr><td data-label="Wann" class="cell-title">{{ e.when }}</td><td data-label="Titel"><a href="/arbeit/termine/{{ e.id }}">{{ e.title }}</a></td><td data-label="Ort">{{ e.location }}</td><td data-label="Anmeldungen" class="num">{{ e.registered }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% endif %}
+{% endif %}
+{% endblock %}

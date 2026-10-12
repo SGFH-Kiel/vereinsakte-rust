@@ -1,26 +1,31 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Verwaltung{% endblock %}
+{% block page_title %}Finanzen{% endblock %}
+{% block page_sub %}Tourgebühren{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Finanzen</h1><p class="muted">Tourgebühren</p></div></div>
 {% include "_finance_nav.html" %}
-<section class="card">
-  {% if v.rows.is_empty() %}<p>Es gibt keine Touren.</p>{% else %}
-  <div class="table-wrap">
+{% if v.rows.is_empty() %}
+<section class="card">{{ ui::empty("anchor", "Es gibt keine Touren.") }}</section>
+{% else %}
+{{ ui::sort_form(sort) }}
+<div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Tour</th><th>Skipper</th><th class="num">Berechnet</th><th class="num">Noch offen zu berechnen</th><th class="num">Summe</th><th></th></tr></thead>
+    <thead><tr>{{ ui::th_sort(sort, "tour", "Tour", "") }}{{ ui::th_sort(sort, "skipper", "Skipper", "") }}<th scope="col" class="num">Berechnet</th><th scope="col" class="num">Noch offen zu berechnen</th>{{ ui::th_sort(sort, "summe", "Summe", "num") }}{{ ui::th_sort(sort, "stand", "Stand", "") }}</tr></thead>
     <tbody>
     {% for r in v.rows %}
       <tr>
-        <td data-label="Tour"><a href="/reservierungen/{{ r.id }}">{{ r.boat }}, {{ r.when }}</a></td>
-        <td data-label="Skipper">{{ r.skipper }}</td>
+        <td data-label="Tour" class="cell-title"><a href="/reservierungen/{{ r.id }}">{{ r.boat }}, {{ r.when }}</a></td>
+        <td data-label="Skipper"><a class="person" href="/mitglieder/{{ r.skipper_id }}">{{ r.skipper }}</a></td>
         <td data-label="Berechnet" class="num">{{ r.billed }}</td><td data-label="Noch offen zu berechnen" class="num">{{ r.missing }}</td><td data-label="Summe" class="num">{{ r.total }}</td>
-        <td data-label="">{% if v.can_bill && r.missing > 0 %}
-          <form method="post" action="/finanzen/touren/{{ r.id }}/abrechnen" class="inline"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary small">Abrechnen</button></form>
-        {% else %}<span class="badge ok">✓ abgerechnet</span>{% endif %}</td>
+        <td data-label="Stand">{% if v.can_bill && r.missing > 0 %}
+          <form method="post" action="/finanzen/touren/{{ r.id }}/abrechnen"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="primary small">Abrechnen</button></form>
+        {% else %}{{ ui::badge("ok", "check", "abgerechnet") }}{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-  </div>
-  {% endif %}
-</section>
+</div>
+{% endif %}
+<p class="muted">Gäste werden nicht abgerechnet; ihre Gebühr erhebt der Skipper auf der Fahrt.</p>
 {% endblock %}

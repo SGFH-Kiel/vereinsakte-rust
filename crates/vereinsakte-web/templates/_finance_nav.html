@@ -1,6 +1,7 @@
+{% import "_ui.html" as ui -%}
 <nav class="subnav" aria-label="Finanzen">
-  <a href="/finanzen"{% if nav == "aussenstaende" %} aria-current="page"{% endif %}>Außenstände</a>
-  <a href="/finanzen/saisons"{% if nav == "saisons" %} aria-current="page"{% endif %}>Saisons und Gebühren</a>
-  <a href="/finanzen/beitraege"{% if nav == "beitraege" %} aria-current="page"{% endif %}>Jahresbeiträge</a>
-  <a href="/finanzen/touren"{% if nav == "touren" %} aria-current="page"{% endif %}>Touren</a>
+  <a href="/finanzen"{% if nav == "aussenstaende" %} aria-current="page"{% endif %}>{{ ui::icon("alert-circle") }}Außenstände</a>
+  <a href="/finanzen/saisons"{% if nav == "saisons" %} aria-current="page"{% endif %}>{{ ui::icon("euro") }}Saisons und Gebühren</a>
+  <a href="/finanzen/beitraege"{% if nav == "beitraege" %} aria-current="page"{% endif %}>{{ ui::icon("list") }}Jahresbeiträge</a>
+  <a href="/finanzen/touren"{% if nav == "touren" %} aria-current="page"{% endif %}>{{ ui::icon("anchor") }}Touren</a>
 </nav>

@@ -219,7 +219,7 @@ impl ClubService {
         Ok(OfficesView {
             sections,
             can_appoint,
-            can_see_history: principal.can(&Capability::ReadOfficeHistory),
+            can_see_history: principal.can(&Capability::ReadArchive),
             role_options: if can_appoint { role_options } else { vec![] },
             member_options: if can_appoint {
                 members
@@ -235,7 +235,7 @@ impl ClubService {
     /// Alle Ämter samt beendeter, nach Amt und Beginn sortiert (nur Vorstand).
     pub async fn office_history(&self, user: &CurrentUser) -> Result<Vec<OfficeRow>, AppError> {
         let principal = self.principal(user).await?;
-        principal.require(&Capability::ReadOfficeHistory)?;
+        principal.require(&Capability::ReadArchive)?;
         let scoped = self
             .load(&Scope {
                 offices: true,

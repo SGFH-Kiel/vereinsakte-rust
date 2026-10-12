@@ -1,0 +1,5 @@
+{% import "_ui.html" as ui -%}
+<nav class="subnav" aria-label="Protokoll und Archiv">
+  <a href="/protokoll"{% if tab == "protokoll" %} aria-current="page"{% endif %}>{{ ui::icon("clipboard") }}Protokoll</a>
+  {% if can_archive %}<a href="/protokoll/archiv"{% if tab == "archiv" %} aria-current="page"{% endif %}>{{ ui::icon("archive") }}Archiv</a>{% endif %}
+</nav>

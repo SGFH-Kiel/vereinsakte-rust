@@ -1,8 +1,13 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}<a href="/finanzen">Finanzen</a>{% endblock %}
+{% block page_title %}Jahresnachweis {{ p.year }}{% endblock %}
+{% block page_sub %}{{ p.name }}, Mitglied {{ p.number }}{% endblock %}
+{% block page_actions %}<a class="btn no-print" href="/finanzen/konten/{{ p.member }}">{{ ui::icon("euro") }}Zum Konto</a>{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><h1>Jahresnachweis {{ p.year }}</h1><p class="muted">{{ p.name }}, Mitglied {{ p.number }}</p></div>
-  <div class="actions no-print"><a class="btn" href="/finanzen/konten/{{ p.member }}">Zum Konto</a></div>
+<div class="letterhead print-only">
+  <img src="/static/img/sgfh-logo.svg" alt="">
+  <div><strong>Segelgruppe an der Fachhochschule Kiel e.V.</strong>Jahresnachweis {{ p.year }}</div>
 </div>
 <section class="card">
   <dl>
@@ -12,8 +17,8 @@
     <dt>Arbeitsstunden</dt><dd>{{ p.credited }} angerechnet von {{ p.required }} Soll</dd>
     <dt>Beitrag</dt><dd>{{ p.fee_state }}</dd>
     <dt>Segelerlaubnis {{ p.year }}</dt>
-    <dd>{% if p.permit_granted %}<span class="badge ok">✓ erteilt</span>{% else %}<span class="badge warn">nicht erteilt</span><ul>{% for r in p.permit_reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}</dd>
-    <dt>Bootserlaubnisse</dt><dd>{% if p.boat_permits.is_empty() %}keine{% else %}{{ p.boat_permits|join(", ") }}{% endif %}</dd>
+    <dd>{% if p.permit_granted %}{{ ui::badge("ok", "check", "erteilt") }}{% else %}{{ ui::badge("warn", "alert", "nicht erteilt") }}<ul>{% for r in p.permit_reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}</dd>
+    <dt>Bootserlaubnisse</dt><dd>{% if p.boat_permits.is_empty() %}<span class="muted">keine</span>{% else %}{{ p.boat_permits|join(", ") }}{% endif %}</dd>
   </dl>
   <p class="no-print muted">Zum Drucken die Druckfunktion des Browsers verwenden (Strg+P); Navigation und Schaltflächen werden dabei ausgeblendet.</p>
 </section>

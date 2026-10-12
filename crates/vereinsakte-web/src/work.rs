@@ -20,6 +20,7 @@ use crate::error::WebError;
 use crate::forms::{
     FieldErrors, errors_from, non_empty, parse_money, redirect_with_flash, unprocessable,
 };
+use crate::list::{Sort, SortCtx, SortKey, date_key, num_key, sort_rows, text_key};
 use crate::pages::{Layout, render};
 use crate::session::{FlashKind, RequireUser, flash};
 use crate::state::AppState;
@@ -52,11 +53,17 @@ async fn nav(
 
 fn entry_input(fields: &Fields) -> EntryInput {
     let t = |n: &str| get(fields, n).trim().to_string();
+    // Der Umschalter „Stunden / Zeitraum“ bestimmt, welche Angaben zählen.
+    let (hours, start, end) = match get(fields, "umfang") {
+        "zeitraum" => (String::new(), t("start"), t("end")),
+        "stunden" => (t("hours"), String::new(), String::new()),
+        _ => (t("hours"), t("start"), t("end")),
+    };
     EntryInput {
         date: t("date"),
-        hours: t("hours"),
-        start: t("start"),
-        end: t("end"),
+        hours,
+        start,
+        end,
         subject: t("subject"),
         description: t("description"),
         reference: t("reference"),
@@ -75,6 +82,14 @@ pub struct YearQuery {
     jahr: Option<i32>,
     mitglied: Option<u32>,
     rueckstand: Option<String>,
+    #[serde(default)]
+    sort_std: String,
+    #[serde(default)]
+    dir_std: String,
+    #[serde(default)]
+    sort_alle: String,
+    #[serde(default)]
+    dir_alle: String,
 }
 
 #[derive(Template)]
@@ -83,6 +98,7 @@ struct WorkPage {
     layout: Layout,
     nav: WorkNav,
     v: WorkView,
+    sort: SortCtx,
     own: bool,
     form: EntryInput,
     errors: FieldErrors,
@@ -102,13 +118,49 @@ async fn work_page(
     errors: FieldErrors,
 ) -> Result<Response, WebError> {
     let target = query.mitglied.and_then(MemberId::new);
-    let v = state.club.work_view(user, target, query.jahr).await?;
+    let mut v = state.club.work_view(user, target, query.jahr).await?;
+    let sort_state = Sort {
+        key: query.sort_std.clone(),
+        desc: query.dir_std == "desc",
+    };
+    sort_rows(
+        &mut v.entries,
+        &sort_state,
+        &[
+            ("datum", |e| date_key(&e.date)),
+            ("stunden", |e| num_key(&e.hours)),
+            ("gegenstand", |e| text_key(&e.subject)),
+            ("status", |e| SortKey::Num(i64::from(e.confirmed))),
+        ],
+    );
+    let sort = SortCtx::new(
+        "std",
+        "/arbeit",
+        vec![
+            (
+                "jahr".to_string(),
+                query.jahr.map(|y| y.to_string()).unwrap_or_default(),
+            ),
+            (
+                "mitglied".to_string(),
+                query.mitglied.map(|m| m.to_string()).unwrap_or_default(),
+            ),
+        ],
+        &sort_state,
+        &[
+            ("datum", "Datum"),
+            ("stunden", "Stunden"),
+            ("gegenstand", "Gegenstand"),
+            ("status", "Status"),
+        ],
+    );
     let own = target.is_none_or(|m| m == user.member);
     let layout = Layout::build(state, session, Some(user), "Arbeit", "/arbeit").await?;
     let invalid = !errors.is_empty();
     let response = render(&WorkPage {
         nav: nav(state, user, "stunden").await?,
         layout,
+        sort,
         own,
         form,
         errors,
@@ -162,6 +214,10 @@ pub async fn add_entry(
                     jahr: None,
                     mitglied: None,
                     rueckstand: None,
+                    sort_std: String::new(),
+                    dir_std: String::new(),
+                    sort_alle: String::new(),
+                    dir_alle: String::new(),
                 },
                 input,
                 errors,
@@ -277,14 +333,39 @@ struct ConfirmationsPage {
     layout: Layout,
     nav: WorkNav,
     lines: Vec<EntryLine>,
+    sort: SortCtx,
 }
 
 pub async fn confirmations(
     State(state): State<AppState>,
     session: Session,
     RequireUser(user): RequireUser,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
-    let lines = state.club.open_confirmations(&user).await?;
+    let mut lines = state.club.open_confirmations(&user).await?;
+    let sort_state = Sort::from_params(&params, "best");
+    sort_rows(
+        &mut lines,
+        &sort_state,
+        &[
+            ("mitglied", |e| text_key(&e.member)),
+            ("datum", |e| date_key(&e.date)),
+            ("stunden", |e| num_key(&e.hours)),
+            ("gegenstand", |e| text_key(&e.subject)),
+        ],
+    );
+    let sort = SortCtx::new(
+        "best",
+        "/arbeit/bestaetigungen",
+        vec![],
+        &sort_state,
+        &[
+            ("mitglied", "Mitglied"),
+            ("datum", "Datum"),
+            ("stunden", "Stunden"),
+            ("gegenstand", "Gegenstand"),
+        ],
+    );
     let layout = Layout::build(
         &state,
         &session,
@@ -297,6 +378,7 @@ pub async fn confirmations(
         nav: nav(&state, &user, "bestaetigungen").await?,
         layout,
         lines,
+        sort,
     })
 }
 
@@ -712,6 +794,7 @@ struct HoursPage {
     v: HoursOverview,
     deficit: bool,
     errors: FieldErrors,
+    sort: SortCtx,
 }
 
 async fn hours_page(
@@ -721,8 +804,40 @@ async fn hours_page(
     year: Option<i32>,
     deficit: bool,
     errors: FieldErrors,
+    sort_state: Sort,
 ) -> Result<Response, WebError> {
-    let v = state.club.hours_overview(user, year, deficit).await?;
+    let mut v = state.club.hours_overview(user, year, deficit).await?;
+    sort_rows(
+        &mut v.rows,
+        &sort_state,
+        &[
+            ("name", |r| text_key(&r.name)),
+            ("soll", |r| num_key(&r.required)),
+            ("angerechnet", |r| num_key(&r.credited)),
+            ("stand", |r| SortKey::Num(i64::from(r.missing.is_some()))),
+        ],
+    );
+    let sort = SortCtx::new(
+        "alle",
+        "/arbeit/uebersicht",
+        vec![
+            (
+                "jahr".to_string(),
+                year.map(|y| y.to_string()).unwrap_or_default(),
+            ),
+            (
+                "rueckstand".to_string(),
+                if deficit { "1".into() } else { String::new() },
+            ),
+        ],
+        &sort_state,
+        &[
+            ("name", "Mitglied"),
+            ("soll", "Soll"),
+            ("angerechnet", "Angerechnet"),
+            ("stand", "Stand"),
+        ],
+    );
     let layout = Layout::build(
         state,
         session,
@@ -738,6 +853,7 @@ async fn hours_page(
         v,
         deficit,
         errors,
+        sort,
     })?;
     Ok(if invalid {
         unprocessable(response)
@@ -759,6 +875,10 @@ pub async fn overview(
         query.jahr,
         query.rueckstand.is_some(),
         FieldErrors::new(),
+        Sort {
+            key: query.sort_alle.clone(),
+            desc: query.dir_alle == "desc",
+        },
     )
     .await
 }
@@ -797,7 +917,16 @@ pub async fn transfer(
             if errors.get("hours").is_empty() && errors.get("to").is_empty() {
                 errors.add_general("Der Übertrag wurde nicht angenommen.");
             }
-            hours_page(&state, &session, &user, Some(year), false, errors).await
+            hours_page(
+                &state,
+                &session,
+                &user,
+                Some(year),
+                false,
+                errors,
+                Sort::default(),
+            )
+            .await
         }
     }
 }
@@ -851,5 +980,14 @@ pub async fn compensate(
             }
         }
     }
-    hours_page(&state, &session, &user, Some(year), false, errors).await
+    hours_page(
+        &state,
+        &session,
+        &user,
+        Some(year),
+        false,
+        errors,
+        Sort::default(),
+    )
+    .await
 }

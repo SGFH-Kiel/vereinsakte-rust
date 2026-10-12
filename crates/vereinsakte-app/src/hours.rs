@@ -476,7 +476,14 @@ mod tests {
         let view = service.tasks_view(&user(GRETA)).await.unwrap();
         let line = view.tasks.iter().find(|t| t.id == id.to_string()).unwrap();
         assert_eq!(line.status, "erledigt");
-        assert!(line.can_update && line.assignees == ["Greta Lorenzen"]);
+        assert!(
+            line.can_update
+                && line
+                    .assignees
+                    .iter()
+                    .map(|p| p.name.as_str())
+                    .eq(["Greta Lorenzen"])
+        );
         let mut hans = user(vereinsakte_core::example::HANNES);
         hans.member = vereinsakte_core::example::HANNES;
         let denied = service.set_task_status(&hans, id, TaskStatus::Open).await;

@@ -1,14 +1,31 @@
 {% extends "base.html" %}
-{% import "_forms.html" as f %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Arbeit{% endblock %}
+{% block page_title %}Meine Stunden{% endblock %}
+{% block page_sub %}Arbeitsstunden {{ v.year }}{% endblock %}
+{% block page_actions %}{% if own %}<a class="btn primary" href="#einsatz-erfassen">{{ ui::icon("plus") }}Einsatz erfassen</a>{% endif %}{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Arbeit</h1><p class="muted">Arbeitsstunden {{ v.year }}</p></div></div>
 {% include "_work_nav.html" %}
+<section class="card stat-card">
+  <span class="stat-icon {% if v.missing.is_empty() %}ok{% else %}warn{% endif %}">{{ ui::icon_lg("clock") }}</span>
+  <div class="stat-body">
+    <div class="stat-label">Angerechnet {{ v.year }}</div>
+    <div class="stat-value">{{ v.credited }} <small>von {{ v.required }} Stunden</small></div>
+    {% if v.required_centi > 0 %}
+    <progress class="{% if v.missing.is_empty() %}ok{% else %}warn{% endif %}" max="{{ v.required_centi }}" value="{{ v.credited_centi }}">{{ v.credited }} von {{ v.required }} Stunden</progress>
+    <p class="stat-note">{% if v.missing.is_empty() %}Soll erfüllt{% else %}Es fehlen {{ v.missing }} Stunden{% endif %}</p>
+    {% else %}<p class="stat-note">Keine Stundenpflicht</p>{% endif %}
+  </div>
+</section>
 <section class="card">
-  <p>Angerechnet: <strong>{{ v.credited }}</strong> von {{ v.required }} Stunden</p>
-  {% if v.entries.is_empty() %}<p>Noch keine Einsätze erfasst.</p>{% else %}
+  <div class="card-head"><h2>{{ ui::icon("list") }}Einsätze</h2></div>
+  {% if v.entries.is_empty() %}{{ ui::empty("clock", "Noch keine Einsätze erfasst.") }}{% else %}
+  {{ ui::sort_form(sort) }}
   <div class="table-wrap">
   <table class="responsive">
-    <thead><tr><th>Datum</th><th class="num">Stunden</th><th>Gegenstand</th><th>Beschreibung</th><th>Status</th><th></th></tr></thead>
+    <thead><tr>
+      {{ ui::th_sort(sort, "datum", "Datum", "") }}{{ ui::th_sort(sort, "stunden", "Stunden", "num") }}{{ ui::th_sort(sort, "gegenstand", "Gegenstand", "") }}<th scope="col">Beschreibung</th>{{ ui::th_sort(sort, "status", "Status", "") }}<th scope="col"><span class="visually-hidden">Aktionen</span></th>
+    </tr></thead>
     <tbody>
     {% for e in v.entries %}
       <tr>
@@ -16,14 +33,16 @@
         <td data-label="Stunden" class="num">{{ e.hours }}</td>
         <td data-label="Gegenstand">{{ e.subject }}</td>
         <td data-label="Beschreibung">{{ e.description }}{% if !e.reference.is_empty() %} <span class="muted">({{ e.reference }})</span>{% endif %}</td>
-        <td data-label="Status">{% if e.confirmed %}<span class="badge ok">bestätigt</span>{% else %}<span class="badge warn">unbestätigt</span>{% endif %}</td>
+        <td data-label="Status">{% if e.confirmed %}{{ ui::badge("ok", "check", "bestätigt") }}{% else %}{{ ui::badge("warn", "clock", "unbestätigt") }}{% endif %}</td>
         <td data-label="">
           {% if e.can_edit %}
-          <a class="btn small" href="/arbeit/einsaetze/{{ e.id }}/bearbeiten">Ändern</a>
-          <form method="post" action="/arbeit/einsaetze/{{ e.id }}/loeschen" class="inline">
-            <input type="hidden" name="csrf" value="{{ layout.csrf }}">
-            <button type="submit" class="small danger">Löschen</button>
-          </form>
+          <div class="row-actions">
+            <a class="btn small icon-only" href="/arbeit/einsaetze/{{ e.id }}/bearbeiten" title="Einsatz ändern">{{ ui::icon_label("pencil", "Einsatz ändern") }}</a>
+            <form method="post" action="/arbeit/einsaetze/{{ e.id }}/loeschen">
+              <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+              <button type="submit" class="small danger icon-only" title="Einsatz löschen">{{ ui::icon_label("trash", "Einsatz löschen") }}</button>
+            </form>
+          </div>
           {% endif %}
         </td>
       </tr>
@@ -34,9 +53,6 @@
   {% endif %}
 </section>
 {% if own %}
-<section class="card">
-  <h2>Einsatz erfassen</h2>
-  {% include "_work_entry_form.html" %}
-</section>
+<div id="einsatz-erfassen">{% include "_work_entry_form.html" %}</div>
 {% endif %}
 {% endblock %}

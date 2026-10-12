@@ -8,11 +8,12 @@ use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Redirect, Response};
 use tower_sessions::Session;
 use vereinsakte_app::AppError;
-use vereinsakte_app::offices::{OfficeRow, OfficesView, parse_role};
+use vereinsakte_app::offices::{OfficesView, parse_role};
 use vereinsakte_core::ids::{MemberId, OfficeId};
 
 use crate::error::WebError;
 use crate::forms::{FieldErrors, non_empty, parse_date, redirect_with_flash, unprocessable};
+use crate::list::{Sort, SortCtx, date_key, sort_rows, text_key};
 use crate::pages::{Layout, render};
 use crate::session::{FlashKind, RequireUser, flash};
 use crate::state::AppState;
@@ -29,13 +30,7 @@ struct OfficesPage {
     chosen_member: String,
     chosen_role: String,
     chosen_start: String,
-}
-
-#[derive(Template)]
-#[template(path = "offices_history.html")]
-struct HistoryPage {
-    layout: Layout,
-    rows: Vec<OfficeRow>,
+    sorts: Vec<SortCtx>,
 }
 
 async fn page(
@@ -44,8 +39,36 @@ async fn page(
     user: &vereinsakte_app::CurrentUser,
     errors: FieldErrors,
     chosen: (String, String, String),
+    params: &HashMap<String, String>,
 ) -> Result<Response, WebError> {
-    let v = state.club.offices_view(user).await?;
+    let mut v = state.club.offices_view(user).await?;
+    let mut sorts = vec![];
+    for (index, section) in v.sections.iter_mut().enumerate() {
+        let id = format!("amt{index}");
+        let sort_state = Sort::from_params(params, &id);
+        sort_rows(
+            &mut section.rows,
+            &sort_state,
+            &[
+                ("amt", |r| text_key(&r.role)),
+                ("inhaber", |r| text_key(&r.holder)),
+                ("seit", |r| date_key(&r.since)),
+            ],
+        );
+        let others: Vec<(String, String)> = params
+            .iter()
+            .filter(|(k, _)| k.starts_with("sort_amt") || k.starts_with("dir_amt"))
+            .filter(|(k, _)| !k.ends_with(&id))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        sorts.push(SortCtx::new(
+            &id,
+            "/aemter",
+            others,
+            &sort_state,
+            &[("amt", "Amt"), ("inhaber", "Inhaber"), ("seit", "Seit")],
+        ));
+    }
     let layout = Layout::build(state, session, Some(user), "Ämter", "/aemter").await?;
     let invalid = !errors.is_empty();
     let response = render(&OfficesPage {
@@ -56,6 +79,7 @@ async fn page(
         chosen_member: chosen.0,
         chosen_role: chosen.1,
         chosen_start: chosen.2,
+        sorts,
     })?;
     Ok(if invalid {
         unprocessable(response)
@@ -68,6 +92,7 @@ pub async fn overview(
     State(state): State<AppState>,
     session: Session,
     RequireUser(user): RequireUser,
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
 ) -> Result<Response, WebError> {
     page(
         &state,
@@ -75,6 +100,7 @@ pub async fn overview(
         &user,
         FieldErrors::new(),
         Default::default(),
+        &params,
     )
     .await
 }
@@ -98,10 +124,10 @@ pub async fn appoint(
     let start = non_empty(&get("start")).and_then(|d| errors.take("start", parse_date(d)));
     let chosen = (get("member"), get("role"), get("start"));
     let (Some(member), Some(role)) = (member, role) else {
-        return page(&state, &session, &user, errors, chosen).await;
+        return page(&state, &session, &user, errors, chosen, &HashMap::new()).await;
     };
     if !errors.is_empty() {
-        return page(&state, &session, &user, errors, chosen).await;
+        return page(&state, &session, &user, errors, chosen, &HashMap::new()).await;
     }
     match state.club.appoint(&user, member, role, start).await {
         Ok(hints) => {
@@ -122,7 +148,7 @@ pub async fn appoint(
             for e in list {
                 errors.add(&e.field, e.message);
             }
-            page(&state, &session, &user, errors, chosen).await
+            page(&state, &session, &user, errors, chosen, &HashMap::new()).await
         }
         Err(other) => Err(other.into()),
     }
@@ -155,21 +181,4 @@ pub async fn resign(
         }
         Err(other) => Err(other.into()),
     }
-}
-
-pub async fn history(
-    State(state): State<AppState>,
-    session: Session,
-    RequireUser(user): RequireUser,
-) -> Result<Response, WebError> {
-    let rows = state.club.office_history(&user).await?;
-    let layout = Layout::build(
-        &state,
-        &session,
-        Some(&user),
-        "Amtshistorie",
-        "/aemter/historie",
-    )
-    .await?;
-    render(&HistoryPage { layout, rows })
 }

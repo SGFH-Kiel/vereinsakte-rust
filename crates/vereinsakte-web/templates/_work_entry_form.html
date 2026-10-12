@@ -1,25 +1,42 @@
-{% for message in errors.general() %}<div class="notice error" role="alert">{{ message }}</div>{% endfor %}
-<form method="post" action="{{ action }}" class="form-grid cols-2">
+{% import "_ui.html" as ui %}
+{% import "_forms.html" as f %}
+{% if !errors.general().is_empty() %}<div class="notice error" role="alert">{{ ui::icon("alert-circle") }}<div>{% for message in errors.general() %}<p>{{ message }}</p>{% endfor %}</div></div>{% endif %}
+<form method="post" action="{{ action }}" class="stack">
   <input type="hidden" name="csrf" value="{{ layout.csrf }}">
   <input type="hidden" name="version" value="{{ version }}">
-  {{ f::field("date", "Datum", form.date, errors.get("date"), "date", "") }}
-  {{ f::field("hours", "Stunden", form.hours, errors.get("hours"), "text", "z. B. 2,5 – oder stattdessen einen Zeitraum angeben") }}
-  {{ f::field("start", "Beginn (optional)", form.start, errors.get("start"), "time", "") }}
-  {{ f::field("end", "Ende (optional)", form.end, errors.get("end"), "time", "") }}
-  <div class="field{% if !errors.get("subject").is_empty() %} has-error{% endif %}">
-    <label for="f-subject">Gegenstand</label>
-    <select id="f-subject" name="subject">
-      {% for (key, label) in subjects %}<option value="{{ key }}"{% if *key == form.subject %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-    {% if !errors.get("subject").is_empty() %}<span class="error-text">{{ errors.get("subject") }}</span>{% endif %}
-  </div>
-  <div class="field">
-    <label for="f-reference">Bezug (optional)</label>
-    <select id="f-reference" name="reference">
-      <option value="">kein Bezug</option>
-      {% for (key, label) in references %}<option value="{{ key }}"{% if *key == form.reference %} selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </div>
-  {{ f::field("description", "Beschreibung", form.description, errors.get("description"), "text", "") }}
-  <div class="form-actions wide"><button type="submit" class="primary">Speichern</button></div>
+  <p class="form-legend"><span class="req">*</span> Pflichtfeld</p>
+  <section class="form-section">
+    <h2>Einsatz</h2>
+    <p class="section-intro">Wann, wofür und wie lange?</p>
+    <div class="form-grid cols-2 umfang-switch">
+      {{ f::req_field("date", "Datum", form.date, errors.get("date"), "date", "") }}
+      <div class="field{% if !errors.get("subject").is_empty() %} has-error{% endif %}">
+        <label for="f-subject">Gegenstand<span class="req" aria-hidden="true">*</span></label>
+        <select id="f-subject" name="subject">
+          {% for (key, label) in subjects %}<option value="{{ key }}"{% if *key == form.subject %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% if !errors.get("subject").is_empty() %}<span class="error-text">{{ ui::icon("alert-circle") }}{{ errors.get("subject") }}</span>{% endif %}
+      </div>
+      <input type="radio" class="mode" name="umfang" id="umfang-stunden" value="stunden"{% if form.start.is_empty() && form.end.is_empty() %} checked{% endif %}>
+      <input type="radio" class="mode" name="umfang" id="umfang-zeitraum" value="zeitraum"{% if !form.start.is_empty() || !form.end.is_empty() %} checked{% endif %}>
+      <div class="mode-labels" role="group" aria-label="Umfang angeben als">
+        <label for="umfang-stunden">{{ ui::icon("clock") }}&nbsp;Stunden</label>
+        <label for="umfang-zeitraum">{{ ui::icon("calendar") }}&nbsp;Zeitraum</label>
+      </div>
+      <div class="only-hours">{{ f::field("hours", "Stunden", form.hours, errors.get("hours"), "text", "z. B. 2,5") }}</div>
+      <div class="only-range field-pair">
+        {{ f::field("start", "Beginn", form.start, errors.get("start"), "time", "") }}
+        {{ f::field("end", "Ende", form.end, errors.get("end"), "time", "") }}
+      </div>
+      <div class="field">
+        <label for="f-reference">Bezug (optional)</label>
+        <select id="f-reference" name="reference">
+          <option value="">kein Bezug</option>
+          {% for (key, label) in references %}<option value="{{ key }}"{% if *key == form.reference %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      {{ f::field("description", "Beschreibung", form.description, errors.get("description"), "text", "") }}
+    </div>
+  </section>
+  <div class="form-actions sticky"><button type="submit" class="primary">{{ ui::icon("check") }}Speichern</button></div>
 </form>

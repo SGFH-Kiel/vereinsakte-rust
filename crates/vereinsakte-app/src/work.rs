@@ -24,6 +24,7 @@ use crate::service::{ClubService, CurrentUser};
 pub struct EntryLine {
     pub id: String,
     pub member: String,
+    pub member_id: u32,
     pub date: String,
     pub hours: String,
     pub subject: String,
@@ -38,6 +39,10 @@ pub struct WorkView {
     pub year: i32,
     pub required: String,
     pub credited: String,
+    /// Fortschrittsanzeige in Hundertstel Stunden und fehlende Stunden („“, wenn nichts fehlt).
+    pub required_centi: u32,
+    pub credited_centi: u32,
+    pub missing: String,
     pub entries: Vec<EntryLine>,
     /// Auswahl „Gegenstand“: Schlüssel und Bezeichnung.
     pub subjects: Vec<(String, String)>,
@@ -105,7 +110,7 @@ pub struct TaskLine {
     pub description: String,
     pub status: &'static str,
     pub status_key: &'static str,
-    pub assignees: Vec<String>,
+    pub assignees: Vec<crate::people::PersonRef>,
     pub boat: String,
     pub due: String,
     pub hours: String,
@@ -367,6 +372,7 @@ impl ClubService {
             .map(|e| EntryLine {
                 id: e.id.to_string(),
                 member: String::new(),
+                member_id: e.member.get(),
                 date: format::date(e.date()),
                 hours: format::hours(e.hours()),
                 subject: subject_label(&record.boats, e.subject),
@@ -383,6 +389,16 @@ impl ClubService {
             year,
             required: format::hours(my.required_hours()),
             credited: format::hours(my.credited_hours()),
+            required_centi: (my.required_hours() * 100.0).round().max(0.0) as u32,
+            credited_centi: (my.credited_hours() * 100.0).round().max(0.0) as u32,
+            missing: {
+                let missing = my.required_hours() - my.credited_hours();
+                if missing > 0.0 {
+                    format::hours(missing)
+                } else {
+                    String::new()
+                }
+            },
             entries: lines,
             subjects: subject_options(&record.boats),
             references: self.reference_options(record, principal.now),
@@ -626,6 +642,7 @@ impl ClubService {
             .map(|e| EntryLine {
                 id: e.id.to_string(),
                 member: name(e.member),
+                member_id: e.member.get(),
                 date: format::date(e.date()),
                 hours: format::hours(e.hours()),
                 subject: subject_label(&record.boats, e.subject),

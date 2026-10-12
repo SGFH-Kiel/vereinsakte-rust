@@ -173,11 +173,13 @@ impl Sort {
 
 /// Sortiert `rows` nach der gewählten Spalte; unbekannte Schlüssel lassen die
 /// Reihenfolge unverändert (Standardreihenfolge der Ansicht).
-pub fn sort_rows<T>(rows: &mut [T], sort: &Sort, keys: &[(&str, fn(&T) -> SortKey)]) {
+pub type KeyFn<T> = fn(&T) -> SortKey;
+
+pub fn sort_rows<T>(rows: &mut [T], sort: &Sort, keys: &[(&str, KeyFn<T>)]) {
     let Some((_, key)) = keys.iter().find(|(name, _)| *name == sort.key) else {
         return;
     };
-    rows.sort_by(|a, b| key(a).cmp(&key(b)));
+    rows.sort_by_key(key);
     if sort.desc {
         rows.reverse();
     }
