@@ -4,9 +4,11 @@
 #   git tag -a change-add-kontakt-sichtbarkeit 6d34cbf -m "add-kontakt-sichtbarkeit umgesetzt"
 #   git tag -a change-add-ui-fuehrung c92768a -m "add-ui-fuehrung umgesetzt"
 #   git tag -a change-add-aufgabenboard ab96251 -m "add-aufgabenboard umgesetzt"
+#   git tag -a change-add-bootsbild 5b44078 -m "add-bootsbild umgesetzt"
 #   git push origin --tags
 #
 # Name                              Hash      Change
 change-add-kontakt-sichtbarkeit     6d34cbf   add-kontakt-sichtbarkeit
 change-add-ui-fuehrung          c92768a   add-ui-fuehrung
 change-add-aufgabenboard        ab96251   add-aufgabenboard
+change-add-bootsbild            5b44078   add-bootsbild
