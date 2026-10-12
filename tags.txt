@@ -1,0 +1,8 @@
+# Tags je umgesetztem Change (Tags ließen sich aus der Umgebung nicht pushen).
+# Zum Erzeugen und Pushen lokal ausführen:
+#   git fetch origin claude/sweet-hopper-sffn4n
+#   git tag -a change-add-kontakt-sichtbarkeit 6d34cbf -m "add-kontakt-sichtbarkeit umgesetzt"
+#   git push origin --tags
+#
+# Name                              Hash      Change
+change-add-kontakt-sichtbarkeit     6d34cbf   add-kontakt-sichtbarkeit
