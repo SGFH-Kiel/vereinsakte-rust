@@ -8,13 +8,10 @@ use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 use tower_sessions::Session;
-use vereinsakte_app::work::{
-    EntryInput, EntryLine, EventInput, HoursOverview, TaskInput, TasksView, WorkView,
-};
+use vereinsakte_app::work::{EntryInput, EntryLine, EventInput, HoursOverview, WorkView};
 use vereinsakte_app::{AppError, CurrentUser};
-use vereinsakte_core::ids::{MemberId, TaskId, WorkEntryId, WorkEventId};
+use vereinsakte_core::ids::{MemberId, WorkEntryId, WorkEventId};
 use vereinsakte_core::rights::Capability;
-use vereinsakte_core::task::TaskStatus;
 
 use crate::error::WebError;
 use crate::forms::{
@@ -645,143 +642,6 @@ pub async fn unregister(
         .unregister_event(&user, parse_id::<WorkEventId>(&id, "Arbeitstermin")?)
         .await;
     event_result(&session, &id, result, "Du bist abgemeldet.").await
-}
-
-// ---- Aufgaben --------------------------------------------------------------------------------
-
-#[derive(Template)]
-#[template(path = "work_tasks.html")]
-struct TasksPage {
-    layout: Layout,
-    nav: WorkNav,
-    v: TasksView,
-    form: TaskInput,
-    errors: FieldErrors,
-}
-
-async fn tasks_page(
-    state: &AppState,
-    session: &Session,
-    user: &CurrentUser,
-    form: TaskInput,
-    errors: FieldErrors,
-) -> Result<Response, WebError> {
-    let v = state.club.tasks_view(user).await?;
-    let layout = Layout::build(state, session, Some(user), "Aufgaben", "/arbeit/aufgaben").await?;
-    let invalid = !errors.is_empty();
-    let response = render(&TasksPage {
-        nav: nav(state, user, "aufgaben").await?,
-        layout,
-        v,
-        form,
-        errors,
-    })?;
-    Ok(if invalid {
-        unprocessable(response)
-    } else {
-        response
-    })
-}
-
-pub async fn tasks(
-    State(state): State<AppState>,
-    session: Session,
-    RequireUser(user): RequireUser,
-) -> Result<Response, WebError> {
-    tasks_page(
-        &state,
-        &session,
-        &user,
-        TaskInput::default(),
-        FieldErrors::new(),
-    )
-    .await
-}
-
-pub async fn create_task(
-    State(state): State<AppState>,
-    session: Session,
-    RequireUser(user): RequireUser,
-    Form(fields): Form<Fields>,
-) -> Result<Response, WebError> {
-    let t = |n: &str| get(&fields, n).trim().to_string();
-    let input = TaskInput {
-        title: t("title"),
-        description: t("description"),
-        boat: t("boat"),
-        due: t("due"),
-        hours: t("hours"),
-    };
-    match state.club.create_task(&user, &input).await {
-        Ok(_) => {
-            Ok(
-                redirect_with_flash(&session, "/arbeit/aufgaben", "Die Aufgabe wurde angelegt.")
-                    .await,
-            )
-        }
-        Err(error) => {
-            let errors = errors_from(error)?;
-            tasks_page(&state, &session, &user, input, errors).await
-        }
-    }
-}
-
-pub async fn assign_task(
-    State(state): State<AppState>,
-    session: Session,
-    RequireUser(user): RequireUser,
-    Path(id): Path<String>,
-    Form(fields): Form<Fields>,
-) -> Result<Response, WebError> {
-    let member = get(&fields, "member")
-        .parse::<u32>()
-        .ok()
-        .and_then(MemberId::new);
-    let Some(member) = member else {
-        flash(&session, FlashKind::Error, "Bitte ein Mitglied wählen.").await;
-        return Ok(Redirect::to("/arbeit/aufgaben").into_response());
-    };
-    match state
-        .club
-        .assign_task(&user, parse_id::<TaskId>(&id, "Aufgabe")?, member)
-        .await
-    {
-        Ok(()) => Ok(redirect_with_flash(
-            &session,
-            "/arbeit/aufgaben",
-            "Das Mitglied ist jetzt zuständig.",
-        )
-        .await),
-        Err(AppError::Rejected(list)) => {
-            flash(
-                &session,
-                FlashKind::Error,
-                list.first().map(|e| e.message.clone()).unwrap_or_default(),
-            )
-            .await;
-            Ok(Redirect::to("/arbeit/aufgaben").into_response())
-        }
-        Err(other) => Err(other.into()),
-    }
-}
-
-pub async fn task_status(
-    State(state): State<AppState>,
-    session: Session,
-    RequireUser(user): RequireUser,
-    Path(id): Path<String>,
-    Form(fields): Form<Fields>,
-) -> Result<Response, WebError> {
-    let status = match get(&fields, "status") {
-        "in_progress" => TaskStatus::InProgress,
-        "done" => TaskStatus::Done,
-        _ => TaskStatus::Open,
-    };
-    state
-        .club
-        .set_task_status(&user, parse_id::<TaskId>(&id, "Aufgabe")?, status)
-        .await?;
-    Ok(redirect_with_flash(&session, "/arbeit/aufgaben", "Der Status wurde gesetzt.").await)
 }
 
 // ---- Übersicht, Übertrag, Abgeltung (Vorstand, Revisoren) -------------------------------------

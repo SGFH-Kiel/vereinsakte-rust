@@ -24,7 +24,7 @@ rust_decimal_macros = "1"
 anyhow = "1"
 async-trait = "0.1"
 askama = "0.16"
-axum = { version = "0.8", features = ["macros"] }
+axum = { version = "0.8", features = ["macros", "multipart"] }
 clap = { version = "4", features = ["derive", "env"] }
 figment = { version = "0.10", features = ["toml", "env"] }
 openidconnect = { version = "4", default-features = false, features = ["reqwest", "rustls-tls"] }

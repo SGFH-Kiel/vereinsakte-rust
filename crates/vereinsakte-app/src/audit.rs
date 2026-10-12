@@ -42,6 +42,8 @@ pub struct AuditFilter {
     pub action: Option<String>,
     /// Nur Einträge, in denen das Mitglied handelt oder betroffen ist.
     pub involving: Option<MemberId>,
+    /// Nur Einträge zu diesem Objekt (Kennung).
+    pub object_id: Option<String>,
     pub limit: Option<u32>,
     pub offset: u32,
 }
@@ -52,7 +54,7 @@ pub trait AuditRepository: Send + Sync {
 }
 
 /// Alle Aktionsarten des Protokolls mit deutscher Bezeichnung.
-pub const ACTIONS: [(&str, &str); 39] = [
+pub const ACTIONS: [(&str, &str); 47] = [
     ("boat.block", "Boot gesperrt"),
     ("boat.unblock", "Sperre aufgehoben"),
     ("boat.release", "Boot für Saison freigegeben"),
@@ -88,6 +90,14 @@ pub const ACTIONS: [(&str, &str); 39] = [
     ("task.create", "Aufgabe angelegt"),
     ("task.assign", "Aufgabe zugewiesen"),
     ("task.status", "Aufgabenstatus geändert"),
+    ("task.edit", "Aufgabe geändert"),
+    ("task.unassign", "Zuständigkeit entzogen"),
+    ("task.description_changed", "Aufgabenbeschreibung geändert"),
+    ("task.comment_added", "Aufgabe kommentiert"),
+    ("task.comment_edited", "Kommentar korrigiert"),
+    ("task.comment_deleted", "Kommentar gelöscht"),
+    ("task.attachment_added", "Anhang hinzugefügt"),
+    ("task.attachment_removed", "Anhang entfernt"),
     ("work.add", "Arbeitseinsatz erfasst"),
     ("work.edit", "Arbeitseinsatz geändert"),
     ("work.delete", "Arbeitseinsatz gelöscht"),
@@ -558,6 +568,54 @@ mod sweep {
         logged!(
             "task.status",
             service.set_task_status(&user(GRETA), task, TaskStatus::Done)
+        );
+        let task_form = TaskInput {
+            title: "Fender neu".into(),
+            ..Default::default()
+        };
+        logged!(
+            "task.edit",
+            service.edit_task(&user(BEN), task, &task_form, None)
+        );
+        logged!(
+            "task.unassign",
+            service.unassign_task(&user(BEN), task, GRETA)
+        );
+        logged!(
+            "task.description_changed",
+            service.set_task_description(&user(BEN), task, "**fett**", None)
+        );
+        logged!(
+            "task.comment_added",
+            service.add_comment(&user(ANNA), task, "Segeltuch ist bestellt")
+        );
+        let comment = service.task_page(&user(ANNA), task).await.unwrap().comments[0]
+            .id
+            .parse()
+            .unwrap();
+        logged!(
+            "task.comment_edited",
+            service.edit_comment(&user(ANNA), comment, "Segeltuch ist da")
+        );
+        logged!(
+            "task.comment_deleted",
+            service.delete_comment(&user(ANNA), comment)
+        );
+        logged!(
+            "task.attachment_added",
+            service.add_attachment(&user(ANNA), task, "a.pdf", b"%PDF-1.4 x".to_vec(), "")
+        );
+        let attachment = service
+            .task_page(&user(ANNA), task)
+            .await
+            .unwrap()
+            .attachments[0]
+            .id
+            .parse()
+            .unwrap();
+        logged!(
+            "task.attachment_removed",
+            service.delete_attachment(&user(ANNA), attachment)
         );
         logged!(
             "hours.transfer",

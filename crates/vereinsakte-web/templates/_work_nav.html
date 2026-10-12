@@ -2,7 +2,7 @@
 <nav class="subnav" aria-label="Arbeit">
   <a href="/arbeit"{% if nav.current == "stunden" %} aria-current="page"{% endif %}>{{ ui::icon("clock") }}Meine Stunden</a>
   <a href="/kalender?art=termine"{% if nav.current == "termine" %} aria-current="page"{% endif %}>{{ ui::icon("calendar") }}Arbeitstermine</a>
-  <a href="/arbeit/aufgaben"{% if nav.current == "aufgaben" %} aria-current="page"{% endif %}>{{ ui::icon("check-square") }}Aufgaben</a>
+  <a href="/aufgaben"{% if nav.current == "aufgaben" %} aria-current="page"{% endif %}>{{ ui::icon("check-square") }}Aufgaben</a>
   {% if nav.confirm %}<a href="/arbeit/bestaetigungen"{% if nav.current == "bestaetigungen" %} aria-current="page"{% endif %}>{{ ui::icon("check-circle") }}Bestätigungen</a>{% endif %}
   {% if nav.all %}<a href="/arbeit/uebersicht"{% if nav.current == "uebersicht" %} aria-current="page"{% endif %}>{{ ui::icon("users") }}Alle Mitglieder</a>{% endif %}
 </nav>

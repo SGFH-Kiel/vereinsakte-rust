@@ -11,6 +11,7 @@ mod finance;
 pub mod forms;
 pub mod list;
 mod login;
+mod markdown;
 mod members;
 mod offices;
 pub mod oidc;
@@ -19,6 +20,7 @@ mod reservations;
 mod router;
 pub mod session;
 pub mod state;
+mod tasks;
 mod work;
 
 pub use router::router;

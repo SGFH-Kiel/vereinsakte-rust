@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block eyebrow %}Arbeit{% endblock %}
+{% block page_title %}Aufgaben{% endblock %}
+{% block page_sub %}Was liegt, was läuft und was auf etwas wartet{% endblock %}
+{% block page_actions %}
+{% if v.can_manage %}<a class="btn primary" href="/aufgaben/neu">{{ ui::icon("plus") }}Neue Aufgabe</a>{% endif %}
+{% if can_archive %}<a class="btn" href="/protokoll/archiv?tab=aufgaben">{{ ui::icon("archive") }}Archiv</a>{% endif %}
+{% endblock %}
+{% block content %}
+<form method="get" action="/aufgaben" class="filters">
+  <div class="field">
+    <label for="f-meine">Anzeige</label>
+    <select id="f-meine" name="meine"><option value="">Alle Aufgaben</option><option value="1"{% if v.mine %} selected{% endif %}>Meine Aufgaben</option></select>
+  </div>
+  <div class="field">
+    <label for="f-boot">Boot</label>
+    <select id="f-boot" name="boot"><option value="">Alle Boote</option>{% for (key, label) in v.boats %}<option value="{{ key }}"{% if *key == v.boat %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  </div>
+  <button type="submit" class="primary">{{ ui::icon("filter") }}Anzeigen</button>
+</form>
+<div class="board" data-board data-csrf="{{ layout.csrf }}">
+{% for col in v.columns %}
+  <details class="board-col" data-status="{{ col.key }}" open>
+    <summary><span class="col-tag">{{ col.tag }}</span><span class="col-label">{{ col.label }}</span><span class="count" aria-label="{{ col.cards.len() }} Aufgaben">{{ col.cards.len() }}</span></summary>
+    <p class="col-hint">{{ col.hint }}</p>
+    <div class="col-body">
+    {% for card in col.cards %}
+      <article class="task-card" id="aufgabe-{{ card.id }}" data-id="{{ card.id }}" data-version="{{ card.version }}" data-can-move="{% if card.can_move %}1{% else %}0{% endif %}"{% if card.can_move %} tabindex="0"{% endif %}>
+        <h3><a href="/aufgaben/{{ card.id }}">{{ card.title }}</a></h3>
+        <p class="task-meta">
+          {% if !card.boat.is_empty() %}<span class="chip">{{ ui::icon("boat") }}{{ card.boat }}</span>{% endif %}
+          {% if !card.due.is_empty() %}<span class="chip">{{ ui::icon("calendar") }}{{ card.due }}</span>{% if card.overdue %} {{ ui::badge("danger", "alert", "überfällig") }}{% endif %}{% endif %}
+        </p>
+        {% if !card.assignees.is_empty() %}<p class="task-people">{{ ui::icon("users") }}{% for p in card.assignees %}{{ ui::person(p) }}{% if !loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+        <p class="task-counts">
+          <span class="chip" title="Kommentare">{{ ui::icon("message") }}{{ card.comments }}<span class="visually-hidden"> Kommentare</span></span>
+          <span class="chip" title="Bilder">{{ ui::icon("image") }}{{ card.images }}<span class="visually-hidden"> Bilder</span></span>
+          {% if card.attachments > card.images %}<span class="chip" title="Dokumente">{{ ui::icon("file") }}{{ card.attachments - card.images }}<span class="visually-hidden"> Dokumente</span></span>{% endif %}
+        </p>
+        {% if card.can_move %}
+        <form method="post" action="/aufgaben/{{ card.id }}/status" class="move-form">
+          <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+          <input type="hidden" name="version" value="{{ card.version }}">
+          <input type="hidden" name="next" value="board">
+          <label class="visually-hidden" for="mv-{{ card.id }}">Verschieben nach</label>
+          <select id="mv-{{ card.id }}" name="status">{% for c in v.columns %}{% if c.key != card.status_key %}<option value="{{ c.key }}">{{ c.tag }} – {{ c.label }}</option>{% endif %}{% endfor %}</select>
+          <button type="submit" class="small">Verschieben</button>
+        </form>
+        {% endif %}
+      </article>
+    {% else %}
+      <p class="empty-col">Keine Aufgaben</p>
+    {% endfor %}
+    </div>
+  </details>
+{% endfor %}
+</div>
+<p class="muted board-help">Karten lassen sich mit der Maus in eine andere Spalte ziehen, mit der Tastatur über Alt + Pfeil links/rechts auf einer markierten Karte, oder über „Verschieben“. Erledigte Aufgaben früherer Saisons stehen im Archiv.</p>
+<script src="/static/board.js" defer></script>
+{% endblock %}

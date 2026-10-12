@@ -616,6 +616,7 @@ pub const TRIGON_ANTIFOULING: TaskId = TaskId::from_uuid(Uuid::from_u128(0x7a5c_
 pub const FOCK_NAEHEN: TaskId = TaskId::from_uuid(Uuid::from_u128(0x7a5c_0002));
 pub const VEREINSZEITUNG: TaskId = TaskId::from_uuid(Uuid::from_u128(0x7a5c_0003));
 pub const WEBSEITE: TaskId = TaskId::from_uuid(Uuid::from_u128(0x7a5c_0004));
+pub const SEGELTUCH: TaskId = TaskId::from_uuid(Uuid::from_u128(0x7a5c_0005));
 
 struct Work {
     n: u128,
@@ -1026,7 +1027,15 @@ pub fn tasks() -> Vec<Task> {
     webseite.estimated_hours = Some(5.0);
     webseite.status = TaskStatus::InProgress;
 
-    vec![antifouling, fock, zeitung, webseite]
+    let mut segeltuch = Task::new("Segeltuch für die Fock bestellen");
+    segeltuch.id = SEGELTUCH;
+    segeltuch.description = Some("Wartet auf das **Angebot** der Segelmacherei.".into());
+    segeltuch.boat = Some(HARALD_BLAUZAHN);
+    segeltuch.assignees = vec![BEN];
+    segeltuch.due_at = Some(at(2026, 11, 15, 0, 0));
+    segeltuch.status = TaskStatus::Waiting;
+
+    vec![antifouling, fock, zeitung, webseite, segeltuch]
 }
 
 // --- Reservierungen --------------------------------------------------------

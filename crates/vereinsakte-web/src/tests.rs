@@ -196,6 +196,35 @@ impl Client {
         self.send(request).await
     }
 
+    /// Mehrteil-Upload mit Feldern `file` (Datei) und `alt`; das Token steht in der Adresse.
+    async fn upload(
+        &mut self,
+        path: &str,
+        token: &str,
+        filename: &str,
+        data: &[u8],
+        alt: &str,
+    ) -> Response {
+        let boundary = "----testgrenze";
+        let mut body: Vec<u8> = Vec::new();
+        body.extend_from_slice(
+            format!(
+                "--{boundary}\r\nContent-Disposition: form-data; name=\"alt\"\r\n\r\n{alt}\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+            )
+            .as_bytes(),
+        );
+        body.extend_from_slice(data);
+        body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+        let request = Request::post(format!("{path}?csrf={token}"))
+            .header(
+                header::CONTENT_TYPE,
+                format!("multipart/form-data; boundary={boundary}"),
+            )
+            .body(Body::from(body))
+            .unwrap();
+        self.send(request).await
+    }
+
     fn session_id(&self) -> Option<Id> {
         self.cookie
             .as_ref()
@@ -1773,63 +1802,398 @@ async fn events_registration_and_start_page_card() {
     );
 }
 
-#[tokio::test]
-async fn tasks_are_created_assigned_and_shown_on_the_start_page() {
-    let h = dev();
-    let mut ben = logged_in(&h, 102).await;
-    let page = ben.get("/arbeit/aufgaben").await;
-    let token = csrf(&page.body);
+fn location(response: &Response) -> String {
+    response
+        .headers
+        .get(header::LOCATION)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or_default()
+        .to_string()
+}
+
+/// Legt als Ben eine Aufgabe an und liefert ihre Kennung.
+async fn create_task(ben: &mut Client, title: &str) -> String {
+    let page = ben.get("/aufgaben/neu").await;
+    assert_eq!(page.status, StatusCode::OK);
     let created = ben
         .post(
-            "/arbeit/aufgaben",
+            "/aufgaben/neu",
             &[
-                ("csrf", &token),
-                ("title", "Fender flicken"),
+                ("csrf", &csrf(&page.body)),
+                ("title", title),
                 ("hours", "2,5"),
             ],
         )
         .await;
     assert_eq!(created.status, StatusCode::SEE_OTHER, "{}", created.body);
-    let page = ben.get("/arbeit/aufgaben").await;
-    let id = id_after(&page.body, "Fender flicken", "/arbeit/aufgaben/");
+    location(&created)
+        .strip_prefix("/aufgaben/")
+        .unwrap()
+        .to_string()
+}
+
+#[tokio::test]
+async fn tasks_are_created_assigned_moved_and_shown_on_the_start_page() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let id = create_task(&mut ben, "Fender flicken").await;
+    let board = ben.get("/aufgaben").await;
+    assert!(board.body.contains("Fender flicken") && board.body.contains("TODO"));
+    for tag in ["TODO", "WIP", "WAIT", "DONE"] {
+        assert!(board.body.contains(tag), "{tag}");
+    }
+    let token = csrf(&board.body);
     let assigned = ben
         .post(
-            &format!("/arbeit/aufgaben/{id}/zuweisen"),
+            &format!("/aufgaben/{id}/zuweisen"),
             &[("csrf", &token), ("member", "107")],
         )
         .await;
     assert_eq!(assigned.status, StatusCode::SEE_OTHER);
+    // „meine“ filtert nach Zuständigkeit.
     let mut greta = logged_in(&h, 107).await;
     let start = greta.get("/").await;
     assert!(start.body.contains("Meine Aufgaben") && start.body.contains("Fender flicken"));
+    let mine = greta.get("/aufgaben?meine=1").await;
+    assert!(mine.body.contains("Fender flicken"));
+    assert!(
+        !ben.get("/aufgaben?meine=1")
+            .await
+            .body
+            .contains("Fender flicken"),
+        "Ben ist nicht zuständig"
+    );
     let greta_token = csrf(&start.body);
+    let moved = greta
+        .post(
+            &format!("/aufgaben/{id}/status"),
+            &[
+                ("csrf", &greta_token),
+                ("status", "waiting"),
+                ("next", "board"),
+            ],
+        )
+        .await;
+    assert_eq!(moved.status, StatusCode::SEE_OTHER);
+    assert_eq!(location(&moved), "/aufgaben");
+    let page = greta.get(&format!("/aufgaben/{id}")).await;
+    assert!(page.body.contains("Wartet"), "{}", page.body);
     let done = greta
         .post(
-            &format!("/arbeit/aufgaben/{id}/status"),
+            &format!("/aufgaben/{id}/status"),
             &[("csrf", &greta_token), ("status", "done")],
         )
         .await;
     assert_eq!(done.status, StatusCode::SEE_OTHER);
     assert!(
-        greta
-            .get("/arbeit/aufgaben")
-            .await
-            .body
-            .contains("erledigt")
-    );
-    assert!(
         !greta.get("/").await.body.contains("Meine Aufgaben"),
         "erledigt ist nicht mehr offen"
     );
     let mut hannes = logged_in(&h, 108).await;
-    let hannes_token = csrf(&hannes.get("/arbeit/aufgaben").await.body);
+    let hannes_page = hannes.get(&format!("/aufgaben/{id}")).await;
+    assert!(!hannes_page.body.contains("Status setzen"));
+    let hannes_token = csrf(&hannes.get("/aufgaben").await.body);
     let denied = hannes
         .post(
-            &format!("/arbeit/aufgaben/{id}/status"),
+            &format!("/aufgaben/{id}/status"),
             &[("csrf", &hannes_token), ("status", "open")],
         )
         .await;
     assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    // Nicht-Amtsträger sehen weder „Neue Aufgabe“ noch dürfen sie anlegen.
+    assert_eq!(
+        hannes.get("/aufgaben/neu").await.status,
+        StatusCode::FORBIDDEN
+    );
+    assert!(!hannes.get("/aufgaben").await.body.contains("/aufgaben/neu"));
+}
+
+#[tokio::test]
+async fn old_task_list_redirects_to_the_board() {
+    let h = dev();
+    let r = logged_in(&h, 107).await.get("/arbeit/aufgaben").await;
+    assert_eq!(r.status, StatusCode::SEE_OTHER);
+    assert_eq!(location(&r), "/aufgaben");
+}
+
+#[tokio::test]
+async fn move_conflict_is_reported_and_ajax_moves_answer_204() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let id = create_task(&mut ben, "Fock nähen").await;
+    let board = ben.get("/aufgaben").await;
+    let token = csrf(&board.body);
+    let marker = format!("data-id=\"{id}\" data-version=\"");
+    let at = board.body.find(&marker).unwrap() + marker.len();
+    let version = &board.body[at..at + board.body[at..].find('"').unwrap()];
+    let first = ben
+        .post(
+            &format!("/aufgaben/{id}/status"),
+            &[
+                ("csrf", &token),
+                ("status", "in_progress"),
+                ("version", version),
+                ("ajax", "1"),
+            ],
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::NO_CONTENT);
+    let second = ben
+        .post(
+            &format!("/aufgaben/{id}/status"),
+            &[("csrf", &token), ("status", "done"), ("version", version)],
+        )
+        .await;
+    assert_eq!(second.status, StatusCode::CONFLICT);
+    assert!(second.body.contains("zwischenzeitlich"));
+    let bad = ben
+        .post(
+            &format!("/aufgaben/{id}/status"),
+            &[("csrf", &token), ("status", "bogus")],
+        )
+        .await;
+    assert_eq!(bad.status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn markdown_description_preview_and_safety() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let id = create_task(&mut ben, "Segel flicken").await;
+    let page = ben.get(&format!("/aufgaben/{id}")).await;
+    let token = csrf(&page.body);
+    let version = "1";
+    let evil = "**Wichtig:** Fock <script>alert(1)</script> [x](javascript:alert(1))";
+    let preview = ben
+        .post(
+            &format!("/aufgaben/{id}/beschreibung"),
+            &[
+                ("csrf", &token),
+                ("action", "preview"),
+                ("text", evil),
+                ("version", version),
+            ],
+        )
+        .await;
+    assert_eq!(preview.status, StatusCode::OK);
+    assert!(preview.body.contains("<strong>Wichtig:</strong>"));
+    assert!(preview.body.contains("noch nicht gespeichert"));
+    assert!(
+        !preview.body.contains("<script>alert") && !preview.body.contains("href=\"javascript:")
+    );
+    assert!(preview.body.contains("&lt;script&gt;"));
+    // Vorschau speichert nicht.
+    assert!(
+        ben.get(&format!("/aufgaben/{id}"))
+            .await
+            .body
+            .contains("Noch keine Beschreibung")
+    );
+    let saved = ben
+        .post(
+            &format!("/aufgaben/{id}/beschreibung"),
+            &[
+                ("csrf", &token),
+                ("action", "save"),
+                ("text", evil),
+                ("version", version),
+            ],
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::SEE_OTHER);
+    let page = ben.get(&format!("/aufgaben/{id}")).await;
+    assert!(
+        page.body.contains("<strong>Wichtig:</strong>") && !page.body.contains("<script>alert")
+    );
+    // Zu lang
+    let long = "a".repeat(20_001);
+    let too_long = ben
+        .post(
+            &format!("/aufgaben/{id}/beschreibung"),
+            &[("csrf", &token), ("action", "save"), ("text", &long)],
+        )
+        .await;
+    assert_eq!(too_long.status, StatusCode::UNPROCESSABLE_ENTITY);
+    // Fremde: 403
+    let mut greta = logged_in(&h, 107).await;
+    let greta_token = csrf(&greta.get("/aufgaben").await.body);
+    let denied = greta
+        .post(
+            &format!("/aufgaben/{id}/beschreibung"),
+            &[("csrf", &greta_token), ("action", "preview"), ("text", "x")],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn comments_are_listed_counted_and_validated() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let id = create_task(&mut ben, "Segeltuch bestellen").await;
+    let mut greta = logged_in(&h, 107).await;
+    let token = csrf(&greta.get(&format!("/aufgaben/{id}")).await.body);
+    let empty = greta
+        .post(
+            &format!("/aufgaben/{id}/kommentar"),
+            &[("csrf", &token), ("text", "  ")],
+        )
+        .await;
+    assert_eq!(empty.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(empty.body.contains("Bitte einen Kommentar eingeben"));
+    let ok = greta
+        .post(
+            &format!("/aufgaben/{id}/kommentar"),
+            &[
+                ("csrf", &token),
+                ("text", "Segeltuch ist **bestellt** <b>x</b>"),
+            ],
+        )
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER);
+    let page = greta.get(&format!("/aufgaben/{id}")).await;
+    assert!(page.body.contains("<strong>bestellt</strong>") && page.body.contains("Greta"));
+    assert!(!page.body.contains("<b>x</b>"));
+    // Eigener Kommentar ist korrigierbar, fremder nicht.
+    assert!(page.body.contains("Ändern oder löschen"));
+    assert!(
+        !ben.get(&format!("/aufgaben/{id}"))
+            .await
+            .body
+            .contains("Korrigieren")
+    );
+    let board = ben.get("/aufgaben").await;
+    let card = &board.body[board.body.find(&format!("id=\"aufgabe-{id}\"")).unwrap()..];
+    assert!(card.contains("Kommentare"));
+}
+
+#[tokio::test]
+async fn attachments_are_checked_served_safely_and_deleted_by_owner_or_board() {
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let id = create_task(&mut ben, "Schaden dokumentieren").await;
+    let page = ben.get(&format!("/aufgaben/{id}")).await;
+    let token = csrf(&page.body);
+    let up = format!("/aufgaben/{id}/anhang");
+    let jpeg = [
+        0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10, b'J', b'F', b'I', b'F', 0, 1,
+    ];
+    let ok = ben
+        .upload(&up, &token, "schaden.jpg", &jpeg, "Riss im Segel")
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    let pdf = ben
+        .upload(
+            &up,
+            &token,
+            "../Angebot Segeltuch.pdf",
+            b"%PDF-1.4\n%%EOF",
+            "",
+        )
+        .await;
+    assert_eq!(pdf.status, StatusCode::SEE_OTHER, "{}", pdf.body);
+    for (name, data) in [
+        ("bild.png", b"just text".to_vec()),
+        ("angebot.pdf", b"just text".to_vec()),
+        (
+            "x.svg",
+            b"<svg xmlns='http://www.w3.org/2000/svg' onload='alert(1)'/>".to_vec(),
+        ),
+        ("brief.docx", b"PK\x03\x04 word".to_vec()),
+    ] {
+        let bad = ben.upload(&up, &token, name, &data, "").await;
+        assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY, "{name}");
+        assert!(bad.body.contains("Erlaubt sind Bilder"), "{name}");
+    }
+    let mut huge = vec![0xFF, 0xD8, 0xFF];
+    huge.resize(10 * 1024 * 1024 + 10, 0);
+    let big = ben.upload(&up, &token, "gross.jpg", &huge, "").await;
+    assert_eq!(big.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(big.body.contains("zu groß"));
+    // Ohne Token: abgelehnt.
+    let no_token = ben.upload(&up, "falsch", "a.jpg", &jpeg, "").await;
+    assert_eq!(no_token.status, StatusCode::FORBIDDEN);
+
+    let page = ben.get(&format!("/aufgaben/{id}")).await;
+    assert!(
+        page.body.contains("alt=\"Riss im Segel\"") && page.body.contains("Angebot Segeltuch.pdf")
+    );
+    let image_id = path_of(
+        &page.body[page.body.find("<img").unwrap()..],
+        "/aufgaben/anhang/",
+        "\"",
+    );
+    let file_id = path_of(
+        &page.body[page.body.find("file-row").unwrap()..],
+        "/aufgaben/anhang/",
+        "\"",
+    );
+    let image = ben.get(&format!("/aufgaben/anhang/{image_id}")).await;
+    assert_eq!(image.status, StatusCode::OK);
+    assert_eq!(image.headers[header::CONTENT_TYPE], "image/jpeg");
+    assert_eq!(image.headers[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+    assert!(
+        image.headers[header::CONTENT_SECURITY_POLICY]
+            .to_str()
+            .unwrap()
+            .contains("sandbox")
+    );
+    let download = ben.get(&format!("/aufgaben/anhang/{file_id}")).await;
+    assert_eq!(download.headers[header::CONTENT_TYPE], "application/pdf");
+    let disposition = download.headers[header::CONTENT_DISPOSITION]
+        .to_str()
+        .unwrap();
+    assert!(
+        disposition.starts_with("attachment;") && disposition.contains("Angebot%20Segeltuch.pdf")
+    );
+    // Ohne Anmeldung: Umleitung zur Anmeldung.
+    let mut anonymous = Client::new(&h);
+    let r = anonymous.get(&format!("/aufgaben/anhang/{file_id}")).await;
+    assert!(r.status.is_redirection(), "{}", r.status);
+    // Die Karte zählt Bild und Dokument.
+    assert!(ben.get("/aufgaben").await.body.contains("Dokumente"));
+    // Fremde löschen nicht, der Vorstand schon.
+    let mut greta = logged_in(&h, 107).await;
+    let greta_token = csrf(&greta.get("/aufgaben").await.body);
+    let denied = greta
+        .post(
+            &format!("/aufgaben/anhang/{file_id}/loeschen"),
+            &[("csrf", &greta_token)],
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    let mut eva = logged_in(&h, 105).await;
+    let eva_token = csrf(&eva.get("/aufgaben").await.body);
+    let removed = eva
+        .post(
+            &format!("/aufgaben/anhang/{file_id}/loeschen"),
+            &[("csrf", &eva_token)],
+        )
+        .await;
+    assert_eq!(removed.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        ben.get(&format!("/aufgaben/anhang/{file_id}")).await.status,
+        StatusCode::NOT_FOUND
+    );
+}
+
+#[tokio::test]
+async fn board_shows_wait_column_and_archive_tab_is_for_the_board() {
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let board = greta.get("/aufgaben").await;
+    assert!(board.body.contains("Segeltuch für die Fock bestellen") && board.body.contains("WAIT"));
+    assert!(board.body.contains("data-status=\"waiting\""));
+    assert!(board.body.contains("/static/board.js"));
+    assert_eq!(
+        greta.get("/protokoll/archiv?tab=aufgaben").await.status,
+        StatusCode::FORBIDDEN
+    );
+    let mut eva = logged_in(&h, 105).await;
+    let archive = eva.get("/protokoll/archiv?tab=aufgaben").await;
+    assert_eq!(archive.status, StatusCode::OK);
+    assert!(archive.body.contains("Keine erledigten Aufgaben"));
+    assert_eq!(eva.get("/static/board.js").await.status, StatusCode::OK);
 }
 
 #[tokio::test]

@@ -180,6 +180,7 @@ pub trait ClubStore:
     + crate::changes::ChangeRepository
     + crate::audit::AuditRepository
     + crate::scope::ScopeRepository
+    + crate::task_extras::TaskExtrasRepository
 {
 }
 
@@ -193,6 +194,7 @@ impl<T> ClubStore for T where
         + crate::changes::ChangeRepository
         + crate::audit::AuditRepository
         + crate::scope::ScopeRepository
+        + crate::task_extras::TaskExtrasRepository
 {
 }
 

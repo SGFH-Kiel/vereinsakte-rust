@@ -12,7 +12,57 @@ use super::work_hours::WorkReference;
 pub enum TaskStatus {
     Open,
     InProgress,
+    /// Wartet auf etwas oder jemanden.
+    Waiting,
     Done,
+}
+
+/// Kommentar zu einer Aufgabe (Markdown).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TaskComment {
+    pub id: uuid::Uuid,
+    pub task: TaskId,
+    pub author: MemberId,
+    pub at: Timestamp,
+    pub text: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AttachmentKind {
+    Image,
+    Pdf,
+}
+
+impl AttachmentKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Image => "image",
+            Self::Pdf => "pdf",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "image" => Some(Self::Image),
+            "pdf" => Some(Self::Pdf),
+            _ => None,
+        }
+    }
+}
+
+/// Metadaten eines Anhangs; die Dateidaten werden getrennt gelesen.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TaskAttachment {
+    pub id: uuid::Uuid,
+    pub task: TaskId,
+    pub uploader: MemberId,
+    pub at: Timestamp,
+    pub kind: AttachmentKind,
+    pub filename: String,
+    pub content_type: String,
+    /// Bildbeschreibung (Bild) bzw. Bezeichnung (PDF).
+    pub alt: Option<String>,
+    pub size: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -68,7 +118,7 @@ impl Task {
     }
 
     /// Setzt den Status; „erledigt“ hält den Zeitpunkt fest, jeder andere
-    /// Status löscht ihn.
+    /// Status (auch „wartet“) löscht ihn.
     pub fn set_status(&mut self, status: TaskStatus, t: Timestamp) {
         self.status = status;
         self.done_at = (status == TaskStatus::Done).then_some(t);
@@ -125,6 +175,19 @@ mod tests {
         assert_eq!(task.done_at, Some(at(2026, 5, 20, 18, 0)));
         task.set_status(TaskStatus::InProgress, at(2026, 5, 21, 9, 0));
         assert_eq!(task.done_at, None);
+    }
+
+    #[test]
+    fn waiting_clears_done_timestamp() {
+        let mut task = Task::new("Segeltuch bestellen");
+        task.set_status(TaskStatus::Done, at(2026, 5, 20, 18, 0));
+        task.set_status(TaskStatus::Waiting, at(2026, 5, 21, 9, 0));
+        assert_eq!(task.status, TaskStatus::Waiting);
+        assert_eq!(task.done_at, None);
+        assert_eq!(
+            serde_json::to_string(&TaskStatus::Waiting).unwrap(),
+            "\"waiting\""
+        );
     }
 
     #[test]

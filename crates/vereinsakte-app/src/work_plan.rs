@@ -1,10 +1,8 @@
 //! Arbeitstermine mit Anmeldung und Aufgaben.
 
-use chrono::Datelike;
 use vereinsakte_core::ids::{BoatId, MemberId, TaskId, WorkEventId};
 use vereinsakte_core::rights::Capability;
 use vereinsakte_core::task::{Task, TaskStatus};
-use vereinsakte_core::time::club_time;
 use vereinsakte_core::work_event::{RegistrationError, WorkEvent};
 use vereinsakte_core::work_hours::WorkReference;
 
@@ -336,6 +334,7 @@ impl ClubService {
                 let (status, key) = match t.status {
                     TaskStatus::Open => ("offen", "open"),
                     TaskStatus::InProgress => ("in Arbeit", "in_progress"),
+                    TaskStatus::Waiting => ("wartet", "waiting"),
                     TaskStatus::Done => ("erledigt", "done"),
                 };
                 TaskLine {
@@ -384,55 +383,12 @@ impl ClubService {
         let principal = self.principal(user).await?;
         principal.require(&Capability::ManageTasks)?;
         let scoped = self.load(&self.work_scope(MemberScope::None)).await?;
-        let mut errors = vec![];
-        if input.title.trim().is_empty() {
-            errors.push(FieldError::new("title", "Bitte einen Titel angeben."));
-        }
-        let boat = match trimmed(&input.boat) {
-            None => None,
-            Some(id) => match id
-                .parse::<BoatId>()
-                .ok()
-                .filter(|b| scoped.record.boat(*b).is_some())
-            {
-                Some(b) => Some(b),
-                None => {
-                    errors.push(FieldError::new("boat", "Dieses Boot gibt es nicht."));
-                    None
-                }
-            },
-        };
-        let due = match trimmed(&input.due) {
-            None => None,
-            Some(d) => match parse_date_text(&d) {
-                Some(d) => Some(club_time(d.year(), d.month(), d.day(), 0, 0)),
-                None => {
-                    errors.push(FieldError::new("due", "Bitte ein gültiges Datum angeben."));
-                    None
-                }
-            },
-        };
-        let estimated = match trimmed(&input.hours) {
-            None => None,
-            Some(h) => match format::parse_decimal(&h).filter(|h| *h > 0.0) {
-                Some(h) => Some(h),
-                None => {
-                    errors.push(FieldError::new(
-                        "hours",
-                        "Bitte eine positive Stundenzahl eingeben.",
-                    ));
-                    None
-                }
-            },
-        };
-        if !errors.is_empty() {
-            return Err(AppError::Rejected(errors));
-        }
-        let mut task = Task::new(input.title.trim());
+        let fields = crate::tasks::parse_task_fields(input, &scoped.record.boats)?;
+        let mut task = Task::new(fields.title);
         task.description = trimmed(&input.description);
-        task.boat = boat;
-        task.due_at = due;
-        task.estimated_hours = estimated;
+        task.boat = fields.boat;
+        task.due_at = fields.due;
+        task.estimated_hours = fields.estimated;
         let id = task.id;
         let mut new = scoped.record.clone();
         new.tasks.push(task);

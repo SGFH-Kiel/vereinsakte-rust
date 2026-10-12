@@ -23,6 +23,8 @@ pub mod principal;
 pub mod reservations;
 pub mod scope;
 pub mod service;
+pub mod task_extras;
+pub mod tasks;
 pub mod work;
 pub mod work_plan;
 

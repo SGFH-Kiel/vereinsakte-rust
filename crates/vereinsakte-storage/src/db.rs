@@ -127,6 +127,65 @@ mod tests {
         assert_eq!(tables(&db).await, before);
     }
 
+    /// Migration 0004 baut `tasks` neu auf: Zuständige und Arbeitseinsatz-Verweise bleiben.
+    #[tokio::test]
+    async fn task_table_rebuild_keeps_references() {
+        use std::borrow::Cow;
+        let db = Database::in_memory().await.unwrap();
+        let all = sqlx::migrate!("./migrations");
+        let old = sqlx::migrate::Migrator {
+            migrations: Cow::Owned(
+                all.migrations
+                    .iter()
+                    .filter(|m| m.version < 4)
+                    .cloned()
+                    .collect(),
+            ),
+            ..sqlx::migrate::Migrator::DEFAULT
+        };
+        old.run(db.pool()).await.unwrap();
+        for sql in [
+            "INSERT INTO members (id, position, last_name, first_name, street, postal_code, city,
+                 address_valid, membership_type, board_consent, joined_at)
+             VALUES (1, 0, 'Test', 'Tina', 'Weg 1', '24103', 'Kiel', 1, 'regular', 0, '2026-01-01T00:00:00+01:00')",
+            "INSERT INTO tasks (id, position, title, status) VALUES ('t1', 0, 'Fender', 'open')",
+            "INSERT INTO task_assignees (task_id, position, member_id) VALUES ('t1', 0, 1)",
+            "INSERT INTO work_entries (id, position, member_id, date_at, hours, task_id)
+             VALUES ('w1', 0, 1, '2026-05-01T00:00:00+02:00', 2.0, 't1')",
+        ] {
+            sqlx::query(sql).execute(db.pool()).await.unwrap();
+        }
+        db.migrate().await.unwrap();
+        let count = |sql: &'static str| {
+            let pool = db.pool().clone();
+            async move {
+                sqlx::query(sql)
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap()
+                    .get::<i64, _>(0)
+            }
+        };
+        assert_eq!(
+            count("SELECT COUNT(*) FROM task_assignees WHERE task_id = 't1'").await,
+            1
+        );
+        assert_eq!(
+            count("SELECT COUNT(*) FROM work_entries WHERE task_id = 't1'").await,
+            1
+        );
+        sqlx::query("UPDATE tasks SET status = 'waiting' WHERE id = 't1'")
+            .execute(db.pool())
+            .await
+            .unwrap();
+        assert!(
+            sqlx::query("UPDATE tasks SET status = 'bogus' WHERE id = 't1'")
+                .execute(db.pool())
+                .await
+                .is_err()
+        );
+    }
+
     #[tokio::test]
     async fn check_and_unique_constraints() {
         let db = Database::in_memory().await.unwrap();
@@ -221,6 +280,11 @@ mod tests {
             assert!(!columns.is_empty(), "{table}");
             for column in columns {
                 let (name, kind): (String, String) = (column.get("name"), column.get("type"));
+                // Hochgeladene Dateien (Bilder, PDFs) liegen als BLOB, nicht als JSON.
+                if table == "task_attachments" && name == "data" {
+                    assert_eq!(kind, "BLOB");
+                    continue;
+                }
                 assert_ne!(name, "data", "{table}");
                 assert!(
                     ["INTEGER", "TEXT", "REAL"].contains(&kind.as_str()),

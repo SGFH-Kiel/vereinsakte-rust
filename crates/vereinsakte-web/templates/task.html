@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_forms.html" as f %}
+{% block eyebrow %}<a href="/aufgaben">Aufgaben</a>{% endblock %}
+{% block page_title %}{{ p.title }}{% endblock %}
+{% block page_sub %}{% if p.status_key == "done" %}{{ ui::badge("ok", "check", p.status_label) }}{% else if p.status_key == "in_progress" %}{{ ui::badge("info", "clock", p.status_label) }}{% else if p.status_key == "waiting" %}{{ ui::badge("warn", "clock", p.status_label) }}{% else %}{{ ui::badge("neutral", "list", p.status_label) }}{% endif %}{% if p.overdue %} {{ ui::badge("danger", "alert", "überfällig") }}{% endif %}{% if p.archived %} {{ ui::badge("neutral", "archive", "archiviert") }}{% endif %}{% endblock %}
+{% block page_actions %}
+{% if p.can_move %}
+<form method="post" action="/aufgaben/{{ p.id }}/status" class="inline">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}"><input type="hidden" name="version" value="{{ p.version }}">
+  <label class="visually-hidden" for="st-status">Status</label>
+  <select id="st-status" name="status">
+    <option value="open"{% if p.status_key == "open" %} selected{% endif %}>TODO – offen</option>
+    <option value="in_progress"{% if p.status_key == "in_progress" %} selected{% endif %}>WIP – in Arbeit</option>
+    <option value="waiting"{% if p.status_key == "waiting" %} selected{% endif %}>WAIT – wartet</option>
+    <option value="done"{% if p.status_key == "done" %} selected{% endif %}>DONE – erledigt</option>
+  </select>
+  <button type="submit">Status setzen</button>
+</form>
+{% endif %}
+{% endblock %}
+{% block content %}
+{% if !errors.general().is_empty() %}<div class="notice error" role="alert">{{ ui::icon("alert-circle") }}<div>{% for message in errors.general() %}<p>{{ message }}</p>{% endfor %}</div></div>{% endif %}
+<div class="task-layout">
+<div class="task-main">
+<section class="card" id="beschreibung">
+  <div class="card-head"><h2>{{ ui::icon("file") }}Beschreibung</h2></div>
+  {% if p.description.is_empty() %}<p class="muted">Noch keine Beschreibung.</p>{% else %}<div class="markdown">{{ description_html|safe }}</div>{% endif %}
+  {% if p.can_edit %}
+  <details class="panel"{% if editing %} open{% endif %}>
+    <summary class="btn">{{ ui::icon("pencil") }}Beschreibung bearbeiten</summary>
+    <form method="post" action="/aufgaben/{{ p.id }}/beschreibung" class="stack">
+      <input type="hidden" name="csrf" value="{{ layout.csrf }}"><input type="hidden" name="version" value="{{ p.version }}">
+      {{ f::area("text", "Beschreibung (Markdown)", draft, errors.get("description"), "Unterstützt Überschriften, **fett**, *kursiv*, Listen, - [ ] Aufgabenlisten, > Zitate, `Code` und Links (http, https, mailto). Eingebettetes HTML wird als Text angezeigt.", "large") }}
+      <div class="form-actions"><button type="submit" name="action" value="save" class="primary">{{ ui::icon("check") }}Speichern</button><button type="submit" name="action" value="preview">{{ ui::icon("search") }}Vorschau</button></div>
+    </form>
+    {% if editing %}<div class="preview"><h3>Vorschau (noch nicht gespeichert)</h3><div class="markdown">{{ preview_html|safe }}</div></div>{% endif %}
+  </details>
+  {% endif %}
+</section>
+
+<section class="card" id="anhaenge">
+  <div class="card-head"><h2>{{ ui::icon("image") }}Anhänge</h2><span class="count">{{ p.attachments.len() }}</span></div>
+  {% if p.attachments.is_empty() %}<p class="muted">Noch keine Anhänge.</p>{% else %}
+  <ul class="attachments">
+  {% for a in p.attachments %}
+    <li class="attachment {% if a.is_image %}image{% else %}document{% endif %}">
+    {% if a.is_image %}
+      <a href="/aufgaben/anhang/{{ a.id }}"><img src="/aufgaben/anhang/{{ a.id }}" alt="{% if a.alt.is_empty() %}{{ a.filename }}{% else %}{{ a.alt }}{% endif %}" loading="lazy"></a>
+      <div class="attachment-info"><span>{% if a.alt.is_empty() %}{{ a.filename }}{% else %}{{ a.alt }}{% endif %}</span> <span class="muted">{{ a.size }} · {{ ui::person(a.by) }} · {{ a.at }}</span></div>
+    {% else %}
+      <a class="file-row" href="/aufgaben/anhang/{{ a.id }}" download>{{ ui::icon("file") }}<span class="file-name">{{ a.filename }}</span>{{ ui::icon("download") }}</a>
+      <div class="attachment-info"><span class="muted">PDF · {{ a.size }}{% if !a.alt.is_empty() %} · {{ a.alt }}{% endif %} · {{ ui::person(a.by) }} · {{ a.at }}</span></div>
+    {% endif %}
+    {% if a.can_delete %}
+      <form method="post" action="/aufgaben/anhang/{{ a.id }}/loeschen" class="inline"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="small danger">{{ ui::icon("trash") }}Entfernen</button></form>
+    {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+  {% if p.attachments.len() < p.max_attachments %}
+  <details class="panel">
+    <summary class="btn">{{ ui::icon("plus") }}Anhang hinzufügen</summary>
+    <form method="post" action="/aufgaben/{{ p.id }}/anhang?csrf={{ layout.csrf }}" enctype="multipart/form-data" class="stack">
+      <div class="field{% if !errors.get("file").is_empty() %} has-error{% endif %}">
+        <label for="f-file">Datei</label>
+        <input id="f-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" required>
+        <span class="hint">{{ format_hint }} Höchstens {{ max_mb }} MB je Datei und {{ p.max_attachments }} Anhänge je Aufgabe. Fotos können Standortdaten enthalten.</span>
+        {% if !errors.get("file").is_empty() %}<span class="error-text">{{ ui::icon("alert-circle") }}{{ errors.get("file") }}</span>{% endif %}
+      </div>
+      {{ f::field("alt", "Beschreibung (Bildbeschreibung bzw. Bezeichnung)", "", "", "text", "") }}
+      <div class="form-actions"><button type="submit" class="primary">{{ ui::icon("plus") }}Hochladen</button></div>
+    </form>
+  </details>
+  {% else %}<p class="muted">Mehr als {{ p.max_attachments }} Anhänge sind nicht möglich.</p>{% endif %}
+</section>
+
+<section class="card" id="kommentare">
+  <div class="card-head"><h2>{{ ui::icon("message") }}Kommentare</h2><span class="count">{{ p.comments.len() }}</span></div>
+  {% if p.comments.is_empty() %}<p class="muted">Noch keine Kommentare.</p>{% endif %}
+  <ol class="comments">
+  {% for c in p.comments %}
+    <li class="comment">
+      <div class="comment-head"><strong>{{ ui::person(c.author) }}</strong> <span class="muted">{{ c.at }}</span></div>
+      <div class="markdown">{{ comments_html[loop.index0]|safe }}</div>
+      {% if c.can_edit || c.can_delete %}
+      <details class="panel">
+        <summary class="btn small">{{ ui::icon("pencil") }}Ändern oder löschen</summary>
+        {% if c.can_edit %}
+        <form method="post" action="/aufgaben/kommentar/{{ c.id }}/aendern" class="stack">
+          <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+          <div class="field wide"><label for="ce-{{ c.id }}">Kommentar</label><textarea id="ce-{{ c.id }}" name="text">{{ c.text }}</textarea><span class="hint">Eigene Kommentare lassen sich {{ window }} Minuten lang korrigieren.</span></div>
+          <div class="form-actions"><button type="submit" class="primary">Korrigieren</button></div>
+        </form>
+        {% endif %}
+        {% if c.can_delete %}
+        <form method="post" action="/aufgaben/kommentar/{{ c.id }}/loeschen" class="inline"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="small danger">{{ ui::icon("trash") }}Löschen</button></form>
+        {% endif %}
+      </details>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ol>
+  <form method="post" action="/aufgaben/{{ p.id }}/kommentar" class="stack">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    {{ f::area("text", "Neuer Kommentar", comment_draft, errors.get("text"), "Markdown wie in der Beschreibung.", "") }}
+    <div class="form-actions"><button type="submit" class="primary">{{ ui::icon("message") }}Kommentieren</button></div>
+  </form>
+</section>
+</div>
+
+<aside class="task-side">
+<section class="card">
+  <div class="card-head"><h2>{{ ui::icon("info") }}Angaben</h2></div>
+  <dl>
+    <dt>Zuständig</dt><dd>{% if p.assignees.is_empty() %}<span class="muted">noch niemand</span>{% else %}{% for a in p.assignees %}{{ ui::person(a) }}{% if !loop.last %}, {% endif %}{% endfor %}{% endif %}</dd>
+    {% if !p.boat.is_empty() %}<dt>Boot</dt><dd><a href="/boote/{{ p.boat_id }}">{{ p.boat }}</a></dd>{% endif %}
+    {% if !p.due.is_empty() %}<dt>Fällig</dt><dd>{{ p.due }}</dd>{% endif %}
+    {% if !p.estimated.is_empty() %}<dt>Geschätzt</dt><dd>{{ p.estimated }}</dd>{% endif %}
+    <dt>Erfasste Stunden</dt><dd>{{ p.hours }}</dd>
+  </dl>
+</section>
+{% if p.can_manage %}
+<section class="card">
+  <div class="card-head"><h2>{{ ui::icon("pencil") }}Verwalten</h2></div>
+  <details class="panel">
+    <summary class="btn">{{ ui::icon("pencil") }}Angaben ändern</summary>
+    <form method="post" action="/aufgaben/{{ p.id }}/bearbeiten" class="stack">
+      <input type="hidden" name="csrf" value="{{ layout.csrf }}"><input type="hidden" name="version" value="{{ p.version }}">
+      {{ f::req_field("title", "Titel", form.title, errors.get("title"), "text", "") }}
+      {{ f::field("due", "Fällig am", form.due, errors.get("due"), "date", "") }}
+      {{ f::field("hours", "Geschätzte Stunden", form.hours, errors.get("hours"), "text", "") }}
+      <div class="field"><label for="f-boat">Boot</label>
+        <select id="f-boat" name="boat"><option value="">kein bestimmtes Boot</option>{% for (key, label) in p.boats %}<option value="{{ key }}"{% if *key == form.boat %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="form-actions"><button type="submit" class="primary">Speichern</button></div>
+    </form>
+  </details>
+  <form method="post" action="/aufgaben/{{ p.id }}/zuweisen" class="stack">
+    <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+    <div class="field"><label for="as-member">Mitglied</label><select id="as-member" name="member">{% for (number, name) in p.members %}<option value="{{ number }}">{{ name }}</option>{% endfor %}</select></div>
+    <div class="form-actions"><button type="submit" name="action" value="zuweisen" class="small">Zuweisen</button><button type="submit" name="action" value="entziehen" class="small">Zuständigkeit entziehen</button></div>
+  </form>
+</section>
+{% endif %}
+<section class="card">
+  <div class="card-head"><h2>{{ ui::icon("clock") }}Verlauf</h2></div>
+  {% if p.history.is_empty() %}<p class="muted">Noch keine Änderungen.</p>{% else %}
+  <ul class="plain history">{% for h in p.history %}<li><span class="muted">{{ h.at }}</span> {{ ui::person(h.who) }}: {{ h.text }}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+</aside>
+</div>
+{% endblock %}

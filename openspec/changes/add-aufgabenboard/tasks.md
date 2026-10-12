@@ -2,31 +2,31 @@
 
 ## 1. Kern und Speicher
 
-- [ ] 1.1 `TaskStatus::Waiting` (`waiting`), `TaskComment`, `TaskAttachment`-Metadaten (Art Bild oder PDF) im Kern; `set_status` löscht `done_at` auch für `Waiting`; Unit-Tests für alle Übergänge inkl. Wiederöffnen, `cargo test -p vereinsakte-core` grün.
-- [ ] 1.2 Migration `0004_task_attachments.sql` (Kommentare, Anhänge als BLOB, Fremdschlüssel mit Cascade) und Lesen/Schreiben im Speicher mit Versionen; Test: Kommentar, Bild und PDF round-trip, Kaskade beim Löschen der Aufgabe, Listenabfragen laden keine Dateidaten (Test prüft Abfrage-Spalten).
-- [ ] 1.3 Saisonfilter: `board(season_start)` liefert Aufgaben pro Spalte ohne erledigte aus früheren Saisons und `archived_tasks()`; Unit-Tests für Mai 2026 erledigt im Juli 2026 (DONE) und im Januar 2027 (Archiv) sowie Wiederöffnen.
+- [x] 1.1 `TaskStatus::Waiting` (`waiting`), `TaskComment`, `TaskAttachment`-Metadaten (Art Bild oder PDF) im Kern; `set_status` löscht `done_at` auch für `Waiting`; Unit-Tests für alle Übergänge inkl. Wiederöffnen, `cargo test -p vereinsakte-core` grün.
+- [x] 1.2 Migration `0004_task_attachments.sql` (Kommentare, Anhänge als BLOB, Fremdschlüssel mit Cascade) und Lesen/Schreiben im Speicher mit Versionen; Test: Kommentar, Bild und PDF round-trip, Kaskade beim Löschen der Aufgabe, Listenabfragen laden keine Dateidaten (Test prüft Abfrage-Spalten).
+- [x] 1.3 Saisonfilter: `board(season_start)` liefert Aufgaben pro Spalte ohne erledigte aus früheren Saisons und `archived_tasks()`; Unit-Tests für Mai 2026 erledigt im Juli 2026 (DONE) und im Januar 2027 (Archiv) sowie Wiederöffnen.
 
 ## 2. Anwendungsfälle und Rechte
 
-- [ ] 2.1 Use Cases: Aufgabe anlegen/ändern, Status verschieben (mit Version), Beschreibung ändern, Kommentar anlegen/ändern/löschen (15-Minuten-Regel), Anhang (Bild oder PDF) hochladen/löschen mit Prüfung von Typ (Magic Bytes, `%PDF-`), Größe (10 MB), Anzahl (20); Tests je Regel inkl. 403 für Fremde und Konflikt bei veralteter Version.
-- [ ] 2.2 Rechtematrix und Protokollaktionen erweitern (`task.description_changed`, `task.comment_*`, `task.attachment_*`), `ACTIONS`-Sweep-Test und Rechtetests grün; Protokolltext enthält keine Beschreibungs- oder Kommentartexte (Test).
+- [x] 2.1 Use Cases: Aufgabe anlegen/ändern, Status verschieben (mit Version), Beschreibung ändern, Kommentar anlegen/ändern/löschen (15-Minuten-Regel), Anhang (Bild oder PDF) hochladen/löschen mit Prüfung von Typ (Magic Bytes, `%PDF-`), Größe (10 MB), Anzahl (20); Tests je Regel inkl. 403 für Fremde und Konflikt bei veralteter Version.
+- [x] 2.2 Rechtematrix und Protokollaktionen erweitern (`task.description_changed`, `task.comment_*`, `task.attachment_*`), `ACTIONS`-Sweep-Test und Rechtetests grün; Protokolltext enthält keine Beschreibungs- oder Kommentartexte (Test).
 
 ## 3. Web: Board und Aufgabenseite
 
-- [ ] 3.1 Markdown-Renderer (`pulldown-cmark`) ohne rohes HTML und mit Link-Erlaubnisliste; Tests mit `<script>`, `javascript:`-Link, `onerror`, Aufgabenlisten, Fett; keine Bilder aus Markdown.
-- [ ] 3.2 Seite `/aufgaben` (Menüpunkt oben): vier Spalten mit Anzahl, Karten mit Boot, Zuständigen, Fälligkeit („überfällig“ mit Text), Zählern; Filter „meine“/Boot in der Adresse; Verschieben-Formular je Karte; Altadresse `/arbeit/aufgaben` leitet um; Tests: Spalteninhalt, Filter, Rechte der Schaltflächen, 403 bei erzwungenem Aufruf.
-- [ ] 3.3 Aufgabenseite `/aufgaben/{id}`: Kopf mit Status, Zuständige, Boot, Fälligkeit, Stunden, Verlauf; Beschreibung mit „Bearbeiten“ und Vorschau (POST ohne Speichern); Tests: Vorschau speichert nicht, Beschreibung fett gerendert, Fremde erhalten 403.
-- [ ] 3.4 Kommentare: Liste, Formular, Korrektur/Löschen nach 15-Minuten-Regel; Tests: leerer Kommentar → Feldfehler, später Eingriff abgelehnt, Zähler auf der Karte.
-- [ ] 3.5 Anhänge: Mehrteil-Upload (Bodygrenze nur an dieser Route), Auslieferung mit `nosniff`, Sandbox-CSP und festem Typ, Bilder als Vorschau mit Alternativtext, PDFs als Dateizeile mit Symbol, Name, Größe und Download (`Content-Disposition: attachment`, bereinigter Name), Löschen; Tests: JPEG ok, PDF ok und als Download ausgeliefert, Textdatei als PNG oder PDF abgelehnt, SVG und Word abgelehnt, 11-MB-Datei abgelehnt, ohne Anmeldung Umleitung, Fremde löschen → 403.
-- [ ] 3.6 Neue Aufgabe anlegen (Amtsträger) mit Titel, Zuständigen, Boot, Fälligkeit, Schätzung; Test: erscheint in TODO und bei „meine“.
+- [x] 3.1 Markdown-Renderer (`pulldown-cmark`) ohne rohes HTML und mit Link-Erlaubnisliste; Tests mit `<script>`, `javascript:`-Link, `onerror`, Aufgabenlisten, Fett; keine Bilder aus Markdown.
+- [x] 3.2 Seite `/aufgaben` (Menüpunkt oben): vier Spalten mit Anzahl, Karten mit Boot, Zuständigen, Fälligkeit („überfällig“ mit Text), Zählern; Filter „meine“/Boot in der Adresse; Verschieben-Formular je Karte; Altadresse `/arbeit/aufgaben` leitet um; Tests: Spalteninhalt, Filter, Rechte der Schaltflächen, 403 bei erzwungenem Aufruf.
+- [x] 3.3 Aufgabenseite `/aufgaben/{id}`: Kopf mit Status, Zuständige, Boot, Fälligkeit, Stunden, Verlauf; Beschreibung mit „Bearbeiten“ und Vorschau (POST ohne Speichern); Tests: Vorschau speichert nicht, Beschreibung fett gerendert, Fremde erhalten 403.
+- [x] 3.4 Kommentare: Liste, Formular, Korrektur/Löschen nach 15-Minuten-Regel; Tests: leerer Kommentar → Feldfehler, später Eingriff abgelehnt, Zähler auf der Karte.
+- [x] 3.5 Anhänge: Mehrteil-Upload (Bodygrenze nur an dieser Route), Auslieferung mit `nosniff`, Sandbox-CSP und festem Typ, Bilder als Vorschau mit Alternativtext, PDFs als Dateizeile mit Symbol, Name, Größe und Download (`Content-Disposition: attachment`, bereinigter Name), Löschen; Tests: JPEG ok, PDF ok und als Download ausgeliefert, Textdatei als PNG oder PDF abgelehnt, SVG und Word abgelehnt, 11-MB-Datei abgelehnt, ohne Anmeldung Umleitung, Fremde löschen → 403.
+- [x] 3.6 Neue Aufgabe anlegen (Amtsträger) mit Titel, Zuständigen, Boot, Fälligkeit, Schätzung; Test: erscheint in TODO und bei „meine“.
 
 ## 4. Gestaltung, Bedienung, Archiv
 
-- [ ] 4.1 Board-Gestaltung: Spalten am Desktop nebeneinander, am Handy einklappbar untereinander, Karten mit Symbolen, Aufgabenseite zweispaltig (Inhalt/Meta); Prüfung: Screenshots 375 und 1280 px hell/dunkel ohne seitliches Scrollen.
-- [ ] 4.2 `static/board.js`: Ziehen zwischen Spalten und Tastaturbedienung (Pfeiltasten verschieben), Rückfall bei Fehlern; Playwright-Test: Karte nach WIP ziehen, Seite neu laden, Status bleibt; ohne JavaScript funktioniert das Verschieben-Formular.
-- [ ] 4.3 Archiv-Reiter „Aufgaben“ (aus `add-ui-fuehrung`) mit erledigten Aufgaben früherer Saisons; Test: Aufgabe aus 2026 erscheint 2027 dort, nicht mehr im Board.
+- [x] 4.1 Board-Gestaltung: Spalten am Desktop nebeneinander, am Handy einklappbar untereinander, Karten mit Symbolen, Aufgabenseite zweispaltig (Inhalt/Meta); Prüfung: Screenshots 375 und 1280 px hell/dunkel ohne seitliches Scrollen.
+- [x] 4.2 `static/board.js`: Ziehen zwischen Spalten und Tastaturbedienung (Pfeiltasten verschieben), Rückfall bei Fehlern; Playwright-Test: Karte nach WIP ziehen, Seite neu laden, Status bleibt; ohne JavaScript funktioniert das Verschieben-Formular.
+- [x] 4.3 Archiv-Reiter „Aufgaben“ (aus `add-ui-fuehrung`) mit erledigten Aufgaben früherer Saisons; Test: Aufgabe aus 2026 erscheint 2027 dort, nicht mehr im Board.
 
 ## 5. Abschluss
 
-- [ ] 5.1 Beispieldaten um eine WAIT-Aufgabe, einen Kommentar und ein kleines Bild und ein kleines PDF ergänzen; End-to-End-Test (alle Seiten × alle Mitglieder) und Screenshots erweitern; `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` grün.
-- [ ] 5.2 README: Aufgabenboard, Markdown-Umfang, Upload-Grenzen, Datenbankgröße/Backup und EXIF-Hinweis; die beschriebenen Befehle laufen wie dokumentiert.
+- [x] 5.1 Beispieldaten um eine WAIT-Aufgabe, einen Kommentar und ein kleines Bild und ein kleines PDF ergänzen; End-to-End-Test (alle Seiten × alle Mitglieder) und Screenshots erweitern; `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` grün.
+- [x] 5.2 README: Aufgabenboard, Markdown-Umfang, Upload-Grenzen, Datenbankgröße/Backup und EXIF-Hinweis; die beschriebenen Befehle laufen wie dokumentiert.

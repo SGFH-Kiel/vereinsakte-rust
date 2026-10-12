@@ -1942,6 +1942,17 @@
       ],
       "estimated_hours": 5.0,
       "status": "in_progress"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00007a5c0005",
+      "title": "Segeltuch für die Fock bestellen",
+      "description": "Wartet auf das **Angebot** der Segelmacherei.",
+      "boat": "00000000-0000-0000-0000-0000b0a70003",
+      "assignees": [
+        102
+      ],
+      "due_at": "2026-11-15T00:00:00+01:00",
+      "status": "waiting"
     }
   ],
   "seasons": [

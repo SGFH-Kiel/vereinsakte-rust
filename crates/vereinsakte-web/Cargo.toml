@@ -24,6 +24,7 @@ tower-sessions.workspace = true
 tracing.workspace = true
 url.workspace = true
 uuid.workspace = true
+pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
 
 [dev-dependencies]
 vereinsakte-core = { workspace = true, features = ["example"] }

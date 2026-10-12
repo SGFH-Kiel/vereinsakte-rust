@@ -161,6 +161,28 @@ pub async fn csrf_guard(session: Session, request: Request, next: Next) -> Respo
         .get(CSRF_HEADER)
         .and_then(|v| v.to_str().ok())
         .map(str::to_string);
+    // Uploads (Mehrteil) werden nicht zwischengespeichert; das Token kommt dann
+    // aus Header oder Adresse (`?csrf=`).
+    let multipart = request
+        .headers()
+        .get(axum::http::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.starts_with("multipart/form-data"));
+    if multipart {
+        let query = request.uri().query().and_then(|q| {
+            url::form_urlencoded::parse(q.as_bytes())
+                .find(|(key, _)| key == CSRF_FIELD)
+                .map(|(_, value)| value.into_owned())
+        });
+        let valid = matches!((&expected, header.or(query)), (Some(expected), Some(given)) if *expected == given);
+        if !valid {
+            return error_page(
+                StatusCode::FORBIDDEN,
+                "Die Anfrage ist abgelaufen oder ungültig. Bitte lade die Seite neu.",
+            );
+        }
+        return next.run(request).await;
+    }
     let (parts, body) = request.into_parts();
     let Ok(bytes) = to_bytes(body, 64 * 1024).await else {
         return error_page(StatusCode::PAYLOAD_TOO_LARGE, "Anfrage zu groß");

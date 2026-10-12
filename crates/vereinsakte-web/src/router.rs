@@ -1,7 +1,7 @@
 //! Zusammenbau des Routers.
 
 use axum::Router;
-use axum::extract::Request;
+use axum::extract::{DefaultBodyLimit, Request};
 use axum::http::{HeaderName, HeaderValue, header};
 use axum::middleware;
 use axum::routing::{get, post};
@@ -13,7 +13,10 @@ use tower_sessions::{Expiry, SessionManagerLayer, SessionStore};
 use crate::error::not_found;
 use crate::session::csrf_guard;
 use crate::state::AppState;
-use crate::{audit, boats, finance, login, members, offices, pages, reservations, work};
+use crate::{audit, boats, finance, login, members, offices, pages, reservations, tasks, work};
+
+/// Obergrenze für einen Upload (Datei bis 10 MB plus Formularfelder).
+const UPLOAD_BODY_LIMIT: usize = 11 * 1024 * 1024;
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
                    form-action 'self'; frame-ancestors 'none'; base-uri 'self'";
@@ -124,9 +127,32 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
         )
         .route("/arbeit/termine/{id}/anmelden", post(work::register))
         .route("/arbeit/termine/{id}/abmelden", post(work::unregister))
-        .route("/arbeit/aufgaben", get(work::tasks).post(work::create_task))
-        .route("/arbeit/aufgaben/{id}/zuweisen", post(work::assign_task))
-        .route("/arbeit/aufgaben/{id}/status", post(work::task_status))
+        .route("/arbeit/aufgaben", get(tasks::old_list))
+        .route("/aufgaben", get(tasks::board))
+        .route("/aufgaben/neu", get(tasks::new).post(tasks::new_submit))
+        .route("/aufgaben/{id}", get(tasks::show))
+        .route("/aufgaben/{id}/status", post(tasks::move_status))
+        .route("/aufgaben/{id}/bearbeiten", post(tasks::edit))
+        .route("/aufgaben/{id}/zuweisen", post(tasks::assign))
+        .route("/aufgaben/{id}/beschreibung", post(tasks::description))
+        .route("/aufgaben/{id}/kommentar", post(tasks::comment))
+        .route(
+            "/aufgaben/kommentar/{cid}/aendern",
+            post(tasks::comment_edit),
+        )
+        .route(
+            "/aufgaben/kommentar/{cid}/loeschen",
+            post(tasks::comment_delete),
+        )
+        .route(
+            "/aufgaben/{id}/anhang",
+            post(tasks::attach).layer(DefaultBodyLimit::max(UPLOAD_BODY_LIMIT)),
+        )
+        .route("/aufgaben/anhang/{aid}", get(tasks::attachment))
+        .route(
+            "/aufgaben/anhang/{aid}/loeschen",
+            post(tasks::attachment_delete),
+        )
         .route("/arbeit/uebersicht", get(work::overview))
         .route("/arbeit/uebertrag", post(work::transfer))
         .route("/arbeit/abgeltung", post(work::compensate))

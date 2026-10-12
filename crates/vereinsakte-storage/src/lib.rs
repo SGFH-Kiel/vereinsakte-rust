@@ -4,6 +4,7 @@ mod commit;
 pub mod db;
 mod read;
 pub mod repo;
+mod task_extras;
 mod values;
 mod write;
 

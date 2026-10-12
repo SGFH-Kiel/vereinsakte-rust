@@ -2,7 +2,7 @@
 {% import "_ui.html" as ui %}
 {% block eyebrow %}Verwaltung{% endblock %}
 {% block page_title %}Archiv{% endblock %}
-{% block page_sub %}Was nicht mehr aktuell ist: beendete Ämter, Ausgeschiedene, abgelaufene Sperren, vergangene Reservierungen und Termine{% endblock %}
+{% block page_sub %}Was nicht mehr aktuell ist: beendete Ämter, Ausgeschiedene, abgelaufene Sperren, vergangene Reservierungen, Termine und Aufgaben{% endblock %}
 {% block content %}
 {% include "_protokoll_nav.html" %}
 {% let tab = tab.as_str() %}
@@ -55,6 +55,15 @@
       <tr><td data-label="Wann" class="cell-title"><a href="/reservierungen/{{ r.id }}">{{ r.when }}</a></td><td data-label="Boot">{{ r.boat }}</td>
         <td data-label="Skipper"><a class="person" href="/mitglieder/{{ r.skipper_id }}">{{ r.skipper }}</a></td>
         <td data-label="Art">{% if r.tour %}{{ ui::badge("info", "anchor", "Tour") }}{% else %}Ausfahrt{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+  {% endif %}
+{% else if tab == "aufgaben" %}
+  {% if tasks.is_empty() %}<section class="card">{{ ui::empty("check-square", "Keine erledigten Aufgaben aus früheren Saisons.") }}</section>{% else %}
+  {{ ui::sort_form(sort) }}
+  <div class="table-wrap"><table class="responsive">
+    <thead><tr>{{ ui::th_sort(sort, "titel", "Aufgabe", "") }}{{ ui::th_sort(sort, "boot", "Boot", "") }}<th scope="col">Zuständig</th>{{ ui::th_sort(sort, "erledigt", "Erledigt am", "") }}<th scope="col" class="num">Stunden</th></tr></thead>
+    <tbody>{% for t in tasks %}
+      <tr><td data-label="Aufgabe" class="cell-title"><a href="/aufgaben/{{ t.id }}">{{ t.title }}</a></td><td data-label="Boot">{{ t.boat }}</td><td data-label="Zuständig">{% for p in t.assignees %}{{ ui::person(p) }}{% if !loop.last %}, {% endif %}{% endfor %}</td><td data-label="Erledigt am">{{ t.done }}</td><td data-label="Stunden" class="num">{{ t.hours }}</td></tr>
     {% endfor %}</tbody></table></div>
   {% endif %}
 {% else %}

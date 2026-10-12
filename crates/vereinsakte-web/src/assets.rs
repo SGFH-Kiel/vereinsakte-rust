@@ -28,6 +28,11 @@ const ASSETS: &[Asset] = &[
         body: include_bytes!("../static/fonts/Amaranth-Bold.woff2"),
     },
     Asset {
+        path: "board.js",
+        content_type: "text/javascript; charset=utf-8",
+        body: include_bytes!("../static/board.js"),
+    },
+    Asset {
         path: "fonts/OFL.txt",
         content_type: "text/plain; charset=utf-8",
         body: include_bytes!("../static/fonts/OFL.txt"),

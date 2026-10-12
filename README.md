@@ -140,6 +140,27 @@ mit „Mehr“ (Mobil); Listen sind sortierbar (Spaltenköpfe) und filterbar.
 Startdatum liegt; Gäste werden nicht erfasst (Hinweise in der Bemerkung), die
 Mindestbesatzung wird nicht geprüft.
 
+### Aufgabenboard
+
+`/aufgaben` zeigt Aufgaben als Kanban-Board (TODO, WIP, WAIT, DONE). Verschieben geht
+über das Formular an der Karte (ohne JavaScript), per Ziehen oder mit Alt + Pfeiltasten
+(`static/board.js`; Test: `node tools/board-test.mjs`). Erledigte Aufgaben früherer
+Saisons (vor dem 1. Januar des laufenden Jahres) stehen nur noch im Archiv (Reiter
+„Aufgaben“, Vorstand und Revisoren).
+
+- **Beschreibung und Kommentare** sind Markdown (Überschriften, Hervorhebung, Listen,
+  Aufgabenlisten, Zitate, Code, Links mit http/https/mailto, Tabellen); eingebettetes HTML
+  wird als Text angezeigt, Bilder in Markdown werden nicht gerendert. Beschreibung höchstens
+  20.000, Kommentar 5.000 Zeichen; Kommentare sind 15 Minuten lang korrigierbar.
+- **Anhänge**: Bilder (JPEG, PNG, WebP, GIF) und PDFs bis 10 MB, höchstens 20 je Aufgabe.
+  Der Inhalt wird an der Dateikennung geprüft (SVG und Office-Dateien werden abgelehnt).
+  Auslieferung nur an angemeldete Mitglieder mit festem Typ, `nosniff` und Sandbox-CSP;
+  PDFs immer als Download. Fotos können Standortdaten (EXIF) enthalten – sie werden nicht
+  entfernt.
+- **Sicherung**: Kommentare und Anhänge liegen in der SQLite-Datei (Tabellen
+  `task_comments`, `task_attachments`), gehören aber **nicht** zu `vereinsakte export`.
+  Für eine vollständige Sicherung die Datenbankdatei kopieren; sie wächst mit den Anhängen.
+
 ### Bildschirmfotos zur Prüfung des Designs
 
 ```sh

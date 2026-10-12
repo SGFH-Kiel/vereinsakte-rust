@@ -29,6 +29,7 @@ await new Promise((r) => setTimeout(r, 1500));
 
 // Mitglied -> Seiten, die für dieses Mitglied fotografiert werden (Beispielakte).
 const FILOU = '00000000-0000-0000-0000-0000b0a70001';
+const SEGELTUCH = '00000000-0000-0000-0000-00007a5c0005';
 const DEHLER_TOUR = '00000000-0000-0000-0000-00002e5e0003';
 const defaults = [
   ['105', '/'], ['103', '/meine-daten'], ['105', '/mitglieder'], ['107', '/mitglieder'],
@@ -40,6 +41,7 @@ const defaults = [
   ['101', '/konto'], ['110', '/finanzen'], ['110', '/finanzen/konten/103'], ['110', '/finanzen/saisons?jahr=2027'],
   ['110', '/finanzen/beitraege?jahr=2027'], ['110', '/finanzen/touren'], ['110', '/finanzen/nachweis/103'],
   ['112', '/protokoll'],
+  ['107', '/aufgaben'], ['102', '/aufgaben?meine=1'], ['102', `/aufgaben/${SEGELTUCH}`], ['102', '/aufgaben/neu'], ['105', '/protokoll/archiv?tab=aufgaben'],
   ['105', '/kalender'], ['105', '/kalender?ansicht=monat'], ['105', '/protokoll/archiv'], ['105', '/protokoll/archiv?bereich=reservierungen'],
 ];
 const pages = JSON.parse(process.env.SCREEN_PAGES ?? JSON.stringify(defaults));

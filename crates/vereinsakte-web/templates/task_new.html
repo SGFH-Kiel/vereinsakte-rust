@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_forms.html" as f %}
+{% block eyebrow %}<a href="/aufgaben">Aufgaben</a>{% endblock %}
+{% block page_title %}Neue Aufgabe{% endblock %}
+{% block content %}
+{% if !errors.general().is_empty() %}<div class="notice error" role="alert">{{ ui::icon("alert-circle") }}<div>{% for message in errors.general() %}<p>{{ message }}</p>{% endfor %}</div></div>{% endif %}
+<form method="post" action="/aufgaben/neu" class="stack">
+  <input type="hidden" name="csrf" value="{{ layout.csrf }}">
+  <p class="form-legend"><span class="req">*</span> Pflichtfeld</p>
+  <section class="form-section">
+    <h2>Aufgabe</h2>
+    <p class="section-intro">Titel genügt; alles Weitere ist optional. Die Beschreibung lässt sich später mit Markdown formatieren.</p>
+    <div class="form-grid cols-2">
+      {{ f::req_field("title", "Titel", form.title, errors.get("title"), "text", "") }}
+      {{ f::field("due", "Fällig am", form.due, errors.get("due"), "date", "") }}
+      {{ f::field("hours", "Geschätzte Stunden", form.hours, errors.get("hours"), "text", "") }}
+      <div class="field"><label for="f-boat">Boot</label>
+        <select id="f-boat" name="boat"><option value="">kein bestimmtes Boot</option>{% for (key, label) in boats %}<option value="{{ key }}"{% if *key == form.boat %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      {{ f::area("description", "Beschreibung (Markdown)", form.description, "", "", "") }}
+    </div>
+  </section>
+  <div class="form-actions"><button type="submit" class="primary">{{ ui::icon("plus") }}Anlegen</button><a class="btn" href="/aufgaben">Abbrechen</a></div>
+</form>
+{% endblock %}

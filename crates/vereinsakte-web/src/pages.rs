@@ -109,7 +109,7 @@ fn navigation(principal: &Principal, path: &str) -> (Vec<NavGroup>, Vec<NavItem>
                 ("/aemter", "Ämter", "award"),
                 ("/boote", "Boote", "boat"),
                 ("/kalender", "Kalender", "calendar"),
-                ("/arbeit/aufgaben", "Aufgaben", "check-square"),
+                ("/aufgaben", "Aufgaben", "check-square"),
                 ("/arbeit", "Arbeit", "wrench"),
             ],
         ),
@@ -388,7 +388,7 @@ pub fn todo_items(v: &MyDataView, confirmations: usize, open_tasks: usize) -> Ve
             } else {
                 format!("{open_tasks} offene Aufgaben warten auf dich")
             },
-            href: "/arbeit/aufgaben",
+            href: "/aufgaben",
             label: "Zu den Aufgaben",
         });
     }

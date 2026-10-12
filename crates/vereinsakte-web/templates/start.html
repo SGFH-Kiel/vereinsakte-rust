@@ -86,7 +86,7 @@
 <section class="card">
   <div class="card-head"><h2>{{ ui::icon("check-square") }}Meine Aufgaben</h2></div>
   <ul class="plain">{% for t in tasks %}<li><strong>{{ t.title }}</strong> {{ ui::badge("info", "clock", t.status) }}</li>{% endfor %}</ul>
-  <p class="actions"><a href="/arbeit/aufgaben">Zu den Aufgaben</a></p>
+  <p class="actions"><a href="/aufgaben">Zu den Aufgaben</a></p>
 </section>
 {% endif %}
 {% endblock %}

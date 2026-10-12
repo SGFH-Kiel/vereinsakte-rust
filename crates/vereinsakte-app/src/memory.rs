@@ -18,6 +18,9 @@ use crate::changes::{Change, ChangeRepository, Record, RecordKind, Scoped};
 use crate::error::AppError;
 use crate::ports::*;
 use crate::scope::{BoatScope, MemberScope, Scope, ScopeRepository};
+use crate::task_extras::{TaskCounts, TaskExtrasRepository};
+use vereinsakte_core::ids::TaskId;
+use vereinsakte_core::task::{AttachmentKind, TaskAttachment, TaskComment};
 
 /// Datenbank-Ersatz im Speicher mit Versionsstand je Mitglied.
 #[derive(Debug, Default)]
@@ -25,6 +28,8 @@ pub struct MemoryStore {
     record: Mutex<ClubRecord>,
     versions: Mutex<HashMap<(RecordKind, String), Version>>,
     audit: Mutex<Vec<AuditRecord>>,
+    comments: Mutex<Vec<TaskComment>>,
+    attachments: Mutex<Vec<(TaskAttachment, Vec<u8>)>>,
     available: Mutex<bool>,
 }
 
@@ -34,6 +39,8 @@ impl MemoryStore {
             record: Mutex::new(record),
             versions: Mutex::default(),
             audit: Mutex::default(),
+            comments: Mutex::default(),
+            attachments: Mutex::default(),
             available: Mutex::new(true),
         }
     }
@@ -440,6 +447,7 @@ impl AuditRepository for MemoryStore {
                     && filter
                         .involving
                         .is_none_or(|m| e.actor == m || e.subject == Some(m))
+                    && filter.object_id.as_ref().is_none_or(|o| &e.object_id == o)
             })
             .cloned()
             .collect();
@@ -640,5 +648,159 @@ impl ScopeRepository for MemoryStore {
             }
         })?;
         Ok(Scoped { record, versions })
+    }
+}
+
+impl MemoryStore {
+    fn log(&self, entry: AuditEntry) {
+        let mut audit = self.audit.lock().expect("Lock");
+        let id = i64::try_from(audit.len()).expect("Anzahl") + 1;
+        audit.push(AuditRecord { id, entry });
+    }
+
+    fn check_available(&self) -> Result<(), AppError> {
+        self.with(|_| ())
+    }
+}
+
+#[async_trait]
+impl TaskExtrasRepository for MemoryStore {
+    async fn counts(&self) -> Result<HashMap<TaskId, TaskCounts>, AppError> {
+        self.check_available()?;
+        let mut map: HashMap<TaskId, TaskCounts> = HashMap::new();
+        for c in self.comments.lock().expect("Lock").iter() {
+            map.entry(c.task).or_default().comments += 1;
+        }
+        for (a, _) in self.attachments.lock().expect("Lock").iter() {
+            let e = map.entry(a.task).or_default();
+            e.attachments += 1;
+            if a.kind == AttachmentKind::Image {
+                e.images += 1;
+            }
+        }
+        Ok(map)
+    }
+
+    async fn comments(&self, task: TaskId) -> Result<Vec<TaskComment>, AppError> {
+        self.check_available()?;
+        let mut list: Vec<TaskComment> = self
+            .comments
+            .lock()
+            .expect("Lock")
+            .iter()
+            .filter(|c| c.task == task)
+            .cloned()
+            .collect();
+        list.sort_by_key(|c| c.at);
+        Ok(list)
+    }
+
+    async fn comment(&self, id: uuid::Uuid) -> Result<Option<TaskComment>, AppError> {
+        self.check_available()?;
+        Ok(self
+            .comments
+            .lock()
+            .expect("Lock")
+            .iter()
+            .find(|c| c.id == id)
+            .cloned())
+    }
+
+    async fn add_comment(&self, comment: &TaskComment, audit: AuditEntry) -> Result<(), AppError> {
+        self.check_available()?;
+        self.comments.lock().expect("Lock").push(comment.clone());
+        self.log(audit);
+        Ok(())
+    }
+
+    async fn edit_comment(
+        &self,
+        id: uuid::Uuid,
+        text: &str,
+        audit: AuditEntry,
+    ) -> Result<(), AppError> {
+        self.check_available()?;
+        let mut list = self.comments.lock().expect("Lock");
+        let c = list
+            .iter_mut()
+            .find(|c| c.id == id)
+            .ok_or_else(|| AppError::NotFound("Kommentar".into()))?;
+        c.text = text.to_string();
+        drop(list);
+        self.log(audit);
+        Ok(())
+    }
+
+    async fn delete_comment(&self, id: uuid::Uuid, audit: AuditEntry) -> Result<(), AppError> {
+        self.check_available()?;
+        let mut list = self.comments.lock().expect("Lock");
+        let before = list.len();
+        list.retain(|c| c.id != id);
+        if list.len() == before {
+            return Err(AppError::NotFound("Kommentar".into()));
+        }
+        drop(list);
+        self.log(audit);
+        Ok(())
+    }
+
+    async fn attachments(&self, task: TaskId) -> Result<Vec<TaskAttachment>, AppError> {
+        self.check_available()?;
+        let mut list: Vec<TaskAttachment> = self
+            .attachments
+            .lock()
+            .expect("Lock")
+            .iter()
+            .filter(|(a, _)| a.task == task)
+            .map(|(a, _)| a.clone())
+            .collect();
+        list.sort_by_key(|a| a.at);
+        Ok(list)
+    }
+
+    async fn attachment(
+        &self,
+        id: uuid::Uuid,
+    ) -> Result<Option<(TaskAttachment, Vec<u8>)>, AppError> {
+        self.check_available()?;
+        Ok(self
+            .attachments
+            .lock()
+            .expect("Lock")
+            .iter()
+            .find(|(a, _)| a.id == id)
+            .cloned())
+    }
+
+    async fn attachment_meta(&self, id: uuid::Uuid) -> Result<Option<TaskAttachment>, AppError> {
+        Ok(self.attachment(id).await?.map(|(a, _)| a))
+    }
+
+    async fn add_attachment(
+        &self,
+        attachment: &TaskAttachment,
+        data: Vec<u8>,
+        audit: AuditEntry,
+    ) -> Result<(), AppError> {
+        self.check_available()?;
+        self.attachments
+            .lock()
+            .expect("Lock")
+            .push((attachment.clone(), data));
+        self.log(audit);
+        Ok(())
+    }
+
+    async fn delete_attachment(&self, id: uuid::Uuid, audit: AuditEntry) -> Result<(), AppError> {
+        self.check_available()?;
+        let mut list = self.attachments.lock().expect("Lock");
+        let before = list.len();
+        list.retain(|(a, _)| a.id != id);
+        if list.len() == before {
+            return Err(AppError::NotFound("Anhang".into()));
+        }
+        drop(list);
+        self.log(audit);
+        Ok(())
     }
 }

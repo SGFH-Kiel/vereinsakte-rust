@@ -17,12 +17,13 @@ use crate::pages::{Layout, render};
 use crate::session::RequireUser;
 use crate::state::AppState;
 
-const TABS: [(&str, &str, &str); 5] = [
+const TABS: [(&str, &str, &str); 6] = [
     ("aemter", "Ämter", "award"),
     ("mitglieder", "Mitglieder", "users"),
     ("sperren", "Sperren", "lock"),
     ("reservierungen", "Reservierungen", "boat"),
     ("termine", "Arbeitstermine", "wrench"),
+    ("aufgaben", "Aufgaben", "check-square"),
 ];
 
 #[derive(Template)]
@@ -38,6 +39,7 @@ struct ArchivePage {
     blocks: Vec<ArchivedBlock>,
     reservations: Vec<ReservationRow>,
     events: Vec<EventLine>,
+    tasks: Vec<vereinsakte_app::tasks::ArchivedTask>,
     can_archive: bool,
 }
 
@@ -59,8 +61,8 @@ pub async fn show(
         .unwrap_or_else(|| "aemter".to_string());
     let year: Option<i32> = params.get("jahr").and_then(|y| y.trim().parse().ok());
     let sort_state = Sort::from_params(&params, "arch");
-    let (mut offices, mut members, mut blocks, mut reservations, mut events) =
-        (vec![], vec![], vec![], vec![], vec![]);
+    let (mut offices, mut members, mut blocks, mut reservations, mut events, mut tasks) =
+        (vec![], vec![], vec![], vec![], vec![], vec![]);
     let options: &[(&str, &str)];
     match tab.as_str() {
         "aemter" => {
@@ -133,6 +135,23 @@ pub async fn show(
             );
             options = &[("wann", "Wann"), ("boot", "Boot"), ("skipper", "Skipper")];
         }
+        "aufgaben" => {
+            tasks = state.club.archive_tasks(&user).await?;
+            sort_rows(
+                &mut tasks,
+                &sort_state,
+                &[
+                    ("erledigt", |t| date_key(&t.done)),
+                    ("titel", |t| text_key(&t.title)),
+                    ("boot", |t| text_key(&t.boat)),
+                ],
+            );
+            options = &[
+                ("erledigt", "Erledigt am"),
+                ("titel", "Titel"),
+                ("boot", "Boot"),
+            ];
+        }
         _ => {
             events = state.club.archive_events(&user, year).await?;
             sort_rows(
@@ -179,6 +198,7 @@ pub async fn show(
         blocks,
         reservations,
         events,
+        tasks,
         can_archive: true,
     })
 }

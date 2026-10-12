@@ -167,7 +167,7 @@ async fn token(client: &mut Client) -> String {
 
 #[tokio::test]
 async fn every_page_works_on_sqlite_for_every_member() {
-    use vereinsakte_core::example::{DEHLER_TOUR, FILOU};
+    use vereinsakte_core::example::{DEHLER_TOUR, FILOU, SEGELTUCH};
     let (_dir, path, config) = sqlite_app().await;
     let app = build_router(&config, Database::connect(&path).await.unwrap())
         .await
@@ -188,7 +188,11 @@ async fn every_page_works_on_sqlite_for_every_member() {
         format!("/reservierungen/{DEHLER_TOUR}"),
         "/arbeit".into(),
         "/arbeit/termine".into(),
-        "/arbeit/aufgaben".into(),
+        "/aufgaben".into(),
+        "/aufgaben?meine=1".into(),
+        "/aufgaben/neu".into(),
+        format!("/aufgaben/{SEGELTUCH}"),
+        "/protokoll/archiv?tab=aufgaben".into(),
         "/arbeit/bestaetigungen".into(),
         "/arbeit/uebersicht".into(),
         "/aemter".into(),

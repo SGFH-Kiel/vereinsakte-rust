@@ -141,6 +141,26 @@ async fn apply(conn: &mut SqliteConnection, change: &Change) -> Result<(), AppEr
     }
 }
 
+pub(crate) async fn insert_audit(
+    conn: &mut SqliteConnection,
+    entry: &AuditEntry,
+) -> Result<(), StorageError> {
+    sqlx::query(
+        "INSERT INTO audit_log (at, actor_id, action, object_kind, object_id, subject_member_id, summary)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(entry.at.to_rfc3339())
+    .bind(i64::from(entry.actor.get()))
+    .bind(&entry.action)
+    .bind(&entry.object_kind)
+    .bind(&entry.object_id)
+    .bind(entry.subject.map(|m| i64::from(m.get())))
+    .bind(&entry.summary)
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
 #[async_trait]
 impl ChangeRepository for SqliteClubStore {
     async fn commit(&self, changes: Vec<Change>, audit: Vec<AuditEntry>) -> Result<(), AppError> {
@@ -153,20 +173,7 @@ impl ChangeRepository for SqliteClubStore {
             apply(&mut tx, change).await?;
         }
         for entry in &audit {
-            sqlx::query(
-                "INSERT INTO audit_log (at, actor_id, action, object_kind, object_id, subject_member_id, summary)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)",
-            )
-            .bind(entry.at.to_rfc3339())
-            .bind(i64::from(entry.actor.get()))
-            .bind(&entry.action)
-            .bind(&entry.object_kind)
-            .bind(&entry.object_id)
-            .bind(entry.subject.map(|m| i64::from(m.get())))
-            .bind(&entry.summary)
-            .execute(&mut *tx)
-            .await
-            .map_err(StorageError::from)?;
+            insert_audit(&mut tx, entry).await?;
         }
         check_foreign_keys(&mut tx).await?;
         tx.commit().await.map_err(StorageError::from)?;
@@ -205,6 +212,10 @@ impl AuditRepository for SqliteClubStore {
             conditions.push("(actor_id = ? OR subject_member_id = ?)".into());
             binds.push(int(member.get()));
             binds.push(int(member.get()));
+        }
+        if let Some(object) = &filter.object_id {
+            conditions.push("object_id = ?".into());
+            binds.push(text(object));
         }
         let limit = filter.limit.map_or(-1, i64::from);
         let sql = format!(
