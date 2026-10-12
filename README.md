@@ -161,6 +161,14 @@ Saisons (vor dem 1. Januar des laufenden Jahres) stehen nur noch im Archiv (Reit
   `task_comments`, `task_attachments`), gehören aber **nicht** zu `vereinsakte export`.
   Für eine vollständige Sicherung die Datenbankdatei kopieren; sie wächst mit den Anhängen.
 
+### Bootsbild
+
+Jedes Boot kann ein Bild haben (JPEG, PNG, WebP, GIF, höchstens 8 MB, Prüfung an der
+Dateikennung). Es erscheint in der Bootsliste und auf der Bootsseite; ohne Bild steht ein
+Platzhalter mit dem Bootstyp-Symbol. Hochladen, Ersetzen und Entfernen dürfen alle, die das
+Boot bearbeiten dürfen (Vorstand, Bootswart dieses Bootes). Auslieferung nur an angemeldete
+Mitglieder. Das Bild liegt in `boat_images` (SQLite, nicht im JSON-Export).
+
 ### Bildschirmfotos zur Prüfung des Designs
 
 ```sh

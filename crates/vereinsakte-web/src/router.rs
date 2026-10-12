@@ -16,6 +16,8 @@ use crate::state::AppState;
 use crate::{audit, boats, finance, login, members, offices, pages, reservations, tasks, work};
 
 /// Obergrenze für einen Upload (Datei bis 10 MB plus Formularfelder).
+/// Bootsbild: bis 8 MB plus Formularfelder.
+const BOAT_IMAGE_BODY_LIMIT: usize = 9 * 1024 * 1024;
 const UPLOAD_BODY_LIMIT: usize = 11 * 1024 * 1024;
 
 const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; \
@@ -64,6 +66,12 @@ pub fn router<S: SessionStore + Clone>(state: AppState, store: S) -> Router {
             "/boote/{id}/bearbeiten",
             get(boats::edit).post(boats::edit_submit),
         )
+        .route("/boote/{id}/bild", get(boats::image))
+        .route(
+            "/boote/{id}/bild/hochladen",
+            post(boats::image_upload).layer(DefaultBodyLimit::max(BOAT_IMAGE_BODY_LIMIT)),
+        )
+        .route("/boote/{id}/bild/entfernen", post(boats::image_remove))
         .route("/boote/{id}/sperren", post(boats::block))
         .route("/boote/{id}/entsperren", post(boats::lift))
         .route("/boote/{id}/freigabe", post(boats::release))

@@ -453,3 +453,105 @@ pub async fn revoke(
     )
     .await
 }
+
+// ---- Bootsbild ------------------------------------------------------------------------------
+
+/// Liefert das Bild mit festem Typ, `nosniff` und Sandbox-CSP (nur angemeldet).
+pub async fn image(
+    State(state): State<AppState>,
+    RequireUser(user): RequireUser,
+    Path(id): Path<String>,
+) -> Result<Response, WebError> {
+    use axum::http::{HeaderValue, header};
+    let (meta, data) = state.club.boat_image_file(&user, boat_id(&id)?).await?;
+    let mut response = data.into_response();
+    let headers = response.headers_mut();
+    if let Ok(value) = HeaderValue::from_str(&meta.content_type) {
+        headers.insert(header::CONTENT_TYPE, value);
+    }
+    headers.insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static("default-src 'none'; sandbox"),
+    );
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    // Die Adresse trägt eine Versionszahl; Änderungen erzeugen eine neue Adresse.
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("private, max-age=86400"),
+    );
+    Ok(response)
+}
+
+/// Mehrteil-Upload: Felder `file` und `alt`; Fehler erscheinen als Hinweis auf der Bootsseite.
+pub async fn image_upload(
+    State(state): State<AppState>,
+    session: Session,
+    RequireUser(user): RequireUser,
+    Path(id): Path<String>,
+    mut multipart: axum::extract::Multipart,
+) -> Result<Response, WebError> {
+    let boat = boat_id(&id)?;
+    let (mut data, mut alt, mut too_large) = (Vec::new(), String::new(), false);
+    loop {
+        match multipart.next_field().await {
+            Ok(Some(field)) => {
+                let name = field.name().unwrap_or_default().to_string();
+                match field.bytes().await {
+                    Ok(bytes) if name == "file" => data = bytes.to_vec(),
+                    Ok(bytes) if name == "alt" => {
+                        alt = String::from_utf8_lossy(&bytes).to_string();
+                    }
+                    Ok(_) => {}
+                    Err(_) => {
+                        too_large = true;
+                        break;
+                    }
+                }
+            }
+            Ok(None) => break,
+            Err(_) => {
+                too_large = true;
+                break;
+            }
+        }
+    }
+    let result = if too_large {
+        Err(AppError::rejected(
+            "file",
+            format!(
+                "Das Bild ist zu groß (höchstens {} MB).",
+                vereinsakte_app::boat_images::MAX_BOAT_IMAGE_BYTES / (1024 * 1024)
+            ),
+        ))
+    } else {
+        state.club.set_boat_image(&user, boat, data, &alt).await
+    };
+    let to = format!("/boote/{id}");
+    match result {
+        Ok(()) => Ok(redirect_with_flash(&session, &to, "Das Bild wurde gespeichert.").await),
+        Err(AppError::Rejected(list)) => {
+            let message = list.first().map(|e| e.message.clone()).unwrap_or_default();
+            flash(&session, FlashKind::Error, message).await;
+            Ok(Redirect::to(&to).into_response())
+        }
+        Err(other) => Err(other.into()),
+    }
+}
+
+pub async fn image_remove(
+    State(state): State<AppState>,
+    session: Session,
+    RequireUser(user): RequireUser,
+    Path(id): Path<String>,
+) -> Result<Response, WebError> {
+    state.club.remove_boat_image(&user, boat_id(&id)?).await?;
+    Ok(redirect_with_flash(
+        &session,
+        &format!("/boote/{id}"),
+        "Das Bild wurde entfernt.",
+    )
+    .await)
+}

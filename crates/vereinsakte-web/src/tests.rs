@@ -2178,6 +2178,124 @@ async fn attachments_are_checked_served_safely_and_deleted_by_owner_or_board() {
 }
 
 #[tokio::test]
+async fn boat_image_lifecycle_and_rights() {
+    use vereinsakte_core::example::{FILOU, HARALD_BLAUZAHN, TRIGON};
+    let h = dev();
+    let mut ben = logged_in(&h, 102).await;
+    let page = ben.get(&format!("/boote/{HARALD_BLAUZAHN}")).await;
+    assert!(page.body.contains("Bild hochladen"));
+    let token = csrf(&page.body);
+    let up = format!("/boote/{HARALD_BLAUZAHN}/bild/hochladen");
+    let png = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0];
+    let ok = ben
+        .upload(&up, &token, "boot.png", &png, "Harald unter Segel")
+        .await;
+    assert_eq!(ok.status, StatusCode::SEE_OTHER, "{}", ok.body);
+    // Liste und Bootsseite zeigen das Bild, die Trigon einen Platzhalter.
+    let list = ben.get("/boote").await;
+    assert!(list.body.contains("alt=\"Harald unter Segel\"") && list.body.contains("/bild?v="));
+    assert!(list.body.contains("placeholder"));
+    let page = ben.get(&format!("/boote/{HARALD_BLAUZAHN}")).await;
+    assert!(page.body.contains("<img src=\"/boote/") && page.body.contains("Bild ändern"));
+    let image = ben.get(&format!("/boote/{HARALD_BLAUZAHN}/bild")).await;
+    assert_eq!(image.headers[header::CONTENT_TYPE], "image/png");
+    assert_eq!(image.headers[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+    assert!(
+        image.headers[header::CONTENT_SECURITY_POLICY]
+            .to_str()
+            .unwrap()
+            .contains("sandbox")
+    );
+    assert_eq!(
+        ben.get(&format!("/boote/{TRIGON}/bild")).await.status,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        ben.get("/boote/kaputt/bild").await.status,
+        StatusCode::NOT_FOUND
+    );
+    // Ohne Anmeldung: Umleitung.
+    let mut anonymous = Client::new(&h);
+    assert!(
+        anonymous
+            .get(&format!("/boote/{HARALD_BLAUZAHN}/bild"))
+            .await
+            .status
+            .is_redirection()
+    );
+    // Falsches Format und zu groß: Meldung, altes Bild bleibt.
+    for (name, data) in [
+        ("a.jpg", b"nur text".to_vec()),
+        ("a.svg", b"<svg onload=x/>".to_vec()),
+    ] {
+        let r = ben.upload(&up, &token, name, &data, "").await;
+        assert_eq!(r.status, StatusCode::SEE_OTHER);
+        assert!(
+            ben.get(&format!("/boote/{HARALD_BLAUZAHN}"))
+                .await
+                .body
+                .contains("Nur JPEG, PNG, WebP oder GIF")
+        );
+    }
+    let mut huge = vec![0xFF, 0xD8, 0xFF];
+    huge.resize(8 * 1024 * 1024 + 10, 0);
+    let big = ben.upload(&up, &token, "gross.jpg", &huge, "").await;
+    assert_eq!(big.status, StatusCode::SEE_OTHER);
+    assert!(
+        ben.get(&format!("/boote/{HARALD_BLAUZAHN}"))
+            .await
+            .body
+            .contains("zu groß")
+    );
+    assert_eq!(
+        ben.get(&format!("/boote/{HARALD_BLAUZAHN}/bild"))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    // Ben ist nicht Bootswart der Filou, Greta hat kein Amt.
+    let denied = ben
+        .upload(
+            &format!("/boote/{FILOU}/bild/hochladen"),
+            &token,
+            "x.png",
+            &png,
+            "",
+        )
+        .await;
+    assert_eq!(denied.status, StatusCode::FORBIDDEN);
+    let mut greta = logged_in(&h, 107).await;
+    let gpage = greta.get(&format!("/boote/{HARALD_BLAUZAHN}")).await;
+    assert!(!gpage.body.contains("Bild ändern") && !gpage.body.contains("Bild hochladen"));
+    let gtoken = csrf(&gpage.body);
+    assert_eq!(
+        greta.upload(&up, &gtoken, "x.png", &png, "").await.status,
+        StatusCode::FORBIDDEN
+    );
+    let remove = greta
+        .post(
+            &format!("/boote/{HARALD_BLAUZAHN}/bild/entfernen"),
+            &[("csrf", &gtoken)],
+        )
+        .await;
+    assert_eq!(remove.status, StatusCode::FORBIDDEN);
+    // Entfernen durch Ben.
+    let removed = ben
+        .post(
+            &format!("/boote/{HARALD_BLAUZAHN}/bild/entfernen"),
+            &[("csrf", &token)],
+        )
+        .await;
+    assert_eq!(removed.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        ben.get(&format!("/boote/{HARALD_BLAUZAHN}/bild"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+}
+
+#[tokio::test]
 async fn board_shows_wait_column_and_archive_tab_is_for_the_board() {
     let h = dev();
     let mut greta = logged_in(&h, 107).await;

@@ -54,12 +54,14 @@ pub trait AuditRepository: Send + Sync {
 }
 
 /// Alle Aktionsarten des Protokolls mit deutscher Bezeichnung.
-pub const ACTIONS: [(&str, &str); 47] = [
+pub const ACTIONS: [(&str, &str); 49] = [
     ("boat.block", "Boot gesperrt"),
     ("boat.unblock", "Sperre aufgehoben"),
     ("boat.release", "Boot für Saison freigegeben"),
     ("boat.create", "Boot angelegt"),
     ("boat.edit", "Boot geändert"),
+    ("boat.image_set", "Bootsbild gesetzt"),
+    ("boat.image_removed", "Bootsbild entfernt"),
     ("boat.checkout", "Bootsabnahme"),
     ("boat.revoke", "Bootserlaubnis widerrufen"),
     ("claim.post", "Forderung angelegt"),
@@ -573,6 +575,14 @@ mod sweep {
             title: "Fender neu".into(),
             ..Default::default()
         };
+        logged!(
+            "boat.image_set",
+            service.set_boat_image(&user(FRANK), FILOU, b"GIF89a....".to_vec(), "")
+        );
+        logged!(
+            "boat.image_removed",
+            service.remove_boat_image(&user(FRANK), FILOU)
+        );
         logged!(
             "task.edit",
             service.edit_task(&user(BEN), task, &task_form, None)

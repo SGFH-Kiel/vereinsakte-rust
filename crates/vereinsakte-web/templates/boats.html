@@ -23,7 +23,7 @@
       <tr>
         <td data-label="Boot" class="cell-title">
           <div class="cell-person">
-            <span class="symbol kind" title="{{ row.type_tip }}">{{ ui::icon(row.type_icon) }}<span class="symbol-text">{{ row.type_tip }}</span></span>
+            {% if let Some(src) = row.image %}<img class="boat-thumb" src="{{ src }}" alt="{{ row.image_alt }}" width="96" height="72" loading="lazy">{% else %}<span class="boat-thumb placeholder" title="{{ row.type_tip }}">{{ ui::icon(row.type_icon) }}<span class="visually-hidden">{{ row.type_tip }}</span></span>{% endif %}
             <div class="cell-main"><a class="person" href="/boote/{{ row.id }}">{{ row.name }}</a>{% if !row.class.is_empty() %}<span class="sub">{{ row.class }}</span>{% endif %}</div>
           </div>
         </td>

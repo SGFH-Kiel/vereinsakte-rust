@@ -281,7 +281,7 @@ mod tests {
             for column in columns {
                 let (name, kind): (String, String) = (column.get("name"), column.get("type"));
                 // Hochgeladene Dateien (Bilder, PDFs) liegen als BLOB, nicht als JSON.
-                if table == "task_attachments" && name == "data" {
+                if ["task_attachments", "boat_images"].contains(&table.as_str()) && name == "data" {
                     assert_eq!(kind, "BLOB");
                     continue;
                 }

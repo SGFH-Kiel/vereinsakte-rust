@@ -1,5 +1,6 @@
 //! SQLite-Speicherung der Vereinsakte in einem relationalen Schema.
 
+mod boat_images;
 mod commit;
 pub mod db;
 mod read;

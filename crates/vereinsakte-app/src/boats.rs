@@ -31,6 +31,9 @@ pub struct BoatRow {
     pub released: bool,
     /// Grund der aktuellen Sperre.
     pub blocked: Option<String>,
+    /// Adresse des Bildes (mit Versionszahl) und Alternativtext, falls vorhanden.
+    pub image: Option<String>,
+    pub image_alt: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -77,6 +80,8 @@ pub struct BoatPage {
     pub released: bool,
     pub blocks: Vec<BlockLine>,
     pub eligibility: Eligibility,
+    pub image: Option<String>,
+    pub image_alt: String,
     pub can_edit: bool,
     pub can_block: bool,
     pub can_lift: bool,
@@ -127,6 +132,15 @@ pub fn boat_type_display(boat: &Boat) -> (&'static str, String) {
         None => boat.boat_type.to_string(),
     };
     (icon, tip)
+}
+
+fn image_url(boat: BoatId, version: i64) -> String {
+    format!("/boote/{boat}/bild?v={version}")
+}
+
+fn image_alt(name: &str, meta: Option<&crate::boat_images::BoatImageMeta>) -> String {
+    meta.and_then(|m| m.alt.clone())
+        .unwrap_or_else(|| format!("Foto der {name}"))
 }
 
 fn trimmed(text: &str) -> Option<String> {
@@ -411,6 +425,7 @@ impl ClubService {
         let mut boats: Vec<&Boat> = scoped.record.boats.iter().collect();
         boats.sort_by(|a, b| a.name.cmp(&b.name));
         let season = principal.now.year();
+        let images = self.store.boat_images().await?;
         let rows = boats
             .into_iter()
             .map(|b| BoatRow {
@@ -426,6 +441,8 @@ impl ClubService {
                     .iter()
                     .find(|x| x.is_active_at(principal.now))
                     .map(|x| x.reason.clone()),
+                image: images.get(&b.id).map(|m| image_url(b.id, m.version())),
+                image_alt: image_alt(&b.name, images.get(&b.id)),
             })
             .collect();
         Ok(BoatList {
@@ -509,6 +526,7 @@ impl ClubService {
             vec![]
         };
         let season = principal.now.year();
+        let boat_image = self.store.boat_images().await?.remove(&id);
         Ok(BoatPage {
             id: id.to_string(),
             name: boat.name.clone(),
@@ -546,6 +564,8 @@ impl ClubService {
                 })
                 .collect(),
             eligibility,
+            image: boat_image.as_ref().map(|m| image_url(id, m.version())),
+            image_alt: image_alt(&boat.name, boat_image.as_ref()),
             can_edit: principal.can(&Capability::EditBoat(id)),
             can_block: principal.can(&Capability::BlockBoat(id)),
             can_lift: principal.can(&Capability::LiftBlock(id))

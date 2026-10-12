@@ -14,6 +14,30 @@
 {% endif %}
 {% endblock %}
 {% block content %}
+<section class="card boat-photo">
+{% if let Some(src) = p.image %}
+  <img src="{{ src }}" alt="{{ p.image_alt }}">
+{% else %}
+  <div class="boat-thumb placeholder large" title="{{ p.type_tip }}">{{ ui::icon_lg(p.type_icon) }}<span class="visually-hidden">Kein Bild: {{ p.type_tip }}</span></div>
+{% endif %}
+{% if p.can_edit %}
+  <details class="panel">
+    <summary class="btn">{{ ui::icon("image") }}{% if p.image.is_some() %}Bild ändern{% else %}Bild hochladen{% endif %}</summary>
+    <form method="post" action="/boote/{{ p.id }}/bild/hochladen?csrf={{ layout.csrf }}" enctype="multipart/form-data" class="stack">
+      <div class="field">
+        <label for="f-bild">Bilddatei</label>
+        <input id="f-bild" name="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required>
+        <span class="hint">JPEG, PNG, WebP oder GIF, höchstens 8 MB; kleinere Bilder laden schneller. Fotos können Standortdaten enthalten.</span>
+      </div>
+      <div class="field"><label for="f-alt">Bildbeschreibung (optional)</label><input id="f-alt" name="alt" type="text" value="" maxlength="200"></div>
+      <div class="form-actions"><button type="submit" class="primary">{{ ui::icon("check") }}Speichern</button></div>
+    </form>
+    {% if p.image.is_some() %}
+    <form method="post" action="/boote/{{ p.id }}/bild/entfernen" class="inline"><input type="hidden" name="csrf" value="{{ layout.csrf }}"><button type="submit" class="small danger">{{ ui::icon("trash") }}Bild entfernen</button></form>
+    {% endif %}
+  </details>
+{% endif %}
+</section>
 <div class="grid cols-2">
 <section class="card">
   <div class="card-head"><h2>{{ ui::icon("anchor") }}Deine Eignung</h2></div>

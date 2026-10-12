@@ -30,6 +30,8 @@ pub struct MemoryStore {
     audit: Mutex<Vec<AuditRecord>>,
     comments: Mutex<Vec<TaskComment>>,
     attachments: Mutex<Vec<(TaskAttachment, Vec<u8>)>>,
+    boat_images:
+        Mutex<HashMap<vereinsakte_core::ids::BoatId, (crate::boat_images::BoatImageMeta, Vec<u8>)>>,
     available: Mutex<bool>,
 }
 
@@ -41,6 +43,7 @@ impl MemoryStore {
             audit: Mutex::default(),
             comments: Mutex::default(),
             attachments: Mutex::default(),
+            boat_images: Mutex::default(),
             available: Mutex::new(true),
         }
     }
@@ -800,6 +803,66 @@ impl TaskExtrasRepository for MemoryStore {
             return Err(AppError::NotFound("Anhang".into()));
         }
         drop(list);
+        self.log(audit);
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl crate::boat_images::BoatImageRepository for MemoryStore {
+    async fn boat_images(
+        &self,
+    ) -> Result<HashMap<vereinsakte_core::ids::BoatId, crate::boat_images::BoatImageMeta>, AppError>
+    {
+        self.check_available()?;
+        Ok(self
+            .boat_images
+            .lock()
+            .expect("Lock")
+            .iter()
+            .map(|(k, (m, _))| (*k, m.clone()))
+            .collect())
+    }
+
+    async fn boat_image(
+        &self,
+        boat: vereinsakte_core::ids::BoatId,
+    ) -> Result<Option<(crate::boat_images::BoatImageMeta, Vec<u8>)>, AppError> {
+        self.check_available()?;
+        Ok(self.boat_images.lock().expect("Lock").get(&boat).cloned())
+    }
+
+    async fn set_boat_image(
+        &self,
+        boat: vereinsakte_core::ids::BoatId,
+        meta: &crate::boat_images::BoatImageMeta,
+        data: Vec<u8>,
+        audit: AuditEntry,
+    ) -> Result<(), AppError> {
+        self.check_available()?;
+        self.boat_images
+            .lock()
+            .expect("Lock")
+            .insert(boat, (meta.clone(), data));
+        self.log(audit);
+        Ok(())
+    }
+
+    async fn remove_boat_image(
+        &self,
+        boat: vereinsakte_core::ids::BoatId,
+        audit: AuditEntry,
+    ) -> Result<(), AppError> {
+        self.check_available()?;
+        if self
+            .boat_images
+            .lock()
+            .expect("Lock")
+            .remove(&boat)
+            .is_none()
+        {
+            return Err(AppError::NotFound("Bild".into()));
+        }
         self.log(audit);
         Ok(())
     }

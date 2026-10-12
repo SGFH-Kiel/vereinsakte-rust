@@ -4,6 +4,7 @@
 pub mod archive;
 pub mod audit;
 pub mod auth;
+pub mod boat_images;
 pub mod boats;
 pub mod changes;
 pub mod commands;

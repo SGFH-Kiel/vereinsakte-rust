@@ -181,6 +181,7 @@ pub trait ClubStore:
     + crate::audit::AuditRepository
     + crate::scope::ScopeRepository
     + crate::task_extras::TaskExtrasRepository
+    + crate::boat_images::BoatImageRepository
 {
 }
 
@@ -195,6 +196,7 @@ impl<T> ClubStore for T where
         + crate::audit::AuditRepository
         + crate::scope::ScopeRepository
         + crate::task_extras::TaskExtrasRepository
+        + crate::boat_images::BoatImageRepository
 {
 }
 
