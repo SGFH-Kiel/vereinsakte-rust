@@ -82,6 +82,8 @@ pub struct BoatPage {
     pub eligibility: Eligibility,
     pub image: Option<String>,
     pub image_alt: String,
+    /// Aktive Mitglieder mit erteilter, nicht widerrufener Bootserlaubnis.
+    pub holders: Vec<crate::directory::DirectoryEntry>,
     pub can_edit: bool,
     pub can_block: bool,
     pub can_lift: bool,
@@ -452,12 +454,56 @@ impl ClubService {
         })
     }
 
+    /// Aktive Mitglieder, denen die Bootserlaubnis erteilt (bestandene Abnahme) und nicht
+    /// widerrufen wurde. Weitere Voraussetzungen (Scheine, Meldeadresse, Segelerlaubnis)
+    /// spielen hier bewusst keine Rolle.
+    async fn permit_holders(
+        &self,
+        principal: &crate::principal::Principal,
+        record: &vereinsakte_core::club_record::ClubRecord,
+        boat: BoatId,
+    ) -> Result<Vec<crate::directory::DirectoryEntry>, AppError> {
+        use vereinsakte_core::boat_permit::CheckoutResult;
+        let now = principal.now;
+        let active = self.store.active_offices(now).await?;
+        let offices = vereinsakte_core::office::Offices::new(&active);
+        let boats = self.store.boats().await?;
+        let mut entries: Vec<_> = self
+            .store
+            .active_members(now)
+            .await?
+            .into_iter()
+            .filter(|m| {
+                let last_passed = record
+                    .boat_checkouts
+                    .iter()
+                    .filter(|c| {
+                        c.member == m.id
+                            && c.boat == boat
+                            && c.result == CheckoutResult::Passed
+                            && c.at <= now
+                    })
+                    .map(|c| c.at)
+                    .max();
+                last_passed.is_some_and(|passed| {
+                    !record.revocations.iter().any(|r| {
+                        r.member == m.id && r.boat == boat && r.at >= passed && r.at <= now
+                    })
+                })
+            })
+            .map(|m| crate::directory::entry_of(&m, principal, &offices, &boats, now))
+            .collect();
+        entries.sort_by(|a, b| a.name.cmp(&b.name));
+        Ok(entries)
+    }
+
     /// Bootsseite mit Stammdaten, Ämtern, Sperren und eigener Eignung.
     pub async fn boat_page(&self, user: &CurrentUser, id: BoatId) -> Result<BoatPage, AppError> {
         let principal = self.principal(user).await?;
         let scoped = self
             .load_boats_with(Scope {
-                members: MemberScope::Some(vec![user.member]),
+                // Alle Mitglieder: Abnahmen und Widerrufe für die Liste der Bootserlaubnisse.
+                members: MemberScope::All,
                 ..Scope::default()
             })
             .await?;
@@ -564,6 +610,7 @@ impl ClubService {
                 })
                 .collect(),
             eligibility,
+            holders: self.permit_holders(&principal, record, id).await?,
             image: boat_image.as_ref().map(|m| image_url(id, m.version())),
             image_alt: image_alt(&boat.name, boat_image.as_ref()),
             can_edit: principal.can(&Capability::EditBoat(id)),
@@ -1033,6 +1080,92 @@ mod tests {
             foreign,
             Err(AppError::Forbidden),
             "DAVID ist nicht Bootswart der Neptun"
+        );
+    }
+}
+
+#[cfg(test)]
+mod holder_tests {
+    use vereinsakte_core::example::{
+        ANNA, BEN, CLARA, DAVID, DIPL_ING_LING, EVA, FILOU, FRANK, GRETA, TRIGON,
+    };
+
+    use crate::service::{CurrentUser, tests::service};
+
+    fn user(member: vereinsakte_core::ids::MemberId) -> CurrentUser {
+        CurrentUser { member }
+    }
+
+    async fn holders(
+        service: &crate::ClubService,
+        viewer: vereinsakte_core::ids::MemberId,
+        boat: vereinsakte_core::ids::BoatId,
+    ) -> Vec<u32> {
+        service
+            .boat_page(&user(viewer), boat)
+            .await
+            .unwrap()
+            .holders
+            .iter()
+            .map(|h| h.id)
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn only_granted_and_not_revoked_permits_count() {
+        let (service, _) = service();
+        // Trigon: Anna, Frank, Eva; Ben ist widerrufen.
+        let mut trigon = holders(&service, GRETA, TRIGON).await;
+        trigon.sort_unstable();
+        assert_eq!(trigon, [ANNA, EVA, FRANK].map(|m| m.get()));
+        // Ben besteht nach dem Widerruf erneut die Abnahme: wieder in der Liste.
+        service
+            .record_checkout(&user(FRANK), TRIGON, BEN, true, "")
+            .await
+            .unwrap();
+        assert!(holders(&service, GRETA, TRIGON).await.contains(&BEN.get()));
+        // Nicht bestandene Abnahme: nicht in der Liste (Ben hat die Filou bestanden, Greta nie).
+        assert!(!holders(&service, GRETA, FILOU).await.contains(&GRETA.get()));
+        service
+            .record_checkout(&user(FRANK), FILOU, GRETA, false, "unsicher")
+            .await
+            .unwrap();
+        assert!(!holders(&service, GRETA, FILOU).await.contains(&GRETA.get()));
+        // Widerruf nimmt David aus der Liste der Filou.
+        assert!(holders(&service, GRETA, FILOU).await.contains(&DAVID.get()));
+        service
+            .revoke_permit(&user(EVA), FILOU, DAVID, "Test")
+            .await
+            .unwrap();
+        assert!(!holders(&service, GRETA, FILOU).await.contains(&DAVID.get()));
+    }
+
+    #[tokio::test]
+    async fn other_requirements_do_not_matter_and_contact_follows_the_block() {
+        let (service, _) = service();
+        // Die Dehler verlangt mehr als die Bootserlaubnis; David steht trotzdem drin.
+        let ling = holders(&service, GRETA, DIPL_ING_LING).await;
+        assert!(ling.contains(&DAVID.get()) && ling.contains(&CLARA.get()));
+        let page = service.boat_page(&user(GRETA), FILOU).await.unwrap();
+        let david = page.holders.iter().find(|h| h.id == DAVID.get()).unwrap();
+        assert!(!david.contact.is_blocked());
+        service
+            .set_contact_blocked(&user(DAVID), DAVID, true)
+            .await
+            .unwrap();
+        let page = service.boat_page(&user(GRETA), FILOU).await.unwrap();
+        let david = page.holders.iter().find(|h| h.id == DAVID.get()).unwrap();
+        assert!(david.contact.is_blocked());
+        // Der Vorstand sieht die Angaben weiterhin.
+        let page = service.boat_page(&user(EVA), FILOU).await.unwrap();
+        assert!(
+            !page
+                .holders
+                .iter()
+                .find(|h| h.id == DAVID.get())
+                .unwrap()
+                .contact
+                .is_blocked()
         );
     }
 }

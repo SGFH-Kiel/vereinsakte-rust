@@ -161,6 +161,14 @@ Saisons (vor dem 1. Januar des laufenden Jahres) stehen nur noch im Archiv (Reit
   `task_comments`, `task_attachments`), gehören aber **nicht** zu `vereinsakte export`.
   Für eine vollständige Sicherung die Datenbankdatei kopieren; sie wächst mit den Anhängen.
 
+### Wer darf dieses Boot fahren?
+
+Die Bootsseite listet alle aktiven Mitglieder, denen die Bootserlaubnis für dieses Boot
+**erteilt** (Abnahme bestanden) und **nicht widerrufen** wurde – mehr nicht: Scheine,
+Segelerlaubnis, Meldeadresse und Skipper-Anforderungen werden dafür nicht geprüft. Die Liste
+ist für alle aktiven Mitglieder sichtbar, nach Name/Art/E-Mail sortierbar und zeigt Kontaktdaten
+nach der Sichtbarkeitsregel (bei Sperrvermerk „Kontaktdaten gesperrt“).
+
 ### Bootsbild
 
 Jedes Boot kann ein Bild haben (JPEG, PNG, WebP, GIF, höchstens 8 MB, Prüfung an der

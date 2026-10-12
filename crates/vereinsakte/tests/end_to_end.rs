@@ -183,6 +183,7 @@ async fn every_page_works_on_sqlite_for_every_member() {
         "/boote".into(),
         format!("/boote/{FILOU}"),
         format!("/boote/{FILOU}/bearbeiten"),
+        format!("/boote/{FILOU}?sort_bf=email&dir_bf=desc"),
         "/reservierungen".into(),
         "/reservierungen/neu".into(),
         format!("/reservierungen/{DEHLER_TOUR}"),

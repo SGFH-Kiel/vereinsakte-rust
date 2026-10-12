@@ -2296,6 +2296,41 @@ async fn boat_image_lifecycle_and_rights() {
 }
 
 #[tokio::test]
+async fn boat_page_lists_permit_holders_with_contact_rules_and_sorting() {
+    use vereinsakte_core::example::TRIGON;
+    let h = dev();
+    let mut greta = logged_in(&h, 107).await;
+    let page = greta.get(&format!("/boote/{TRIGON}")).await;
+    assert_eq!(page.status, StatusCode::OK);
+    let section = &page.body[page.body.find("id=\"bootserlaubnis\"").unwrap()..];
+    let section = &section[..section.find("</section>").unwrap()];
+    assert!(section.contains("Wer darf dieses Boot fahren?"));
+    for name in ["Petersen, Anna", "Möller, Eva", "Koch, Frank"] {
+        assert!(section.contains(name), "{name}");
+    }
+    // Ben ist widerrufen, Clara hat die Trigon nie abgenommen.
+    assert!(!section.contains("Hansen, Ben") && !section.contains("Jensen, Clara"));
+    assert!(
+        section.contains("href=\"/mitglieder/101\"")
+            && section.contains("anna.petersen@example.org")
+    );
+    // Sortierung nach Name absteigend.
+    let sorted = greta
+        .get(&format!("/boote/{TRIGON}?sort_bf=name&dir_bf=desc"))
+        .await;
+    let at = |n: &str| sorted.body.find(n).unwrap();
+    assert!(at("Petersen, Anna") < at("Möller, Eva") && at("Möller, Eva") < at("Koch, Frank"));
+    // Sperrvermerk: keine Werte im Seitentext, stattdessen der Hinweis.
+    assert_eq!(
+        set_contact_block(&h, 101, true).await.status,
+        StatusCode::SEE_OTHER
+    );
+    let page = greta.get(&format!("/boote/{TRIGON}")).await;
+    assert!(page.body.contains("Petersen, Anna") && page.body.contains("Kontaktdaten gesperrt"));
+    assert!(!page.body.contains("anna.petersen@example.org"));
+}
+
+#[tokio::test]
 async fn board_shows_wait_column_and_archive_tab_is_for_the_board() {
     let h = dev();
     let mut greta = logged_in(&h, 107).await;

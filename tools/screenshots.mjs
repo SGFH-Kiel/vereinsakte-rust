@@ -34,7 +34,7 @@ const DEHLER_TOUR = '00000000-0000-0000-0000-00002e5e0003';
 const defaults = [
   ['105', '/'], ['103', '/meine-daten'], ['105', '/mitglieder'], ['107', '/mitglieder'],
   ['105', '/mitglieder/103'], ['105', '/mitglieder/103/bearbeiten'], ['105', '/mitglieder/neu'],
-  ['106', '/boote'], ['106', `/boote/${FILOU}`], ['104', `/boote/${FILOU}`], ['106', `/boote/${FILOU}/bearbeiten`],
+  ['106', '/boote'], ['106', `/boote/${FILOU}`], ['104', `/boote/${FILOU}`], ['107', `/boote/${FILOU}`], ['106', `/boote/${FILOU}/bearbeiten`],
   ['105', '/reservierungen?von=2026-06-01&bis=2026-08-31'], ['104', '/reservierungen/neu'], ['107', `/reservierungen/${DEHLER_TOUR}`],
   ['105', '/arbeit'], ['105', '/arbeit/termine'], ['105', '/arbeit/aufgaben'], ['102', '/arbeit/bestaetigungen'], ['105', '/arbeit/uebersicht'],
   ['105', '/aemter'], ['105', '/aemter/historie'],

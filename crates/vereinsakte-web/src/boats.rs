@@ -42,6 +42,7 @@ struct ListPage {
 struct ShowPage {
     layout: Layout,
     p: BoatPage,
+    holder_sort: SortCtx,
     /// Geöffneter Bereich nach einem Fehler: „sperren“, „abnahme“ oder „widerruf“.
     open: String,
 }
@@ -104,7 +105,28 @@ pub async fn show(
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Response, WebError> {
     let open = params.get("offen").cloned().unwrap_or_default();
-    let p = state.club.boat_page(&user, boat_id(&id)?).await?;
+    let mut p = state.club.boat_page(&user, boat_id(&id)?).await?;
+    let sort = Sort::from_params(&params, "bf");
+    sort_rows(
+        &mut p.holders,
+        &sort,
+        &[
+            ("name", |e| text_key(&e.name)),
+            ("art", |e| text_key(&e.membership_type)),
+            ("email", |e| text_key(e.contact.email().unwrap_or(""))),
+        ],
+    );
+    let holder_sort = SortCtx::new(
+        "bf",
+        &format!("/boote/{id}"),
+        vec![],
+        &sort,
+        &[
+            ("name", "Name"),
+            ("art", "Mitgliedsart"),
+            ("email", "E-Mail"),
+        ],
+    );
     let layout = Layout::build(
         &state,
         &session,
@@ -113,7 +135,12 @@ pub async fn show(
         &format!("/boote/{id}"),
     )
     .await?;
-    render(&ShowPage { layout, p, open })
+    render(&ShowPage {
+        layout,
+        p,
+        holder_sort,
+        open,
+    })
 }
 
 fn input_from(fields: &Fields) -> BoatInput {

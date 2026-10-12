@@ -1,0 +1,37 @@
+{% import "_ui.html" as ui -%}
+<section class="card" id="bootserlaubnis">
+  <div class="card-head"><h2>{{ ui::icon("users") }}Wer darf dieses Boot fahren? <span class="count">{{ p.holders.len() }}</span></h2></div>
+  <p class="muted">Mitglieder, denen die Bootserlaubnis für dieses Boot erteilt und nicht widerrufen wurde. Scheine und weitere Voraussetzungen sind hier nicht geprüft.</p>
+  {% if p.holders.is_empty() %}
+    {{ ui::empty("users", "Noch niemand hat die Bootserlaubnis.") }}
+  {% else %}
+  {{ ui::sort_form(holder_sort) }}
+  <div class="table-wrap">
+  <table class="responsive">
+    <thead><tr>
+      {{ ui::th_sort(holder_sort, "name", "Name", "") }}
+      {{ ui::th_sort(holder_sort, "art", "Art", "") }}
+      <th scope="col">Scheine</th>
+      {{ ui::th_sort(holder_sort, "email", "E-Mail", "") }}
+      <th scope="col">Telefon</th>
+    </tr></thead>
+    <tbody>
+    {% for entry in p.holders %}
+      <tr>
+        <td data-label="Name" class="cell-title"><div class="cell-person">{{ ui::avatar(entry.initials, entry.avatar) }}<div class="cell-main"><a class="person" href="/mitglieder/{{ entry.id }}">{{ entry.name }}</a></div></div></td>
+        <td data-label="Art"><span class="symbols">{{ ui::symbol(entry.type_icon, "kind", entry.membership_type, entry.membership_type) }}</span></td>
+        <td data-label="Scheine">{% if !entry.licenses.is_empty() || !entry.radio_licenses.is_empty() %}<span class="symbols">{% for l in entry.licenses %}{{ ui::symbol("anchor", "", "Segelschein: {}"|format(l), l) }}{% endfor %}{% for l in entry.radio_licenses %}{{ ui::symbol("radio", "radio", "Funklizenz: {}"|format(l), l) }}{% endfor %}</span>{% endif %}</td>
+        {% if entry.contact.is_blocked() %}
+        <td data-label="E-Mail"><span class="badge">{{ ui::icon("lock") }}Kontaktdaten gesperrt</span></td>
+        <td data-label="Telefon"></td>
+        {% else %}
+        <td data-label="E-Mail">{% if let Some(email) = entry.contact.email() %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}</td>
+        <td data-label="Telefon">{{ entry.contact.phones()|join(", ") }}</td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>

@@ -46,6 +46,36 @@ pub struct DirectoryEntry {
     pub contact: ContactInfo,
 }
 
+/// Verzeichniseintrag eines aktiven Mitglieds aus Sicht des Betrachters.
+pub(crate) fn entry_of(
+    m: &crate::ports::MemberSummary,
+    principal: &crate::principal::Principal,
+    offices: &Offices<'_>,
+    boats: &[vereinsakte_core::boat::Boat],
+    now: vereinsakte_core::time::Timestamp,
+) -> DirectoryEntry {
+    DirectoryEntry {
+        id: m.id.get(),
+        licenses: m.sailing_licenses.clone(),
+        radio_licenses: m.radio_licenses.clone(),
+        type_key: crate::members::membership_type_key(m.membership_type),
+        type_icon: crate::members::membership_type_icon(m.membership_type),
+        name: format!("{}, {}", m.last_name, m.first_name),
+        initials: crate::format::initials(&m.first_name, &m.last_name),
+        avatar: crate::format::avatar_class(m.id.get()),
+        offices: office_labels(offices, boats, m.id, now),
+        member_number: m.id.get(),
+        membership_type: m.membership_type.to_string(),
+        contact: ContactInfo::of(
+            principal,
+            m.id,
+            m.contact_blocked,
+            m.email.as_ref(),
+            &m.phone,
+        ),
+    }
+}
+
 impl ClubService {
     /// Aktive Mitglieder nach Nachnamen sortiert, optional gefiltert nach
     /// einem Teil des Vor- oder Nachnamens.
@@ -95,26 +125,7 @@ impl ClubService {
                             .iter()
                             .any(|l| l.to_lowercase() == license))
             })
-            .map(|m| DirectoryEntry {
-                id: m.id.get(),
-                licenses: m.sailing_licenses.clone(),
-                radio_licenses: m.radio_licenses.clone(),
-                type_key: crate::members::membership_type_key(m.membership_type),
-                type_icon: crate::members::membership_type_icon(m.membership_type),
-                name: format!("{}, {}", m.last_name, m.first_name),
-                initials: crate::format::initials(&m.first_name, &m.last_name),
-                avatar: crate::format::avatar_class(m.id.get()),
-                offices: office_labels(&offices, &boats, m.id, now),
-                member_number: m.id.get(),
-                membership_type: m.membership_type.to_string(),
-                contact: ContactInfo::of(
-                    &principal,
-                    m.id,
-                    m.contact_blocked,
-                    m.email.as_ref(),
-                    &m.phone,
-                ),
-            })
+            .map(|m| entry_of(&m, &principal, &offices, &boats, now))
             .collect();
         let can_manage = principal.can(&vereinsakte_core::rights::Capability::ManageMembers);
         Ok(DirectoryView {
